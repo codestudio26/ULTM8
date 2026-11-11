@@ -3844,6 +3844,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     uploadVideoAria: "رفع فيديو لـ {title}",
     uploadAgain: "ارفع مرة أخرى",
     uploadAgainAria: "ارفع فيديو {title} مرة أخرى",
+    actionsAria: "إجراءات لـ {title}",
     videoUploadsOff: "لم يُعدّ رفع الفيديو بعد. حتى ذلك الحين يمكن إنشاء الدروس ومشاهدتها بدون فيديو.",
     unarchive: "إلغاء الأرشفة",
     unarchiveAria: "إلغاء أرشفة {title}",

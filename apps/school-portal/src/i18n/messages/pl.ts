@@ -3756,6 +3756,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     uploadVideoAria: "Prześlij film do {title}",
     uploadAgain: "Prześlij ponownie",
     uploadAgainAria: "Prześlij ponownie wideo do {title}",
+    actionsAria: "Działania dla {title}",
     videoUploadsOff: "Przesyłanie wideo nie jest jeszcze skonfigurowane. Do tego czasu lekcje można tworzyć i oglądać bez wideo.",
     unarchive: "Przywróć z archiwum",
     unarchiveAria: "Przywróć {title} z archiwum",

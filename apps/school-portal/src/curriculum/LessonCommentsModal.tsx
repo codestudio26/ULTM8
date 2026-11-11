@@ -29,21 +29,25 @@ export function LessonCommentsModal({ schoolId, lesson, canDelete, onClose }: { 
       {isLoading ? <Spinner /> : null}
       {data && data.length === 0 ? <p className="ultm8-field__hint">{t('curriculum.comments.empty')}</p> : null}
       {data && data.length > 0 ? (
-        <ul aria-label={t('curriculum.comments.listLabel')} style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+        <ul aria-label={t('curriculum.comments.listLabel')} className="u8c-comments">
           {data.map((c) => (
-            <li key={c.id} style={{ borderBottom: '1px solid var(--ultm8-border, #ddd)', padding: '8px 0' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'flex-start' }}>
-                <div>
-                  <strong>{c.authorName || t('curriculum.comments.unknownAuthor')}</strong>{' '}
-                  <span className="ultm8-field__hint">{new Date(c.createdAt).toLocaleString(formatLocale())}</span>
-                  <p style={{ margin: '4px 0 0', whiteSpace: 'pre-wrap' }}>{c.body}</p>
-                </div>
-                {canDelete ? (
-                  <Button variant="secondary" onClick={() => handleDelete(c.id)} disabled={remove.isPending} aria-label={t('curriculum.comments.deleteAria', { name: c.authorName })}>
-                    {t('curriculum.delete')}
-                  </Button>
-                ) : null}
+            <li key={c.id} className="u8c-comment">
+              <div style={{ minWidth: 0 }}>
+                <strong className="u8c-comment__who">{c.authorName || t('curriculum.comments.unknownAuthor')}</strong>{' '}
+                <span className="u8c-comment__when">{new Date(c.createdAt).toLocaleString(formatLocale())}</span>
+                <p className="u8c-comment__body">{c.body}</p>
               </div>
+              {canDelete ? (
+                <Button
+                  variant="secondary"
+                  className="u8c-btn-sm"
+                  onClick={() => handleDelete(c.id)}
+                  disabled={remove.isPending}
+                  aria-label={t('curriculum.comments.deleteAria', { name: c.authorName })}
+                >
+                  {t('curriculum.delete')}
+                </Button>
+              ) : null}
             </li>
           ))}
         </ul>

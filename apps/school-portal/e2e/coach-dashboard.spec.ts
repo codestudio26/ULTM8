@@ -76,8 +76,9 @@ test('the board and the student panel show only what the coach may do', async ({
 
   await card.getByRole('link', { name: s.student.name }).click();
   await expect(page.getByRole('heading', { name: s.student.name })).toBeVisible();
-  // A student's grading is the Ranks tab of their page (DESIGN.md → "Grading screens").
-  await page.getByRole('navigation', { name: 'Student sections' }).getByRole('link', { name: 'Ranks' }).click();
+  // A student's grading is the Ranks tab of their page (DESIGN.md → "Grading screens");
+  // from the board it opens on that tab (Decision 457).
+  await expect(page).toHaveURL(new RegExp(`/students/${s.student.id}\\?tab=ranks$`));
   const bjj = page.getByRole('region', { name: 'BJJ' });
   await expect(bjj.getByRole('button', { name: 'Grade' })).toBeVisible();
   await expect(bjj.getByRole('button', { name: 'Correct date' })).toHaveCount(0);
