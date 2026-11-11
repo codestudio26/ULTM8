@@ -238,6 +238,10 @@ test('Decision 367 (Q5): with two Branches the Owner can narrow the Dashboard to
 
     await page.getByRole('link', { name: /See more/ }).click();
     await expect(page).toHaveURL(new RegExp(`/bookings-drilldown\\?branch=${branches[0].id}`));
+    // The address changes a moment before the Bookings page replaces the
+    // Dashboard, whose own Branch picker (a button, not a field) has the same
+    // name; wait for the Bookings page before reading its field.
+    await expect(page.getByRole('heading', { level: 1, name: 'Bookings' })).toBeVisible();
     await expect(page.getByLabel('Branch')).toHaveValue(branches[0].id);
   } finally {
     await db.branch.deleteMany({ where: { id: { in: branches.map((b) => b.id) } } });
