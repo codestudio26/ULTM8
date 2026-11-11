@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { addBranch, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
 
 /**
@@ -33,6 +33,17 @@ test.afterAll(async () => {
   await cleanup();
 });
 
+/** One notification in the inbox (the new look's list of rows, Decision 453). */
+function inboxItem(page: Page, title: RegExp) {
+  return page.getByRole('region', { name: 'Notifications', exact: true }).getByRole('listitem').filter({ has: page.getByText(title) });
+}
+
+/** Picks an option in one of the new look's own drop-downs (NewLookSelect). */
+async function pick(page: Page, label: string, option: string | RegExp) {
+  await page.getByRole('combobox', { name: label, exact: true }).click();
+  await page.getByRole('listbox', { name: label, exact: true }).getByRole('option', { name: option }).click();
+}
+
 test('row action menu — Mark read and Snooze are real, and update the stats ribbon', async ({ page }) => {
   const n1 = await db.notification.create({
     data: { id: randomUUID(), userId: s.ownerId, title: 'Waiver signed', body: 'A waiver was signed.' },
@@ -49,14 +60,14 @@ test('row action menu — Mark read and Snooze are real, and update the stats ri
   const readTileValue = page.getByText('Read within 24h', { exact: true }).locator('xpath=following-sibling::*[1]');
   await expect(readTileValue).toHaveText('—');
 
-  await expect(page.getByRole('row', { name: /Waiver signed/ }).getByText('New')).toBeVisible();
-  await expect(page.getByRole('row', { name: /Payment received/ }).getByText('New')).toBeVisible();
+  await expect(inboxItem(page, /Waiver signed/).getByText('New')).toBeVisible();
+  await expect(inboxItem(page, /Payment received/).getByText('New')).toBeVisible();
 
   // Mark read via the row action menu (previously a plain always-visible
   // Button; now a RowActionsMenu item, same as every other dense list page).
-  await page.getByRole('row', { name: /Waiver signed/ }).getByRole('button', { name: 'Actions for Waiver signed' }).click();
+  await inboxItem(page, /Waiver signed/).getByRole('button', { name: 'Actions for Waiver signed' }).click();
   await page.getByRole('menuitem', { name: 'Mark read' }).click();
-  await expect(page.getByRole('row', { name: /Waiver signed/ }).getByText('Read', { exact: true })).toBeVisible();
+  await expect(inboxItem(page, /Waiver signed/).getByText('Read', { exact: true })).toBeVisible();
 
   // Read within 24h — now backed by one read Notification, read well within
   // 24h of being created a moment ago.
@@ -64,12 +75,12 @@ test('row action menu — Mark read and Snooze are real, and update the stats ri
 
   // Snooze — previously shown disabled-styled in the backlog's referenced
   // concept mockup; now real (PATCH /notifications/:id/snooze).
-  await page.getByRole('row', { name: /Payment received/ }).getByRole('button', { name: 'Actions for Payment received' }).click();
+  await inboxItem(page, /Payment received/).getByRole('button', { name: 'Actions for Payment received' }).click();
   await page.getByRole('menuitem', { name: 'Snooze' }).click();
   await expect(page.getByRole('heading', { name: 'Snooze notification' })).toBeVisible();
   await page.getByRole('button', { name: 'Snooze' }).click();
   await expect(page.getByRole('heading', { name: 'Snooze notification' })).toHaveCount(0);
-  await expect(page.getByRole('row', { name: /Payment received/ }).getByText('Snoozed')).toBeVisible();
+  await expect(inboxItem(page, /Payment received/).getByText('Snoozed')).toBeVisible();
 
   const snoozed = await db.notification.findUniqueOrThrow({ where: { id: n2.id } });
   expect(snoozed.snoozedUntil).not.toBeNull();
@@ -98,15 +109,15 @@ test('Delete and Clear all read — hide notifications from the list and the sta
   await page.getByRole('menuitem', { name: 'Delete' }).click();
   await expect(page.getByRole('heading', { name: 'Delete notification?' })).toBeVisible();
   await page.getByRole('button', { name: 'Delete', exact: true }).click();
-  await expect(page.getByRole('row', { name: /Old alert/ })).toHaveCount(0);
+  await expect(inboxItem(page, /Old alert/)).toHaveCount(0);
   await expect(totalTileValue).toHaveText('2');
 
   // Clear all read: removes the read one, keeps the unread one.
   await page.getByRole('button', { name: 'Clear all read' }).click();
   await expect(page.getByRole('heading', { name: 'Clear all read notifications?' })).toBeVisible();
   await page.getByRole('dialog').getByRole('button', { name: 'Clear all read' }).click();
-  await expect(page.getByRole('row', { name: /Payment failed/ })).toHaveCount(0);
-  await expect(page.getByRole('row', { name: /Waiver due/ })).toBeVisible();
+  await expect(inboxItem(page, /Payment failed/)).toHaveCount(0);
+  await expect(inboxItem(page, /Waiver due/)).toBeVisible();
   await expect(totalTileValue).toHaveText('1');
   // Nothing read is left, so the action is disabled.
   await expect(page.getByRole('button', { name: 'Clear all read' })).toBeDisabled();
@@ -148,8 +159,8 @@ test('Broadcast to Students — Branch audience reaches only that Branch', async
   await page.getByRole('button', { name: 'Send a message to students' }).click();
   await page.getByLabel('Title').fill('Uptown closure');
   await page.getByLabel('Message', { exact: true }).fill('Uptown is closed for maintenance.');
-  await page.getByLabel('Send to').selectOption('BRANCH');
-  await page.getByLabel('Branch').selectOption({ label: 'Uptown' });
+  await pick(page, 'Send to', 'Students at a Branch');
+  await pick(page, 'Branch', 'Uptown');
   await page.getByRole('button', { name: 'Send message' }).click();
 
   // Only `newStudent` has a home Branch at Uptown — `student` does not.
@@ -166,8 +177,8 @@ test('Load more shows notifications past the newest 20, and the bell follows the
 
   await signIn(page, s.ownerToken);
   await page.goto('/notifications');
-  await expect(page.getByRole('row', { name: /Inbox item 0\b/ })).toBeVisible();
-  await expect(page.getByRole('row', { name: /Inbox item \d+/ })).toHaveCount(20);
+  await expect(inboxItem(page, /Inbox item 0\b/)).toBeVisible();
+  await expect(inboxItem(page, /Inbox item \d+/)).toHaveCount(20);
 
   // The only unread one is the oldest, past the first page: the bell still
   // shows it, because it reads the Unread count rather than the loaded rows.
@@ -175,8 +186,8 @@ test('Load more shows notifications past the newest 20, and the bell follows the
   await expect(bell.locator('span')).toHaveCount(1);
 
   await page.getByRole('button', { name: 'Load more' }).click();
-  await expect(page.getByRole('row', { name: /Inbox item \d+/ })).toHaveCount(25);
-  await expect(page.getByRole('row', { name: /Inbox item 24\b/ }).getByText('New')).toBeVisible();
+  await expect(inboxItem(page, /Inbox item \d+/)).toHaveCount(25);
+  await expect(inboxItem(page, /Inbox item 24\b/).getByText('New')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Load more' })).toHaveCount(0);
 
   // Snooze is greyed out on a read notification.
@@ -188,7 +199,7 @@ test('Load more shows notifications past the newest 20, and the bell follows the
   await page.getByRole('button', { name: 'Actions for Inbox item 24' }).click();
   await page.getByRole('menuitem', { name: 'Snooze' }).click();
   await page.getByRole('button', { name: 'Snooze' }).click();
-  await expect(page.getByRole('row', { name: /Inbox item 24\b/ }).getByText('Snoozed')).toBeVisible();
+  await expect(inboxItem(page, /Inbox item 24\b/).getByText('Snoozed')).toBeVisible();
   await expect(bell.locator('span')).toHaveCount(0);
 });
 
@@ -210,19 +221,32 @@ test('Broadcast to one class — the picker lists upcoming classes only, soonest
   await signIn(page, s.ownerToken);
   await page.goto('/notifications');
   await page.getByRole('button', { name: 'Send a message to students' }).click();
-  await page.getByLabel('Send to').selectOption('CLASS');
+  await pick(page, 'Send to', 'Students in a Class');
 
-  const options = await page.getByLabel('Class').locator('option').allTextContents();
+  await page.getByRole('combobox', { name: 'Class', exact: true }).click();
+  const list = page.getByRole('listbox', { name: 'Class', exact: true }).getByRole('option');
+  const options = (await list.allTextContents()).map((o) => o.trim());
   const kids = options.filter((o) => o.startsWith('Kids BJJ'));
   expect(kids).toHaveLength(2);
   // Each carries its own date, so the two "Kids BJJ" weeks can be told apart,
   // and the sooner one comes first.
   expect(kids[0]).not.toBe(kids[1]);
   expect(options.indexOf(kids[0])).toBeLessThan(options.indexOf(kids[1]));
-  const values = await page.getByLabel('Class').locator('option').evaluateAll((els) => els.map((e) => (e as HTMLOptionElement).value));
-  expect(values.indexOf(sooner.id)).toBeLessThan(values.indexOf(later.id));
   expect(options.some((o) => o.startsWith('Past Class'))).toBe(false);
   expect(options.some((o) => o.startsWith('Archived Class'))).toBe(false);
+  // The first "Kids BJJ" is the sooner class: picking it sends that class's id.
+  let sent: Record<string, unknown> | null = null;
+  await page.route('**/v1/schools/*/notifications/broadcast', (route) => {
+    sent = route.request().postDataJSON();
+    return route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ broadcastId: randomUUID(), audience: 'CLASS', recipientCount: 0 }) });
+  });
+  await list.filter({ hasText: kids[0] }).click();
+  await page.getByLabel('Title').fill('Kids BJJ');
+  await page.getByLabel('Message', { exact: true }).fill('See you there.');
+  await page.getByRole('button', { name: 'Send message' }).click();
+  await expect(page.getByRole('heading', { name: 'Message sent' })).toBeVisible();
+  expect(sent).toMatchObject({ audience: 'CLASS', classId: sooner.id });
+  expect(sent).not.toMatchObject({ classId: later.id });
 });
 
 test('Broadcast to one class — the Owner ticks who on the class list gets it (Decision 333)', async ({ page }) => {
@@ -241,8 +265,8 @@ test('Broadcast to one class — the Owner ticks who on the class list gets it (
   await page.getByRole('button', { name: 'Send a message to students' }).click();
   await page.getByLabel('Title').fill('Mats moved');
   await page.getByLabel('Message', { exact: true }).fill('Class is in the back room tonight.');
-  await page.getByLabel('Send to').selectOption('CLASS');
-  await page.getByLabel('Class', { exact: true }).selectOption(cls.id);
+  await pick(page, 'Send to', 'Students in a Class');
+  await pick(page, 'Class', /^Teen Judo/);
 
   // Booked is ticked by default; nothing ticked is refused before sending.
   await expect(page.getByLabel('Booked')).toBeChecked();
@@ -275,7 +299,7 @@ test('Mark all read, the School label, and clicking a notification opens its cla
   await page.goto('/notifications');
   // The School it came from sits under the title; a notification with nothing
   // to open has a plain title.
-  await expect(page.getByRole('cell', { name: `Class moved ${school.name}` })).toBeVisible();
+  await expect(inboxItem(page, /Class moved/).getByText(school.name, { exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Just news' })).toHaveCount(0);
 
   await page.getByRole('link', { name: 'Class moved' }).click();
