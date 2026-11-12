@@ -7,7 +7,7 @@ import { GradingService } from './grading.service';
 import { ChangeHistoryNoteDto, DeclareRankDto, DowngradeActionDto, EditRankDateDto, GradingActionDto, MoveToAdultDto, ReadyForAdultAgeDto, UndoAutomaticPromotionDto, VerifyRankDto, VoidPromotionEventDto } from './dto/grading-action.dto';
 import { DeclareOptionsResponseDto, PendingVerificationListResponseDto, StudentEligibilityListResponseDto, StudentGradingOverviewResponseDto, StudentRankListResponseDto } from './dto/student-rank-response.dto';
 import { PromotionEventListResponseDto, PromotionEventNoteLogResponseDto, PromotionEventResponseDto } from './dto/promotion-event-response.dto';
-import { BoardActiveDto, BoardMoveDto, BoardThresholdsDto, BulkPromoteDto, BulkPromoteResponseDto, GradingBoardResponseDto, GradingRequirementsDto, LogClassDto, OpenMatHoursSettingDto } from './dto/grading-board.dto';
+import { BoardActiveDto, BoardMoveDto, BoardThresholdsDto, BulkPromoteDto, BulkPromoteResponseDto, GradingBoardResponseDto, GradingRequirementsDto, LogClassDto, OpenMatHoursSettingDto, ReadyToGradeResponseDto } from './dto/grading-board.dto';
 import { DisciplineResponseDto } from './dto/discipline-response.dto';
 import { RankDisplayDto } from './dto/create-discipline.dto';
 import { Throttle } from '@nestjs/throttler';
@@ -223,6 +223,16 @@ export class GradingController {
   @Get('schools/:schoolId/rank-verifications')
   findPendingVerifications(@CurrentUser() user: JwtPayload, @Param('schoolId', ParseUUIDPipe) schoolId: string) {
     return this.gradingService.findPendingVerifications(user.sub, schoolId);
+  }
+
+  /** The Dashboard's "Ready to grade" list: the Grading Board's Ready to
+   * Grade column (currently attending students) across every style the caller
+   * grades. Owner: every style and student; other staff: their styles and
+   * their own branches' students, as on the board (Decisions 168, 181). */
+  @ApiOkResponse({ type: ReadyToGradeResponseDto })
+  @Get('schools/:schoolId/grading-board/ready')
+  getReadyToGrade(@CurrentUser() user: JwtPayload, @Param('schoolId', ParseUUIDPipe) schoolId: string) {
+    return this.gradingService.getReadyToGrade(user.sub, schoolId);
   }
 
   /** The Grading Board for one style (roadmap Phase 3b): every student with a

@@ -55,6 +55,31 @@ export class AttendanceStatsResponseDto {
   classesPerStudent!: number;
 }
 
+/** GET /schools/{schoolId}/attendance/today (the Dashboard's "Check-ins today", Decision 454 item 8). */
+export class CheckInsTodayQueryDto {
+  @ApiPropertyOptional({ description: "Only the classes held at this Branch. Staff may only name one of their own Branches." })
+  @IsOptional()
+  @IsUUID()
+  branchId?: string;
+}
+
+export class CheckInsTodayResponseDto {
+  @ApiProperty({ description: "Today (YYYY-MM-DD, the School's time zone)." })
+  date!: string;
+
+  @ApiProperty({ description: "The School's time zone the day is in (UTC when the School has none)." })
+  timeZone!: string;
+
+  @ApiProperty({ type: [String], nullable: true, description: 'The Branches counted; null means the whole School.' })
+  branchIds!: string[] | null;
+
+  @ApiProperty({ description: "Check-ins to today's classes, counted as the attendance statistics count them: members checked in (or logged), plus guests checked in on a Friend Pass." })
+  checkIns!: number;
+
+  @ApiProperty({ description: "Today's classes with at least one check-in." })
+  classes!: number;
+}
+
 /** GET /schools/{schoolId}/attendance/log-classes (Decision 317 item 4, backlog 5.7). */
 export class LogClassesQueryDto {
   @ApiPropertyOptional({ description: "The day (YYYY-MM-DD, the School's time zone), today or up to 30 days back. Today when left out." })

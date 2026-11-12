@@ -4,8 +4,9 @@ import { ErrorBanner, Spinner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useAuth, useOwnedSchoolId } from '../auth/AuthContext';
 import { useSchool } from '../schools/schoolQueries';
-import { useBookingsSummary, useDashboardOverview, type BookingsSummaryClass, type BookingsSummaryResponse } from './dashboardQueries';
+import { useBookingsSummary, useCheckInsToday, useDashboardOverview, type BookingsSummaryClass, type BookingsSummaryResponse } from './dashboardQueries';
 import { BirthdaysCard } from './BirthdaysCard';
+import { ReadyToGradeCard } from './ReadyToGradeCard';
 import { SetupChecklist } from './SetupChecklist';
 import { useI18n, useT } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
@@ -30,6 +31,9 @@ import './dashboardPage.css';
  *   the week shown in the picked language.
  * - Decision 374: Active students, this week's birthdays and the setup
  *   checklist.
+ * - Decision 454 item 8: "Check-ins today" (a number card that follows the
+ *   Branch filter) and the "Ready to grade" list, where the design draws them;
+ *   Birthdays stays, under Ready to grade (Decision 454 item 5).
  * - Today's classes are this week's summary's own classes for today (each on
  *   its own clock), so they follow the Branch filter like the numbers do.
  * - The right panel, "Needs attention", is the owner's own notifications (the
@@ -44,6 +48,7 @@ export function DashboardPage() {
   const branchId = params.get('branch') ?? '';
   const summary = useBookingsSummary(schoolId, null, branchId);
   const overview = useDashboardOverview(schoolId);
+  const checkIns = useCheckInsToday(schoolId, branchId);
   const branches = useBranchChoices(schoolId ?? '', branchId);
 
   // Coaches review CP5: owner-only — anyone else goes back to their own home
@@ -104,6 +109,21 @@ export function DashboardPage() {
                   }
                 />
                 <StatCard testId="stat-upcoming" label={t('dashboard.statUpcoming')} value={data?.upcomingBookings ?? 0} />
+                {/* Decision 454 item 8 — check-ins to today's classes, on the School's clock. */}
+                <StatCard
+                  testId="stat-checkins"
+                  label={t('dashboard.statCheckInsToday')}
+                  value={checkIns.data ? checkIns.data.checkIns : checkIns.error ? '–' : 0}
+                  notes={[
+                    checkIns.error
+                      ? checkIns.error instanceof ApiError
+                        ? checkIns.error.message
+                        : t('dashboard.checkInsLoadFailed')
+                      : checkIns.data && checkIns.data.classes > 0
+                        ? t('dashboard.checkInsAcrossClasses', { count: checkIns.data.classes })
+                        : null,
+                  ]}
+                />
                 {/* Decision 374 (Decision 317 item 5) — memberships aren't per Branch, so always the whole School. */}
                 <StatCard
                   testId="stat-active"
@@ -135,7 +155,10 @@ export function DashboardPage() {
 
           <div className="u8n-dash__lists">
             <TodaysClasses summary={data} loading={summary.isLoading} />
-            <BirthdaysCard schoolId={schoolId} linkToStudent />
+            <div className="u8n-dash__col">
+              <ReadyToGradeCard schoolId={schoolId} branchPicked={!!branchId} />
+              <BirthdaysCard schoolId={schoolId} linkToStudent />
+            </div>
           </div>
         </div>
       </NewLookPage>
@@ -147,7 +170,7 @@ function rangeText(data: BookingsSummaryResponse): string {
   return formatRange(data.from, data.to);
 }
 
-function StatCard({ label, value, notes = [], link, testId }: { label: string; value: number; notes?: (string | null)[]; link?: React.ReactNode; testId: string }) {
+function StatCard({ label, value, notes = [], link, testId }: { label: string; value: number | string; notes?: (string | null)[]; link?: React.ReactNode; testId: string }) {
   const shown = notes.filter((n): n is string => !!n);
   return (
     <div className="u8n-dash__stat" data-testid={testId}>

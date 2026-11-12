@@ -2575,6 +2575,14 @@ export const messages: PartialMessages<EnglishMessages> = {
     branchLabel: "Unidade",
     branchAll: "Todas as unidades",
     statActiveStudents: "Alunos ativos",
+    statCheckInsToday: "Check-ins de hoje",
+    checkInsAcrossClasses: {
+      one: "Em {count} aula até agora",
+      other: "Em {count} aulas até agora",
+    },
+    checkInsLoadFailed: "Não foi possível carregar os check-ins.",
+    readySeeAll: "Ver todos os {count} →",
+    readyLoadFailed: "Não foi possível carregar a lista de prontos para graduar.",
     wholeSchool: "Escola toda",
     birthdays: {
       title: "Aniversários da semana",
