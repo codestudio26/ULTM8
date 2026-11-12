@@ -1,0 +1,399 @@
+/* The sign-in pages in the new look (SignInCard.tsx): the pages outside the
+ * app shell (Decision 453 / 460). The design draws no sign-in screen, so they
+ * use the new look's own pieces: the brand mark as the side menu shows it, a
+ * white card on the grey page, the soft fields, pill buttons, tick boxes and
+ * drop-downs every form already has (packages/ui redesign-fixes.css,
+ * layout/newLookShell.css). Scoped to [data-look='redesign'] and built on the
+ * shell's --u8n-* colours, so dark mode follows them. Phone first (DESIGN.md
+ * → "Phone layout": 16px sides, 16px field text). Class names start with
+ * u8si- so they never meet another page's. */
+
+[data-look='redesign'] {
+  --u8si-card-shadow: 0 8px 24px rgba(21, 23, 25, 0.06);
+  --u8si-link: #3a7556;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-look='redesign']:not([data-theme='light']) {
+    --u8si-card-shadow: none;
+    --u8si-link: #9fd3b2;
+  }
+}
+:root[data-look='redesign'][data-theme='dark'] {
+  --u8si-card-shadow: none;
+  --u8si-link: #9fd3b2;
+}
+
+[data-look='redesign'] .u8si-page {
+  min-height: 100vh;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 56px 24px;
+  background: var(--u8n-page-bg);
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .u8si-column {
+  width: 100%;
+  max-width: 440px;
+  min-width: 0;
+}
+[data-look='redesign'] .u8si-column--wide {
+  max-width: 560px;
+}
+
+/* The other pages outside the shell still drawn by the shared AuthCard
+ * (Access paused, the legal pages) take the same frame here, portal only:
+ * the Platform Admin app, which keeps the shared AuthCard, never sets
+ * data-look. Their fields are unchanged. */
+[data-look='redesign'] .ultm8-auth-page {
+  min-height: 100vh;
+  box-sizing: border-box;
+  align-items: flex-start;
+  padding: 56px 24px;
+  background: var(--u8n-page-bg);
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .ultm8-auth-card {
+  max-width: 560px;
+  min-width: 0;
+}
+[data-look='redesign'] .ultm8-auth-card > .ultm8-card {
+  background: var(--u8n-surface);
+  color: var(--u8n-text);
+  border: 1px solid var(--u8n-line);
+  border-radius: 16px;
+  box-shadow: var(--u8si-card-shadow);
+  padding: 28px 28px 24px;
+}
+[data-look='redesign'] .ultm8-auth-card__title {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 300;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .ultm8-auth-card__subtitle {
+  margin: 6px 0 22px;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .ultm8-auth-card__title + :not(.ultm8-auth-card__subtitle) {
+  margin-top: 22px;
+}
+[data-look='redesign'] .ultm8-auth-card .ultm8-banner {
+  border-radius: 12px;
+}
+[data-look='redesign'] .ultm8-auth-card > .ultm8-card a,
+[data-look='redesign'] .ultm8-auth-card__footer a {
+  color: var(--u8si-link);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+[data-look='redesign'] .ultm8-auth-card__footer {
+  margin-top: 20px;
+  font-size: 14px;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .ultm8-auth-card > .ultm8-card .u8n-select__field {
+  max-width: 100%;
+}
+@media (max-width: 767px) {
+  [data-look='redesign'] .ultm8-auth-page {
+    padding: 24px 16px 32px;
+  }
+  [data-look='redesign'] .ultm8-auth-card > .ultm8-card {
+    padding: 22px 16px 18px;
+  }
+  [data-look='redesign'] .ultm8-auth-card__title {
+    font-size: 24px;
+  }
+}
+
+/* The brand mark: the side menu's small rounded tile (DESIGN.md → "Avatars":
+ * the logo is a rounded square, 8px corners), then the name. */
+[data-look='redesign'] .u8si-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 20px;
+}
+[data-look='redesign'] .u8si-brand__mark {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: var(--u8n-surface);
+  box-shadow: inset 0 0 0 1px var(--u8n-line);
+  color: var(--u8n-tile-icon);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+[data-look='redesign'] .u8si-brand__copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.35;
+}
+[data-look='redesign'] .u8si-brand__name {
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .u8si-brand__tagline {
+  font-size: 13px;
+  color: var(--u8n-quiet);
+}
+
+/* The white card. Soft fields are grey, so a form always sits on white
+ * (DESIGN.md → "Never the same colour twice"). */
+[data-look='redesign'] .u8si-card {
+  background: var(--u8n-surface);
+  color: var(--u8n-text);
+  border: 1px solid var(--u8n-line);
+  border-radius: 16px;
+  box-shadow: var(--u8si-card-shadow);
+  padding: 28px 28px 24px;
+  min-width: 0;
+}
+[data-look='redesign'] .u8si-card__title {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 300;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .u8si-card__subtitle {
+  margin: 6px 0 0;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8si-card > .u8si-card__title + :not(.u8si-card__subtitle),
+[data-look='redesign'] .u8si-card > .u8si-card__subtitle + * {
+  margin-top: 22px;
+}
+[data-look='redesign'] .u8si-card .ultm8-banner {
+  border-radius: 12px;
+}
+[data-look='redesign'] .u8si-card .ultm8-field-row {
+  gap: 0 var(--space-3);
+}
+[data-look='redesign'] .u8si-card .u8n-select__field {
+  max-width: 100%;
+}
+
+/* Links: green text (DESIGN.md → "Greens: mint"), underlined so they read as
+ * links without colour alone. */
+[data-look='redesign'] .u8si-card a,
+[data-look='redesign'] .u8si-footer a {
+  color: var(--u8si-link);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+[data-look='redesign'] .u8si-card .ultm8-field__label-action {
+  font-size: 13px;
+}
+
+/* Plain text in a card (coach invite, guest waiver, verify-phone link). */
+[data-look='redesign'] .u8si-text {
+  margin: 0 0 16px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .u8si-text strong {
+  font-weight: 500;
+}
+
+/* Buttons under the fields: full width, one under the other; a pair shares
+ * its row equally (DESIGN.md → "Button pairs"). */
+[data-look='redesign'] .u8si-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+}
+[data-look='redesign'] .u8si-actions > .ultm8-btn {
+  width: 100%;
+}
+[data-look='redesign'] .u8si-pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+}
+[data-look='redesign'] .u8si-pair > .ultm8-btn {
+  width: 100%;
+  min-width: 0;
+  padding: 0 12px;
+  white-space: normal;
+}
+
+/* The line under the card. */
+[data-look='redesign'] .u8si-footer {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--u8n-quiet);
+}
+
+/* The verification-code boxes as soft fields: grey, no border, white with a
+ * slate ring on focus (form pattern "F"). */
+[data-look='redesign'] .u8si-card .ultm8-segmented-code {
+  gap: 8px;
+}
+[data-look='redesign'] .u8si-card .ultm8-segmented-code__box {
+  min-width: 0;
+  min-height: 44px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--form-field-bg);
+  box-shadow: inset 0 0 0 1px var(--border);
+  color: var(--u8n-text);
+  font-size: 20px;
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
+}
+[data-look='redesign'] .u8si-card .ultm8-segmented-code__box:focus {
+  outline: none;
+  background: var(--form-field-bg-focus);
+  box-shadow: 0 0 0 2px var(--form-field-focus-ring);
+}
+
+/* Create account's "Optional details": a soft panel with the new look's
+ * chevron, not the old blue triangle. */
+[data-look='redesign'] .u8si-card .ultm8-details {
+  margin: 4px 0 16px;
+  padding: 0 16px;
+  border: 1px solid var(--u8n-line);
+  border-radius: 14px;
+}
+[data-look='redesign'] .u8si-card .ultm8-details > summary {
+  min-height: 52px;
+  justify-content: space-between;
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .u8si-card .ultm8-details > summary::before {
+  content: none;
+}
+[data-look='redesign'] .u8si-card .ultm8-details > summary::after {
+  content: '';
+  flex: none;
+  width: 18px;
+  height: 18px;
+  background: var(--u8-chevron) center / 18px 18px no-repeat;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+[data-look='redesign'] .u8si-card .ultm8-details[open] > summary::after {
+  transform: rotate(180deg);
+}
+[data-look='redesign'] .u8si-card .ultm8-details[open] {
+  padding-bottom: 4px;
+}
+[data-look='redesign'] .u8si-card .ultm8-details > summary:focus-visible {
+  outline: 2px solid var(--fill-accent);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* The success panel: a mint circle with a dark tick (DESIGN.md → "Greens:
+ * mint"), and the dialogs' round ✕ (Decision 460). */
+[data-look='redesign'] .u8si-card--success {
+  padding: 32px 28px;
+}
+[data-look='redesign'] .u8si-card .ultm8-success-panel__check {
+  background: var(--u8n-tile-on);
+  color: var(--u8n-tile-on-icon);
+}
+[data-look='redesign'] .u8si-card .ultm8-success-panel__title {
+  font-size: 20px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .u8si-card .ultm8-success-panel__subtitle {
+  font-size: 15px;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8si-card .ultm8-success-panel__dismiss {
+  top: -16px;
+  right: -12px;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--u8-dlg-x-bg);
+  color: var(--u8-dlg-x-text);
+  font-size: 18px;
+}
+[data-look='redesign'] .u8si-card .ultm8-success-panel__dismiss:focus-visible {
+  outline: 2px solid var(--fill-accent);
+  outline-offset: 2px;
+}
+[dir='rtl'] .u8si-card .ultm8-success-panel__dismiss {
+  right: auto;
+  left: -12px;
+}
+
+/* The guest waiver: each waiver's wording in a soft grey box that scrolls. */
+[data-look='redesign'] .u8si-waiver {
+  margin: 0 0 16px;
+}
+[data-look='redesign'] .u8si-waiver__title {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .u8si-waiver__body {
+  max-height: 280px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--form-field-bg);
+  box-shadow: inset 0 0 0 1px var(--border);
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--u8n-text);
+}
+
+[data-look='redesign'] .u8si-loading {
+  display: flex;
+  justify-content: center;
+  padding: 48px 0;
+}
+
+/* Phones: 16px sides (DESIGN.md → "Phone layout"), fields one per row. */
+@media (max-width: 767px) {
+  [data-look='redesign'] .u8si-page {
+    padding: 24px 16px 32px;
+  }
+  [data-look='redesign'] .u8si-card {
+    padding: 22px 16px 18px;
+  }
+  [data-look='redesign'] .u8si-card--success {
+    padding: 28px 16px;
+  }
+  [data-look='redesign'] .u8si-card__title {
+    font-size: 24px;
+  }
+}
+@media (max-width: 479px) {
+  [data-look='redesign'] .u8si-card .ultm8-field-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

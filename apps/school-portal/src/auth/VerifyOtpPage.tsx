@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { AuthCard, Button, ErrorBanner, Field, PhoneField, SegmentedCodeInput, SuccessBanner } from '@ultm8/ui';
+import { Button, ErrorBanner, Field, PhoneField, SegmentedCodeInput, SuccessBanner } from '@ultm8/ui';
 import { ApiError, unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useT } from '../i18n/I18nProvider';
+import { SignInCard } from './SignInCard';
 
 export function VerifyOtpPage() {
   const t = useT();
@@ -42,7 +43,7 @@ export function VerifyOtpPage() {
   }
 
   return (
-    <AuthCard title={t('auth.verify.title')} subtitle={t('auth.verify.subtitle')}>
+    <SignInCard title={t('auth.verify.title')} subtitle={t('auth.verify.subtitle')}>
       <form onSubmit={handleVerify}>
         {error ? <ErrorBanner message={error} /> : null}
         {resent ? <SuccessBanner message={t('auth.verify.resent')} /> : null}
@@ -52,15 +53,15 @@ export function VerifyOtpPage() {
         <Field label={t('auth.verificationCodeLabel')} htmlFor="verify-code">
           <SegmentedCodeInput value={code} onChange={setCode} autoFocus required />
         </Field>
-        <Button type="submit" fullWidth loading={submitting}>
-          {t('auth.verify.submit')}
-        </Button>
-        <div style={{ marginTop: 12, textAlign: 'center' }}>
+        <div className="u8si-actions">
+          <Button type="submit" fullWidth loading={submitting}>
+            {t('auth.verify.submit')}
+          </Button>
           <Button type="button" variant="secondary" onClick={handleResend}>
             {t('auth.verify.resend')}
           </Button>
         </div>
       </form>
-    </AuthCard>
+    </SignInCard>
   );
 }

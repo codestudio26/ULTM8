@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { AddressFields, AuthCard, AuthSuccessCard, Button, CurrencyField, ErrorBanner, Field, PasscodeField, PhoneField, SelectField, TextField, postalAddressFromRecord, preparePostalAddress, type PostalAddressErrors } from '@ultm8/ui';
+import { AddressFields, Button, CurrencyField, ErrorBanner, Field, NewLookSelect, PasscodeField, PhoneField, TextField, postalAddressFromRecord, preparePostalAddress, type PostalAddressErrors } from '@ultm8/ui';
 import { ApiError, unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
 import { guessDefaultCountry } from '../lib/phoneCountry';
@@ -9,6 +9,7 @@ import { languageName } from '../i18n/format';
 import { useT } from '../i18n/I18nProvider';
 import { Trans } from '../i18n/Trans';
 import { LegalAgreeCheckbox } from '../legal/LegalAgreeCheckbox';
+import { SignInCard, SignInSuccessCard } from './SignInCard';
 
 /** Fields match RegisterDto exactly (apps/api/src/auth/dto/register.dto.ts) — nothing
  * added or removed. Required fields first; the rest of the confirmed base User fields
@@ -95,7 +96,7 @@ export function RegisterPage() {
 
   if (created) {
     return (
-      <AuthSuccessCard
+      <SignInSuccessCard
         title={t('auth.register.successTitle')}
         subtitle={t('auth.register.successSubtitle')}
         onContinue={() => navigate('/verify-otp', { state: { phone: form.phone } })}
@@ -104,7 +105,8 @@ export function RegisterPage() {
   }
 
   return (
-    <AuthCard
+    <SignInCard
+      wide
       title={t('auth.register.title')}
       subtitle={t('auth.register.subtitle')}
       footer={
@@ -158,29 +160,36 @@ export function RegisterPage() {
           <Field label={t('auth.register.username')} htmlFor="reg-username" hint={t('auth.register.usernameHint')}>
             <TextField value={form.username} onChange={(e) => set('username', e.target.value)} />
           </Field>
-          <Field label={t('auth.register.gender')} htmlFor="reg-gender">
-            {/* Decision 315 item 15: Female, Male or not given. */}
-            <SelectField
-              id="reg-gender"
-              value={form.gender}
-              onChange={(e) => set('gender', e.target.value)}
-              options={[
+          {/* Decision 315 item 15: Female, Male or not given. Three short
+              choices, so pills (DESIGN.md → form pattern "F"). */}
+          <div className="ultm8-field">
+            <span className="ultm8-field__label" id="reg-gender-label">
+              {t('auth.register.gender')}
+            </span>
+            <div className="ultm8-pills" role="group" aria-labelledby="reg-gender-label">
+              {[
                 { value: '', label: t('schools.form.notSet') },
                 { value: 'FEMALE', label: t('frontDesk.signUp.female') },
                 { value: 'MALE', label: t('frontDesk.signUp.male') },
-              ]}
-            />
-          </Field>
+              ].map((g) => (
+                <button key={g.value || 'none'} type="button" className="ultm8-pills__option" aria-pressed={form.gender === g.value} onClick={() => set('gender', g.value)}>
+                  {g.label}
+                </button>
+              ))}
+            </div>
+          </div>
           <Field label={t('auth.register.nationality')} htmlFor="reg-nationality">
             <TextField value={form.nationality} onChange={(e) => set('nationality', e.target.value)} />
           </Field>
-          <Field label={t('auth.register.language')} htmlFor="reg-language">
-            <SelectField
+          <div className="u8n-dd-field">
+            <NewLookSelect
+              id="reg-language"
+              label={t('auth.register.language')}
               value={form.language}
-              onChange={(e) => set('language', e.target.value)}
+              onChange={(v) => set('language', v)}
               options={[{ value: '', label: t('schools.form.notSet') }, ...(languages ?? []).map((l) => ({ value: l.code, label: languageName(l.code, l.name) }))]}
             />
-          </Field>
+          </div>
           <Field label={t('auth.register.currency')} htmlFor="reg-currency">
             <CurrencyField
               id="reg-currency"
@@ -195,12 +204,12 @@ export function RegisterPage() {
 
         <LegalAgreeCheckbox kind="account" checked={acceptTerms} onChange={setAcceptTerms} />
 
-        <div style={{ marginTop: 16 }}>
+        <div className="u8si-actions">
           <Button type="submit" fullWidth loading={submitting}>
             {t('auth.register.submit')}
           </Button>
         </div>
       </form>
-    </AuthCard>
+    </SignInCard>
   );
 }

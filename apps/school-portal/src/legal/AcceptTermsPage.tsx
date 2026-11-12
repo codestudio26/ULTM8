@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { AuthCard, Button, ErrorBanner } from '@ultm8/ui';
+import { Button, ErrorBanner } from '@ultm8/ui';
 import { ApiError, unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
 import { useAuth } from '../auth/AuthContext';
 import { useT } from '../i18n/I18nProvider';
 import { LegalAgreeCheckbox } from './LegalAgreeCheckbox';
+import { SignInCard } from '../auth/SignInCard';
 
 /**
  * Decision 448 item 8: someone the School created (added manually, an
@@ -40,21 +41,19 @@ export function AcceptTermsPage() {
   }
 
   return (
-    <AuthCard title={t('legal.firstSignIn.title')} subtitle={t('legal.firstSignIn.body')}>
+    <SignInCard title={t('legal.firstSignIn.title')} subtitle={t('legal.firstSignIn.body')}>
       <form onSubmit={handleSubmit}>
         {error ? <ErrorBanner message={error} /> : null}
         <LegalAgreeCheckbox kind="account" checked={accepted} onChange={setAccepted} />
-        <div style={{ marginTop: 16 }}>
+        <div className="u8si-actions">
           <Button type="submit" fullWidth loading={submitting}>
             {t('legal.firstSignIn.submit')}
           </Button>
-        </div>
-        <div style={{ marginTop: 8 }}>
           <Button type="button" variant="secondary" fullWidth onClick={() => void logout()}>
             {t('legal.firstSignIn.signOut')}
           </Button>
         </div>
       </form>
-    </AuthCard>
+    </SignInCard>
   );
 }

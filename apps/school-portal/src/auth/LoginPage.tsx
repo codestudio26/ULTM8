@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { AuthCard, AuthSuccessCard, Button, ErrorBanner, Field, PasscodeField, SuccessBanner, TextField } from '@ultm8/ui';
+import { Button, ErrorBanner, Field, PasscodeField, SuccessBanner, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useAuth } from './AuthContext';
 import { takeReturnTo } from './returnTo';
 import { useT } from '../i18n/I18nProvider';
 import { Trans } from '../i18n/Trans';
+import { SignInCard, SignInSuccessCard } from './SignInCard';
 
 export function LoginPage() {
   const t = useT();
@@ -47,7 +48,7 @@ export function LoginPage() {
 
   if (loggedIn) {
     return (
-      <AuthSuccessCard
+      <SignInSuccessCard
         title={t('auth.login.successTitle')}
         subtitle={t('auth.login.successSubtitle')}
         onContinue={handleContinue}
@@ -56,27 +57,17 @@ export function LoginPage() {
   }
 
   return (
-    <AuthCard
+    <SignInCard
       title={t('auth.login.title')}
       subtitle={t('auth.login.subtitle')}
-      rail={
-        <div className="ultm8-auth-rail">
-          <span className="ultm8-auth-rail__mark" aria-hidden="true">
-            U8
-          </span>
-          <div className="ultm8-auth-rail__copy">
-            <strong>ULTM8</strong>
-            {t('auth.login.railTagline')}
-          </div>
-        </div>
-      }
+      tagline={t('auth.login.railTagline')}
       footer={<Trans k="auth.login.newSchool" nodes={{ link: <Link to="/register">{t('auth.createAccountLink')}</Link> }} />}
     >
       <form onSubmit={handleSubmit}>
         {location.state?.phoneVerified && !error ? <SuccessBanner message={t('auth.login.phoneVerified')} /> : null}
         {error ? <ErrorBanner message={error} /> : null}
         {needsVerifying ? (
-          <p style={{ marginTop: 0 }}>
+          <p className="u8si-text">
             <Link to="/verify-otp">{t('auth.login.verifyPhoneLink')}</Link>
           </p>
         ) : null}
@@ -109,10 +100,12 @@ export function LoginPage() {
             onChange={(e) => setPasscode(e.target.value)}
           />
         </Field>
-        <Button type="submit" fullWidth loading={submitting}>
-          {t('auth.logIn')}
-        </Button>
+        <div className="u8si-actions">
+          <Button type="submit" fullWidth loading={submitting}>
+            {t('auth.logIn')}
+          </Button>
+        </div>
       </form>
-    </AuthCard>
+    </SignInCard>
   );
 }
