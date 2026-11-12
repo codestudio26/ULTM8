@@ -1,10 +1,13 @@
 import React from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { Button, Card, EmptyState, ErrorBanner, PageHeader, Spinner } from '@ultm8/ui';
+import { Button, EmptyState, ErrorBanner, Spinner } from '@ultm8/ui';
 import { ApiError, unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
 import { useI18n } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
+import { NewLookPageHeader } from '../layout/NewLookPage';
+import { BillingCard, BillingPage } from '../billing/BillingLook';
+import './whatsNew.css';
 
 /** The portal languages the API knows; anything else reads English. */
 const READER_LOCALES = ['en-GB', 'pt-BR', 'es', 'ar', 'fr', 'de', 'it', 'nl', 'pl', 'ru', 'tr', 'ja', 'ko', 'zh-CN', 'th'] as const;
@@ -25,6 +28,9 @@ export function useWhatsNew(locale: string) {
  * "What's new" (Decision 318 item 3): news about ULTM8, written by ULTM8 HQ
  * in Platform Admin, for School owners and staff, in their language (English
  * when a post has no translation in it). The same posts for every School.
+ *
+ * New look (Decision 460 item 17): the shell's header and a white card per
+ * post (the Billing pages' pieces). The same posts, order and "Load more".
  */
 export function WhatsNewPage() {
   const { t, locale } = useI18n();
@@ -33,34 +39,36 @@ export function WhatsNewPage() {
   const dateOf = (iso: string) => new Date(iso).toLocaleDateString(formatLocale(), { day: 'numeric', month: 'long', year: 'numeric' });
 
   return (
-    <>
-      <PageHeader title={t('whatsNew.title')} subtitle={t('whatsNew.subtitle')} />
+    <BillingPage>
+      <NewLookPageHeader title={t('whatsNew.title')} subtitle={t('whatsNew.subtitle')} />
       {query.error ? <ErrorBanner message={query.error instanceof ApiError ? query.error.message : t('whatsNew.loadFailed')} /> : null}
       {query.isLoading ? (
         <Spinner />
       ) : items.length === 0 && !query.error ? (
-        <Card>
+        <BillingCard>
           <EmptyState title={t('whatsNew.empty')} />
-        </Card>
+        </BillingCard>
       ) : (
         items.map((post) => (
-          <Card key={post.id}>
-            <article data-testid="whats-new-post" lang={post.locale}>
-              <h2 style={{ fontSize: 18, margin: '0 0 4px' }}>{post.title}</h2>
-              <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '0 0 12px' }}>
+          <BillingCard key={post.id}>
+            <article data-testid="whats-new-post" lang={post.locale} className="u8wn-post">
+              <h2 className="u8b-card__title u8wn-post__title">{post.title}</h2>
+              <p className="u8b-note u8wn-post__date">
                 {t('whatsNew.postedOn', { date: dateOf(post.createdAt) })}
                 {post.locale !== locale && locale !== 'en-GB' ? ` · ${t('whatsNew.inEnglish')}` : null}
               </p>
-              <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{post.body}</p>
+              <p className="u8wn-post__body">{post.body}</p>
             </article>
-          </Card>
+          </BillingCard>
         ))
       )}
       {query.hasNextPage ? (
-        <Button variant="secondary" loading={query.isFetchingNextPage} onClick={() => query.fetchNextPage()}>
-          {t('whatsNew.loadMore')}
-        </Button>
+        <div className="u8wn-more">
+          <Button variant="secondary" loading={query.isFetchingNextPage} onClick={() => query.fetchNextPage()}>
+            {t('whatsNew.loadMore')}
+          </Button>
+        </div>
       ) : null}
-    </>
+    </BillingPage>
   );
 }

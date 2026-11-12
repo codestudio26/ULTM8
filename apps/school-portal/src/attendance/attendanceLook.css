@@ -1,0 +1,119 @@
+/* The class's Show QR and Roll call pages in the new look (Decision 453;
+ * Decision 460 item 17: pages still on the old page header take the new
+ * look). The header is the shell's NewLookPageHeader; the cards and tags are
+ * the class page's own (schedule.css `.u8s-card`, `.u8s-tag`; classDetail.css
+ * `.u8cd-card`). Look only: the QR code, its refresh, the typed code and the
+ * roll call's buttons are unchanged. */
+
+/* ------------------------------------------------------------ Show QR */
+
+[data-look='redesign'] .u8at-qr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 32px 20px;
+  text-align: center;
+}
+/* A white tile with a quiet margin round the code, so it still scans on a
+ * dark screen; it never grows wider than the card on a phone. */
+[data-look='redesign'] .u8at-qr__code {
+  max-width: 100%;
+  padding: 16px;
+  border-radius: 10px;
+  background: #ffffff;
+  box-sizing: border-box;
+  line-height: 0;
+}
+[data-look='redesign'] .u8at-qr__code svg {
+  max-width: 100%;
+  height: auto;
+}
+[data-look='redesign'] .u8at-qr__explanation {
+  max-width: 360px;
+  margin: 0;
+  color: var(--u8n-quiet, var(--text-secondary));
+  font-size: 14px;
+}
+[data-look='redesign'] .u8at-qr__typed {
+  display: grid;
+  gap: 4px;
+}
+[data-look='redesign'] .u8at-qr__hint {
+  margin: 0;
+  color: var(--u8n-quiet, var(--text-secondary));
+  font-size: 13px;
+}
+[data-look='redesign'] .u8at-qr__digits {
+  margin: 0;
+  font-family: monospace;
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: 4px;
+  color: var(--u8n-text);
+}
+
+/* ---------------------------------------------------------- Roll call */
+
+[data-look='redesign'] .u8at-filter {
+  padding: 16px 20px;
+}
+[data-look='redesign'] .u8at-filter .u8n-dd-field {
+  margin: 0;
+}
+[data-look='redesign'] .u8at-filter .u8n-select {
+  max-width: 100%;
+}
+[data-look='redesign'] .u8at-filter .u8n-dd-field__hint {
+  color: var(--u8n-quiet, var(--text-secondary));
+  font-size: 13px;
+}
+[data-look='redesign'] .u8at-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+[data-look='redesign'] .u8at-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--u8n-line, var(--border));
+}
+[data-look='redesign'] .u8at-row:first-child {
+  border-top: 0;
+}
+[data-look='redesign'] .u8at-row__who {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+[data-look='redesign'] .u8at-row__name {
+  font-size: 15px;
+  font-weight: 500;
+}
+[data-look='redesign'] .u8at-row__sub {
+  margin-top: 2px;
+  color: var(--u8n-quiet, var(--text-secondary));
+  font-size: 13px;
+}
+[data-look='redesign'] .u8at-row__error {
+  margin: 4px 0 0;
+  color: var(--u8s-danger-text, var(--text-danger));
+  font-size: 13px;
+}
+/* Scan and Confirm present: side by side, equal (DESIGN.md → "Button
+ * pairs"); on a phone they share the row's full width under the name. */
+[data-look='redesign'] .u8at-row__buttons {
+  display: flex;
+  gap: 8px;
+}
+@media (max-width: 600px) {
+  [data-look='redesign'] .u8at-row__buttons {
+    flex: 1 1 100%;
+  }
+  [data-look='redesign'] .u8at-row__buttons > .ultm8-btn {
+    flex: 1 1 0;
+  }
+}
