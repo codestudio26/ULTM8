@@ -152,7 +152,13 @@ test('Branch Staff: the Dashboard stays the owner\'s, and the two numbers they m
   const apiCall = page.waitForRequest((r) => r.url().includes('/v1/'));
   await page.goto('/dashboard');
   await expect(page).not.toHaveURL(/\/dashboard/);
-  await expect(page.getByTestId('stat-checkins')).toHaveCount(0);
+  // They land on their coach dashboard: none of the owner's number cards or
+  // lists, only (Decision 461 item 4) their own Branch's "Check-ins today".
+  await expect(page).toHaveURL(/\/coach$/);
+  await expect(page.getByTestId('stat-checkins').locator('.u8n-dash__stat-value')).toHaveText('2');
+  await expect(page.getByTestId('stat-bookings')).toHaveCount(0);
+  await expect(page.getByTestId('stat-active')).toHaveCount(0);
+  await expect(page.getByTestId('ready-list')).toHaveCount(0);
 
   // The API gives Branch Staff only their own Branch: North's ready student
   // and North's check-ins, never South's.
