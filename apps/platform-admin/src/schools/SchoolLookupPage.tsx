@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Badge, Button, Card, ErrorBanner, Field, PageHeader, Spinner, TextField } from '@ultm8/ui';
+import { Button, Card, ErrorBanner, Field, Spinner, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useSchool, useSchoolPaymentAccount } from './schoolQueries';
 import { useRotateCredential } from '../paymentAccounts/paymentAccountQueries';
@@ -8,6 +8,8 @@ import { TenantLifecycleControls } from '../tenantLifecycle/TenantLifecycleContr
 import { SchoolOwnersCard } from './SchoolOwnersCard';
 import { SchoolStaffCard } from './SchoolStaffCard';
 import { SchoolTrialCard } from './SchoolTrialCard';
+import { NewLookPageHeader } from '../layout/NewLookPage';
+import '../layout/adminLook.css';
 
 /** Look-up-by-id — see schoolQueries.ts's own header comment for why there's no
  * list here. Mostly read-only: School fields themselves have no Platform Admin
@@ -34,10 +36,10 @@ export function SchoolLookupPage() {
   }
 
   return (
-    <>
-      <PageHeader title="Look up a School" subtitle="Cross-tenant read, audited on every successful lookup." />
+    <div className="u8a">
+      <NewLookPageHeader title="Look up a School" subtitle="Cross-tenant read, audited on every successful lookup." />
       <Card>
-        <form onSubmit={handleSubmit} style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'flex-end' }}>
+        <form onSubmit={handleSubmit} className="u8a-lookup">
           <Field label="School ID" htmlFor="school-id-input">
             <TextField id="school-id-input" required value={idInput} onChange={(e) => setIdInput(e.target.value)} />
           </Field>
@@ -61,8 +63,8 @@ export function SchoolLookupPage() {
           ) : null}
           {school.data ? (
             <Card>
-              <p className="ultm8-subcard-title">{school.data.name}</p>
-              <dl className="ultm8-info-grid">
+              <h2 className="u8a-card__title">{school.data.name}</h2>
+              <dl className="u8a-facts">
                 <dt>Franchise</dt>
                 <dd>{school.data.franchiseId ?? <em>Independent — no Franchise</em>}</dd>
                 <dt>Address</dt>
@@ -70,7 +72,15 @@ export function SchoolLookupPage() {
                 <dt>Mobile</dt>
                 <dd>{school.data.mobileNumber ?? '—'}</dd>
                 <dt>Activities</dt>
-                <dd>{school.data.activities.map((a, i) => <Badge key={`${a}-${i}`}>{a}</Badge>)}</dd>
+                <dd>
+                  <span className="u8a-tags">
+                    {school.data.activities.map((a, i) => (
+                      <span key={`${a}-${i}`} className="u8a-tag">
+                        {a}
+                      </span>
+                    ))}
+                  </span>
+                </dd>
                 <dt>Cancellation policy</dt>
                 <dd>{school.data.classCancellationPolicy}</dd>
                 <dt>Franchise fee status</dt>
@@ -103,7 +113,7 @@ export function SchoolLookupPage() {
               show a confusing "no payment account" message underneath it. */}
           {school.data ? (
             <Card>
-              <p className="ultm8-subcard-title">Payment account</p>
+              <h2 className="u8a-card__title">Payment account</h2>
               {paymentAccount.isLoading ? <Spinner /> : null}
               {paymentAccount.error instanceof ApiError && paymentAccount.error.status === 404 ? (
                 <p>No payment account configured for this School.</p>
@@ -118,6 +128,6 @@ export function SchoolLookupPage() {
           ) : null}
         </>
       ) : null}
-    </>
+    </div>
   );
 }

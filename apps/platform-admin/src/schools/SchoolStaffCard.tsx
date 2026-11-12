@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Badge, Button, Card, ErrorBanner, Modal, Spinner } from '@ultm8/ui';
+import { Button, Card, ErrorBanner, Modal, Spinner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { usePauseSchoolStaff, useSchoolStaff } from './schoolQueries';
 
@@ -31,24 +31,31 @@ export function SchoolStaffCard({ schoolId }: { schoolId: string }) {
 
   return (
     <Card>
-      <h3 style={{ marginTop: 0 }}>Coaches and Branch Staff</h3>
+      <h2 className="u8a-card__title">Coaches and Branch Staff</h2>
       {staff.isLoading ? <Spinner /> : null}
       {staff.error ? <ErrorBanner message={staff.error instanceof ApiError ? staff.error.message : 'Could not load the staff.'} /> : null}
       {staff.data && staff.data.items.length === 0 ? <p>This School has no coaches or Branch Staff.</p> : null}
       {staff.data && staff.data.items.length > 0 ? (
-        <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+        <ul className="u8a-rows">
           {staff.data.items.map((m) => (
-            <li key={m.userId} style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center', flexWrap: 'wrap', padding: '6px 0' }}>
-              <span>
-                <strong>{name(m)}</strong> · {m.email}
+            <li key={m.userId} className="u8a-row">
+              <span className="u8a-row__who">
+                <span className="u8a-row__name">{name(m)}</span>
+                <span className="u8a-small">{m.email}</span>
               </span>
-              <span style={{ opacity: 0.7, fontSize: 13 }}>{roles(m)}</span>
+              <span className="u8a-row__meta">
+                <span className="u8a-small">{roles(m)}</span>
+              </span>
               {m.paused ? (
-                <Badge>Paused</Badge>
+                <span className="u8a-row__meta">
+                  <span className="u8a-tag">Paused</span>
+                </span>
               ) : (
-                <Button variant="secondary" onClick={() => setTarget(m)}>
-                  Pause
-                </Button>
+                <span className="u8a-row__end">
+                  <Button variant="secondary" onClick={() => setTarget(m)}>
+                    Pause
+                  </Button>
+                </span>
               )}
             </li>
           ))}
@@ -62,7 +69,7 @@ export function SchoolStaffCard({ schoolId }: { schoolId: string }) {
             then come back as they were. This is recorded in the audit log and on the School&apos;s Staff activity log.
           </p>
           {pause.error ? <ErrorBanner message={pause.error instanceof ApiError ? pause.error.message : 'Could not pause them.'} /> : null}
-          <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+          <div className="u8a-buttons">
             <Button loading={pause.isPending} onClick={() => pause.mutate(target.userId, { onSuccess: close })}>
               Pause
             </Button>

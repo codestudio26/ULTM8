@@ -1,6 +1,6 @@
 import React from 'react';
 import type { UseMutationResult } from '@tanstack/react-query';
-import { Badge, Button, ErrorBanner, SuccessBanner } from '@ultm8/ui';
+import { Button, ErrorBanner, SuccessBanner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import type { PlatformAdminPaymentAccountResponse, RotateCredentialResponse } from './paymentAccountQueries';
 
@@ -17,7 +17,7 @@ export function PaymentAccountDetails({
 }) {
   return (
     <>
-      <dl style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', gap: '4px 16px' }}>
+      <dl className="u8a-facts">
         <dt>Provider</dt>
         <dd>{account.provider}</dd>
         <dt>Account title</dt>
@@ -25,7 +25,9 @@ export function PaymentAccountDetails({
         <dt>Country</dt>
         <dd>{account.country}</dd>
         <dt>Status</dt>
-        <dd><Badge variant={account.status === 'ACTIVE' ? 'success' : 'default'}>{account.status}</Badge></dd>
+        <dd>
+          <span className={'u8a-tag' + (account.status === 'ACTIVE' ? ' u8a-tag--active' : '')}>{account.status}</span>
+        </dd>
         <dt>Mode</dt>
         <dd>{account.mode}</dd>
       </dl>
