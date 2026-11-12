@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AddressFields, Button, CurrencyField, ErrorBanner, Field, Modal, PhoneField, PhotoUploadField, SelectField, Switch, TextField, hasLegacyAddressOnly, postalAddressFromRecord, preparePostalAddress, type PostalAddress, type PostalAddressErrors } from '@ultm8/ui';
+import { AddressFields, Button, CurrencyField, ErrorBanner, Field, Modal, ModalActions, PhoneField, PhotoUploadField, Switch, TextField, hasLegacyAddressOnly, postalAddressFromRecord, preparePostalAddress, type PostalAddress, type PostalAddressErrors } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useCurrencies, useLanguages } from '../settings/settingsQueries';
@@ -8,6 +8,8 @@ import type { FranchiseResponse } from './franchiseQueries';
 import { useT } from '../i18n/I18nProvider';
 import { LegalAgreeCheckbox } from '../legal/LegalAgreeCheckbox';
 import { languageName } from '../i18n/format';
+import { NewLookSelect } from '../layout/NewLookSelect';
+import '../organisation/organisationForms.css';
 
 const FEE_MODELS = ['FLAT', 'PER_HEADCOUNT'] as const;
 
@@ -204,14 +206,15 @@ export function FranchiseFormModal({
         <Field label={t('franchises.form.facilitiesLabel')} htmlFor="franchise-facilities" hint={t('franchises.form.facilitiesHint')}>
           <TextField value={form.facilities} onChange={(e) => setForm((f) => ({ ...f, facilities: e.target.value }))} />
         </Field>
-        <Field label={t('franchises.form.languageLabel')} htmlFor="franchise-language">
-          <SelectField
+        <div className="u8n-dd-field">
+          <NewLookSelect
             id="franchise-language"
+            label={t('franchises.form.languageLabel')}
             value={form.defaultLanguage}
-            onChange={(e) => setForm((f) => ({ ...f, defaultLanguage: e.target.value }))}
+            onChange={(defaultLanguage) => setForm((f) => ({ ...f, defaultLanguage }))}
             options={[{ value: '', label: t('franchises.form.notSet') }, ...(languages ?? []).map((l) => ({ value: l.code, label: languageName(l.code, l.name) }))]}
           />
-        </Field>
+        </div>
         <Field label={t('franchises.form.currencyLabel')} htmlFor="franchise-currency">
           <CurrencyField
             id="franchise-currency"
@@ -257,22 +260,20 @@ export function FranchiseFormModal({
             }
           />
         </Field>
-        <Field
-          label={t('franchises.form.feeModelLabel')}
-          htmlFor="franchise-feeModel"
-          hint={feeModelLocked ? t('franchises.form.feeModelLocked') : undefined}
-        >
-          <SelectField
+        <div className="u8n-dd-field">
+          <NewLookSelect
             id="franchise-feeModel"
+            label={t('franchises.form.feeModelLabel')}
             disabled={feeModelLocked}
             value={form.feeModel}
-            onChange={(e) => setForm((f) => ({ ...f, feeModel: e.target.value as (typeof FEE_MODELS)[number] }))}
+            onChange={(feeModel) => setForm((f) => ({ ...f, feeModel: feeModel as (typeof FEE_MODELS)[number] }))}
             options={[
               { value: 'FLAT', label: t('franchises.feeModels.flat') },
               { value: 'PER_HEADCOUNT', label: t('franchises.feeModels.perHeadcount') },
             ]}
           />
-        </Field>
+          {feeModelLocked ? <span className="ultm8-field__hint u8n-dd-field__hint">{t('franchises.form.feeModelLocked')}</span> : null}
+        </div>
         <Field
           label={t('franchises.form.flatFeeLabel')}
           htmlFor="franchise-flatFee"
@@ -309,11 +310,11 @@ export function FranchiseFormModal({
           // two-button-choice shape MembershipPlanFormPage's own price-change
           // prompt already establishes.
           <Field label={t('franchises.form.rateChangeLabel')} htmlFor="franchise-fee-rate-change-strategy">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <p className="ultm8-field__hint" style={{ marginTop: 0 }}>
+            <div className="u8o-choice">
+              <p className="ultm8-field__hint">
                 {t('franchises.form.rateChangeBilling', { count: schoolsAlreadyBillingCount })}
               </p>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <div className="u8o-choice__buttons">
                 <Button
                   type="button"
                   variant={feeRateChangeStrategy === 'MIGRATE_NEXT_CYCLE' ? 'primary' : 'secondary'}
@@ -329,7 +330,7 @@ export function FranchiseFormModal({
                   {t('franchises.form.applyImmediately')}
                 </Button>
               </div>
-              <p className="ultm8-field__hint" style={{ marginTop: 0 }}>
+              <p className="ultm8-field__hint">
                 {feeRateChangeStrategy === 'MIGRATE_NEXT_CYCLE'
                   ? t('franchises.form.nextCycleExplanation')
                   : feeRateChangeStrategy === 'MIGRATE_IMMEDIATE'
@@ -342,14 +343,14 @@ export function FranchiseFormModal({
           </Field>
         ) : null}
         {initial ? null : <LegalAgreeCheckbox kind="agreement" checked={acceptAgreement} onChange={setAcceptAgreement} />}
-        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-          <Button type="submit" loading={submitting}>
-            {t('common.save')}
-          </Button>
+        <ModalActions>
           <Button type="button" variant="secondary" onClick={onClose}>
             {t('common.cancel')}
           </Button>
-        </div>
+          <Button type="submit" loading={submitting}>
+            {t('common.save')}
+          </Button>
+        </ModalActions>
       </form>
     </Modal>
   );

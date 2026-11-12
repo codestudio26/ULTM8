@@ -37,11 +37,11 @@ test('the owner sets the School\'s tax: picking the country fills in its rate', 
   await page.goto('/school');
   const card = page.getByTestId('charge-settings');
   await expect(page.getByRole('heading', { name: 'Charges and tax' })).toBeVisible();
-  await card.getByLabel('Country your School is in').selectOption('GB');
+  await pickOption(card, 'Country your School is in', 'United Kingdom');
   await expect(card.getByLabel('Tax rate (%)', { exact: true })).toHaveValue('20');
   // Classes can be taxed at a lower rate: the School can change it.
   await card.getByLabel('Tax rate (%)', { exact: true }).fill('12.5');
-  await card.getByLabel('Your prices').selectOption({ label: 'Have tax added on top' });
+  await pickOption(card, 'Your prices', 'Have tax added on top');
   await card.getByLabel('Tax ID').fill('GB123456789');
   await card.getByRole('button', { name: 'Save' }).click();
   await expect(card.getByText('Saved.', { exact: true })).toBeVisible();
@@ -60,7 +60,7 @@ test('a country picked before the standard rates load still gets its rate, but n
   await page.goto('/school');
   const card = page.getByTestId('charge-settings');
   const rate = card.getByLabel('Tax rate (%)', { exact: true });
-  await card.getByLabel('Country your School is in').selectOption('GB');
+  await pickOption(card, 'Country your School is in', 'United Kingdom');
   await expect(rate).toHaveValue('0');
   release();
   await expect(rate).toHaveValue('20');
@@ -74,14 +74,14 @@ test('a country picked before the standard rates load still gets its rate, but n
     await route.continue();
   });
   await page.reload();
-  await card.getByLabel('Country your School is in').selectOption('GB');
+  await pickOption(card, 'Country your School is in', 'United Kingdom');
   await rate.fill('12.5');
   const loaded = page.waitForResponse('**/v1/tax-rates');
   releaseAgain();
   await loaded;
   // Give the page a moment to take the rates in before checking nothing moved.
   await page.evaluate(() => new Promise<void>((resolve) => setTimeout(() => requestAnimationFrame(() => resolve()), 200)));
-  await expect(card.getByLabel('Country your School is in')).toHaveValue('GB');
+  await expect(card.getByRole('combobox', { name: 'Country your School is in' }).locator('[data-shown="true"]')).toHaveText('United Kingdom');
   await expect(rate).toHaveValue('12.5');
 });
 

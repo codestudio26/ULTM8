@@ -1,9 +1,10 @@
 import React from 'react';
-import { Checkbox, Field, SelectField, TextField } from '@ultm8/ui';
+import { Checkbox, Field, TextField } from '@ultm8/ui';
 import type { components } from '@ultm8/api-client';
 import { useT } from '../i18n/I18nProvider';
 import { parseMoney, toText } from '../lib/MoneyField';
 import { CurrencyFirstNotice } from '../lib/CurrencyFirstNotice';
+import { NewLookSelect } from '../layout/NewLookSelect';
 
 type School = components['schemas']['SchoolResponseDto'];
 
@@ -77,31 +78,36 @@ export function CancellationSettingsFields({
 
   return (
     <>
-      <Field label={t('schools.form.cancellationPolicy')} htmlFor="cancel-policy" hint={t(`schools.cancellations.policyHint.${form.classCancellationPolicy}`)}>
-        <SelectField
+      {/* The new look's drop-downs (DESIGN.md → "Drop-downs"), each with its
+          hint under it as a text field's. */}
+      <div className="u8n-dd-field">
+        <NewLookSelect
           id="cancel-policy"
+          label={t('schools.form.cancellationPolicy')}
           disabled={disabled}
           value={form.classCancellationPolicy}
-          onChange={(e) => set('classCancellationPolicy', e.target.value as CancellationSettingsForm['classCancellationPolicy'])}
+          onChange={(v) => set('classCancellationPolicy', v as CancellationSettingsForm['classCancellationPolicy'])}
           options={[
             { value: 'MANUAL', label: t('schools.form.policyManual') },
             { value: 'AUTO_REFUND', label: t('schools.form.policyAutoRefund') },
             { value: 'AUTO_CREDIT', label: t('schools.form.policyAutoCredit') },
           ]}
         />
-      </Field>
-      <Field label={t('schools.cancellations.windowLabel')} htmlFor="cancel-window">
-        <SelectField
+        <span className="ultm8-field__hint u8n-dd-field__hint">{t(`schools.cancellations.policyHint.${form.classCancellationPolicy}`)}</span>
+      </div>
+      <div className="u8n-dd-field">
+        <NewLookSelect
           id="cancel-window"
+          label={t('schools.cancellations.windowLabel')}
           disabled={disabled}
           value={form.classCancellationPolicyWindow}
-          onChange={(e) => set('classCancellationPolicyWindow', e.target.value as CancellationSettingsForm['classCancellationPolicyWindow'])}
+          onChange={(v) => set('classCancellationPolicyWindow', v as CancellationSettingsForm['classCancellationPolicyWindow'])}
           options={[
             { value: 'BEFORE_CUTOFF', label: t('schools.cancellations.windowBeforeCutoff') },
             { value: 'ANY_TIME', label: t('schools.cancellations.windowAnyTime') },
           ]}
         />
-      </Field>
+      </div>
       <Field label={t('schools.cancellations.defaultCutoffLabel')} htmlFor="cancel-default-cutoff" hint={t('schools.cancellations.defaultCutoffHint')}>
         <TextField
           id="cancel-default-cutoff"
@@ -127,19 +133,20 @@ export function CancellationSettingsFields({
       >
         <AmountInput value={form.noShowFee} onChange={(v) => set('noShowFee', v)} currency={currency} disabled={disabled || schoolCurrencyMissing} />
       </Field>
-      <Field label={t('schools.cancellations.classCancelledLabel')} htmlFor="cancel-class-resolution">
-        <SelectField
+      <div className="u8n-dd-field">
+        <NewLookSelect
           id="cancel-class-resolution"
+          label={t('schools.cancellations.classCancelledLabel')}
           disabled={disabled}
           value={form.schoolCancelledClassResolution}
-          onChange={(e) => set('schoolCancelledClassResolution', e.target.value as CancellationSettingsForm['schoolCancelledClassResolution'])}
+          onChange={(v) => set('schoolCancelledClassResolution', v as CancellationSettingsForm['schoolCancelledClassResolution'])}
           options={[
             { value: 'REFUND_ALL', label: t('schools.cancellations.classCancelledRefund') },
             { value: 'CREDIT_ALL', label: t('schools.cancellations.classCancelledCredit') },
             { value: 'FOLLOW_POLICY', label: t('schools.cancellations.classCancelledFollow') },
           ]}
         />
-      </Field>
+      </div>
       <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: '8px 0 0' }}>{t('schools.cancellations.fixedRules')}</p>
     </>
   );
