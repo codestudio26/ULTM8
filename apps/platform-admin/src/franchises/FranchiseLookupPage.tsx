@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { Badge, Button, Card, ErrorBanner, Field, PageHeader, Spinner, TextField } from '@ultm8/ui';
+import { Button, Card, ErrorBanner, Field, Spinner, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useFranchise, useFranchisePaymentAccount } from './franchiseQueries';
 import { useRotateCredential } from '../paymentAccounts/paymentAccountQueries';
 import { PaymentAccountDetails } from '../paymentAccounts/PaymentAccountDetails';
 import { TenantLifecycleControls } from '../tenantLifecycle/TenantLifecycleControls';
+import { NewLookPageHeader } from '../layout/NewLookPage';
+import '../layout/adminLook.css';
 
 /** Look-up-by-id — see franchiseQueries.ts's own header comment for why
  * there's no list here. Mostly read-only, same scope reasoning as
@@ -25,10 +27,10 @@ export function FranchiseLookupPage() {
   }
 
   return (
-    <>
-      <PageHeader title="Look up a Franchise" subtitle="Cross-tenant read, audited on every successful lookup." />
+    <div className="u8a">
+      <NewLookPageHeader title="Look up a Franchise" subtitle="Cross-tenant read, audited on every successful lookup." />
       <Card>
-        <form onSubmit={handleSubmit} style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'flex-end' }}>
+        <form onSubmit={handleSubmit} className="u8a-lookup">
           <Field label="Franchise ID" htmlFor="franchise-id-input">
             <TextField id="franchise-id-input" required value={idInput} onChange={(e) => setIdInput(e.target.value)} />
           </Field>
@@ -52,14 +54,22 @@ export function FranchiseLookupPage() {
           ) : null}
           {franchise.data ? (
             <Card>
-              <p className="ultm8-subcard-title">{franchise.data.name}</p>
-              <dl className="ultm8-info-grid">
+              <h2 className="u8a-card__title">{franchise.data.name}</h2>
+              <dl className="u8a-facts">
                 <dt>Address</dt>
                 <dd>{franchise.data.address ?? '—'}</dd>
                 <dt>Mobile</dt>
                 <dd>{franchise.data.mobileNumber ?? '—'}</dd>
                 <dt>Activities</dt>
-                <dd>{franchise.data.activities.map((a, i) => <Badge key={`${a}-${i}`}>{a}</Badge>)}</dd>
+                <dd>
+                  <span className="u8a-tags">
+                    {franchise.data.activities.map((a, i) => (
+                      <span key={`${a}-${i}`} className="u8a-tag">
+                        {a}
+                      </span>
+                    ))}
+                  </span>
+                </dd>
                 <dt>Fee model</dt>
                 <dd>{franchise.data.feeModel === 'FLAT' ? 'Flat' : 'Per-headcount'}</dd>
                 <dt>Created</dt>
@@ -81,7 +91,7 @@ export function FranchiseLookupPage() {
 
           {franchise.data ? (
             <Card>
-              <p className="ultm8-subcard-title">Payment account</p>
+              <h2 className="u8a-card__title">Payment account</h2>
               {paymentAccount.isLoading ? <Spinner /> : null}
               {paymentAccount.error instanceof ApiError && paymentAccount.error.status === 404 ? (
                 <p>No payment account configured for this Franchise.</p>
@@ -96,6 +106,6 @@ export function FranchiseLookupPage() {
           ) : null}
         </>
       ) : null}
-    </>
+    </div>
   );
 }
