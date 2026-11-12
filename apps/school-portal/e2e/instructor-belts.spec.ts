@@ -47,7 +47,10 @@ test('the owner verifies an instructor\'s belt, then corrects it', async ({ page
 
   await section.getByRole('button', { name: "Correct Cody Coach's BJJ belt" }).click();
   const dialog = page.getByRole('dialog', { name: "Cody Coach's BJJ belt" });
-  await dialog.getByLabel('Belt').selectOption({ label: 'Blue 0' });
+  // The belt picker shows belt pictures (DESIGN.md → "Drop-downs").
+  await dialog.getByRole('combobox', { name: 'Belt' }).click();
+  await dialog.getByRole('option', { name: 'Blue 0' }).click();
+  await expect(dialog.getByLabel('Belt')).toHaveText(/Blue 0/);
   await dialog.getByRole('button', { name: 'Save and verify' }).click();
   await expect(dialog).toBeHidden();
   await expect(section.getByRole('row', { name: /Cody Coach BJJ Blue 0 Verified/ })).toBeVisible();

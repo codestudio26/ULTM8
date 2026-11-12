@@ -1,0 +1,115 @@
+/* The Team forms in the new look (Decision 460): the Instructors, Staff and
+ * Invite coaches forms and dialogs, and "My coach profile". Their fields,
+ * drop-downs (NewLookSelect in `.u8n-dd-field`), dialog frame and button
+ * band (ModalActions) are the shared new-look parts; this file only adds what
+ * those don't cover. Scoped to [data-look='redesign'], with the shell's
+ * --u8n-* colours, so dark mode follows them. */
+
+/* A form's buttons inside a Team card: side by side, wrapping on a phone. */
+[data-look='redesign'] .u8t-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 4px;
+}
+@media (max-width: 767px) {
+  [data-look='redesign'] .u8t-form-actions > .ultm8-btn {
+    flex: 1 1 140px;
+  }
+}
+
+/* Correct a belt: the grading screens' rank picker, with belt pictures
+ * (DESIGN.md → "Drop-downs"), at the size of the dialog's other fields; the
+ * chosen rank pale green with a green ✓, in dark mode too. */
+[data-look='redesign'] .u8t-belt-pick .ultm8-rank-picker__field {
+  min-height: var(--form-field-height);
+  border: 0;
+  border-radius: var(--form-field-radius);
+  background: var(--u8n-select-bg);
+  color: var(--u8n-select-text);
+  box-shadow: inset 0 0 0 1px var(--border);
+  font-size: var(--font-size-field);
+}
+[data-look='redesign'] .u8t-belt-pick .ultm8-rank-picker__field:focus-visible,
+[data-look='redesign'] .u8t-belt-pick .ultm8-rank-picker__field--open {
+  box-shadow: 0 0 0 2px var(--u8n-select-ring);
+}
+[data-look='redesign'] .u8t-belt-pick .ultm8-rank-picker__list {
+  background: var(--u8n-surface);
+  border-color: var(--u8n-line);
+  border-radius: 12px;
+}
+[data-look='redesign'] .u8t-belt-pick .ultm8-rank-picker__option {
+  color: var(--u8n-select-text);
+  font-size: var(--font-size-field);
+}
+[data-look='redesign'] .u8t-belt-pick .ultm8-rank-picker__option--active {
+  background: var(--u8n-hover);
+}
+[data-look='redesign'] .u8t-belt-pick .ultm8-rank-picker__option--selected {
+  background: var(--u8n-select-on);
+}
+[data-look='redesign'] .u8t-belt-pick .ultm8-rank-picker__option--selected > span[aria-hidden='true'] {
+  color: var(--u8n-select-tick);
+}
+@media (max-width: 767px) {
+  [data-look='redesign'] .u8t-belt-pick .ultm8-rank-picker__field,
+  [data-look='redesign'] .u8t-belt-pick .ultm8-rank-picker__option {
+    font-size: 16px;
+  }
+}
+
+/* Staff access: the presets as pills, and each group of switches under its
+ * own small heading. */
+[data-look='redesign'] .u8t-access-presets .ultm8-pills {
+  align-self: flex-start;
+  flex-wrap: wrap;
+}
+[data-look='redesign'] .u8t-access-group {
+  margin: 0 0 12px;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+[data-look='redesign'] .u8t-access-group > legend {
+  margin-bottom: 4px;
+  padding: 0;
+  font-size: 15px;
+  color: var(--u8n-text);
+}
+
+/* "My coach profile": the certification file picker, a round button like
+ * the form's others. */
+[data-look='redesign'] .u8t-file {
+  max-width: 100%;
+  font: inherit;
+  font-size: 14px;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8t-file::file-selector-button {
+  min-height: 44px;
+  margin-inline-end: 12px;
+  padding: 0 20px;
+  border: 1px solid var(--u8n-field-line);
+  border-radius: 999px;
+  background: var(--u8n-surface);
+  color: var(--u8n-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+[data-look='redesign'] .u8t-file::file-selector-button:hover {
+  background: var(--u8n-hover);
+}
+[data-look='redesign'] .u8t-file:focus-visible {
+  outline: 2px solid var(--fill-accent);
+  outline-offset: 2px;
+  border-radius: 999px;
+}
+
+/* "Found {name}." after a search: one line of text, not a field's column
+ * (the name sat on a line of its own, the full stop on the next). */
+[data-look='redesign'] .u8t-found {
+  margin: 0 0 var(--space-4);
+}

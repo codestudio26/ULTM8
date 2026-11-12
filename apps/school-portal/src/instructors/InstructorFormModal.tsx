@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Checkbox, ErrorBanner, Field, Modal, PhoneField, PhotoUploadField, SelectField, TextArea, TextField } from '@ultm8/ui';
+import { Button, Checkbox, ErrorBanner, Field, Modal, ModalActions, PhoneField, PhotoUploadField, TextArea, TextField } from '@ultm8/ui';
 import type { DisciplineResponse } from '../disciplines/disciplineQueries';
 import { ApiError } from '@ultm8/api-client';
 import { branchSelectOptions, type BranchResponse } from '../branches/branchQueries';
@@ -7,6 +7,7 @@ import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useRequestPublicPhotoUploadUrl } from '../uploads/uploadQueries';
 import type { EligibleInstructorUser, InstructorResponse } from './instructorQueries';
 import { useT } from '../i18n/I18nProvider';
+import { NewLookSelect } from '../layout/NewLookSelect';
 
 /** Fields match CreateInstructorDto/UpdateInstructorDto exactly —
  * apps/api/src/instructors/dto/create-instructor.dto.ts. `userId` is a
@@ -106,16 +107,14 @@ export function InstructorFormModal({
       <form onSubmit={handleSubmit}>
         {error ? <ErrorBanner message={error} /> : null}
         {isEdit ? null : (
-          <Field
-            label={t('instructors.form.user')}
-            htmlFor="instructor-userId"
-            hint={t('instructors.form.userHint')}
-          >
-            <SelectField
-              required
+          // The new look's drop-down (DESIGN.md → "Drop-downs"). It has no
+          // browser `required` check, so Save waits for a pick instead.
+          <div className="u8n-dd-field">
+            <NewLookSelect
+              id="instructor-userId"
+              label={t('instructors.form.user')}
               value={form.userId}
-              onChange={(e) => {
-                const userId = e.target.value;
+              onChange={(userId) => {
                 // Start on the branch their Instructor role is for: a whole-School
                 // profile needs a whole-School role (Decision 311, I13).
                 const picked = (eligibleUsers ?? []).find((u) => u.id === userId);
@@ -130,15 +129,19 @@ export function InstructorFormModal({
                 })),
               ]}
             />
-          </Field>
+            <span className="ultm8-field__hint u8n-dd-field__hint">{t('instructors.form.userHint')}</span>
+          </div>
         )}
-        <Field label={t('instructors.form.branch')} htmlFor="instructor-branch" hint={t('instructors.form.branchHint')}>
-          <SelectField
+        <div className="u8n-dd-field">
+          <NewLookSelect
+            id="instructor-branch"
+            label={t('instructors.form.branch')}
             value={form.branchId}
-            onChange={(e) => setForm((f) => ({ ...f, branchId: e.target.value }))}
+            onChange={(branchId) => setForm((f) => ({ ...f, branchId }))}
             options={[{ value: '', label: t('instructors.form.wholeSchool') }, ...branchSelectOptions(branches, t('branches.archivedBadge'), initial?.branchId)]}
           />
-        </Field>
+          <span className="ultm8-field__hint u8n-dd-field__hint">{t('instructors.form.branchHint')}</span>
+        </div>
         <Field label={t('instructors.form.photo')} htmlFor="instructor-photo">
           {/* A person's photo is a circle (DESIGN.md → "Avatars"). */}
           <div className="u8t-person-photo">
@@ -197,14 +200,14 @@ export function InstructorFormModal({
         <Field label={t('instructors.form.bio')} htmlFor="instructor-bio">
           <TextArea value={form.bio} onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))} />
         </Field>
-        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-          <Button type="submit" loading={submitting}>
-            {t('common.save')}
-          </Button>
+        <ModalActions>
           <Button type="button" variant="secondary" onClick={onClose}>
             {t('common.cancel')}
           </Button>
-        </div>
+          <Button type="submit" loading={submitting} disabled={!isEdit && !form.userId}>
+            {t('common.save')}
+          </Button>
+        </ModalActions>
       </form>
     </Modal>
   );

@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { Button, EmptyState, ErrorBanner, Field, Modal, SelectField, Spinner } from '@ultm8/ui';
+import React, { useRef, useState } from 'react';
+import { Button, EmptyState, ErrorBanner, Field, Modal, ModalActions, Spinner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useRanks } from '../ranks/rankQueries';
 import { flattenLadder } from '../grading/ladder';
+import { RankPicker } from '../grading/RankPicker';
 import { useSchoolInstructorBelts, useVerifyInstructorBelt, type InstructorBelt } from './instructorBeltQueries';
 import { useT } from '../i18n/I18nProvider';
 import { BeltPicture, BeltStatus, OpenFullPageLink, TeamAvatar, TeamCard, pickRow, showPanel } from '../team/TeamParts';
@@ -148,6 +149,16 @@ function CorrectBeltModal({ schoolId, belt, onClose }: { schoolId: string; belt:
   const [choice, setChoice] = useState(belt.stripeTierId);
   const [error, setError] = useState<string | null>(null);
   const ladder = flattenLadder(ranks.data?.items ?? []);
+  const pickerRef = useRef<HTMLDivElement>(null);
+
+  // A pick counts as an edit, as the browser <select> it replaces did (its
+  // change fired an `input` event): the dialog then keeps it on an outside
+  // click or Escape (Modal's unsaved-changes guard).
+  function pick(rungId: string) {
+    if (rungId === choice) return;
+    setChoice(rungId);
+    pickerRef.current?.dispatchEvent(new Event('input', { bubbles: true }));
+  }
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -166,17 +177,21 @@ function CorrectBeltModal({ schoolId, belt, onClose }: { schoolId: string; belt:
     <Modal title={t('instructors.belts.modalTitle', { name: `${belt.firstName} ${belt.surname}`, style: belt.disciplineName })} onClose={onClose}>
       {error ? <ErrorBanner message={error} /> : null}
       <form onSubmit={save}>
-        <Field label={t('instructors.belts.beltLabel')} htmlFor="correct-instructor-belt" hint={t('instructors.belts.beltHint')}>
-          <SelectField id="correct-instructor-belt" value={choice} onChange={(e) => setChoice(e.target.value)} options={ladder.map((r) => ({ value: r.id, label: r.name }))} />
-        </Field>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <Button type="submit" loading={verify.isPending} disabled={choice === belt.stripeTierId && belt.verificationStatus === 'VERIFIED'}>
-            {t('instructors.belts.saveAndVerify')}
-          </Button>
+        {/* Every drop-down of ranks shows the belt picture (DESIGN.md →
+            "Drop-downs"): the grading screens' own rank picker. */}
+        <div className="u8t-belt-pick" ref={pickerRef}>
+          <Field label={t('instructors.belts.beltLabel')} htmlFor="correct-instructor-belt" hint={t('instructors.belts.beltHint')}>
+            <RankPicker id="correct-instructor-belt" value={choice} onChange={pick} options={ladder} />
+          </Field>
+        </div>
+        <ModalActions>
           <Button type="button" variant="secondary" onClick={onClose}>
             {t('common.cancel')}
           </Button>
-        </div>
+          <Button type="submit" loading={verify.isPending} disabled={choice === belt.stripeTierId && belt.verificationStatus === 'VERIFIED'}>
+            {t('instructors.belts.saveAndVerify')}
+          </Button>
+        </ModalActions>
       </form>
     </Modal>
   );
