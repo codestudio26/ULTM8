@@ -10,6 +10,16 @@ Compare any two versions with `git diff <old> <new>`, e.g. `git diff v1.0.0 mast
 
 Post-v1.4.0 work on `master`.
 
+- **Dashboard: Ready to grade and Check-ins today** (#584). The owner Dashboard
+  shows Ready to grade (the Grading Board's Ready to Grade column across every
+  style, with "See all N →") and Check-ins today (today's check-ins on the
+  School's clock, following the Branch filter), from two new read-only API
+  endpoints, `GET /schools/:id/grading-board/ready` and `GET
+  /schools/:id/attendance/today` (Decisions 454, 461).
+- **Coach dashboard: Check-ins today for Branch Staff** (#588). Branch Staff who
+  may see attendance statistics get a "Check-ins today" card for their own
+  Branches (the total when they cover several), the same card as on the owner's
+  Dashboard (Decision 461).
 - **New look: belts, styles and skills** (#573). Styles & Belts, a style's page
   and Grading → Skills have the new header, cards and tables. Their dialogs (add
   / edit style, start from template, duplicate, belt editor, reorder) have the
