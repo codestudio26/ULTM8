@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { expect, test } from '@playwright/test';
 import { addPerson, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
+import { pickOption } from './team-helpers';
 
 /**
  * "Remove from School" for a coach who still teaches (product owner, 28 Oct
@@ -62,7 +63,7 @@ test('a coach who teaches: the dialog shows what they teach, and "Give them to a
 
   await dialog.getByRole('radio', { name: /^Give them to another coach/ }).click();
   await expect(remove).toBeDisabled();
-  await dialog.getByLabel('New coach').selectOption({ label: 'Ben Coach' });
+  await pickOption(dialog, 'New coach', 'Ben Coach');
   await remove.click();
   await expect(dialog).toHaveCount(0);
   await expect(listRow(page, 'Ana Coach')).toHaveCount(0);

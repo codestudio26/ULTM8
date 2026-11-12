@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Button, ErrorBanner, Field, Modal, SelectField } from '@ultm8/ui';
+import { Button, ErrorBanner, Modal, ModalActions } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { branchSelectOptions, useBranches } from '../branches/branchQueries';
 import { useInviteStaff } from '../roleGrants/roleGrantQueries';
 import { instructorName, instructorSelectOptions, useInstructors, useReassignInstructor, useResendInstructorPasscode, type InstructorResponse } from './instructorQueries';
 import { useT } from '../i18n/I18nProvider';
+import { NewLookSelect } from '../layout/NewLookSelect';
 
 /**
  * "Hand over classes" (Decision 312): every upcoming Class and active weekly
@@ -52,18 +53,20 @@ export function HandOverClassesModal({
       <form onSubmit={handleSubmit}>
         {error ? <ErrorBanner message={error} /> : null}
         <p className="ultm8-field">{t('instructors.detail.handOverIntro')}</p>
-        <Field label={t('instructors.detail.handOverTo')} htmlFor="hand-over-to">
-          <SelectField
+        <div className="u8n-dd-field">
+          <NewLookSelect
             id="hand-over-to"
-            required
+            label={t('instructors.detail.handOverTo')}
             value={toUserId}
-            onChange={(e) => setToUserId(e.target.value)}
+            onChange={setToUserId}
             options={[{ value: '', label: t('instructors.detail.handOverPlaceholder') }, ...options]}
           />
-        </Field>
-        <Button type="submit" loading={reassign.isPending} disabled={!toUserId}>
-          {t('instructors.detail.handOverConfirm')}
-        </Button>
+        </div>
+        <ModalActions>
+          <Button type="submit" loading={reassign.isPending} disabled={!toUserId}>
+            {t('instructors.detail.handOverConfirm')}
+          </Button>
+        </ModalActions>
       </form>
     </Modal>
   );
@@ -117,19 +120,21 @@ export function GiveRoleBackModal({
         {error ? <ErrorBanner message={error} /> : null}
         <p className="ultm8-field">{t('instructors.detail.giveRoleBackDescription')}</p>
         {requiresBranch ? (
-          <Field label={t('instructors.detail.giveRoleBackBranch')} htmlFor="give-role-back-branch">
-            <SelectField
+          <div className="u8n-dd-field">
+            <NewLookSelect
               id="give-role-back-branch"
-              required
+              label={t('instructors.detail.giveRoleBackBranch')}
               value={branchId}
-              onChange={(e) => setBranchId(e.target.value)}
+              onChange={setBranchId}
               options={[{ value: '', label: t('instructors.inviteModal.branchPlaceholder') }, ...branchSelectOptions(branches, t('branches.archivedBadge'))]}
             />
-          </Field>
+          </div>
         ) : null}
-        <Button type="submit" loading={invite.isPending} disabled={requiresBranch && !branchId}>
-          {t('instructors.detail.giveRoleBackConfirm')}
-        </Button>
+        <ModalActions>
+          <Button type="submit" loading={invite.isPending} disabled={requiresBranch && !branchId}>
+            {t('instructors.detail.giveRoleBackConfirm')}
+          </Button>
+        </ModalActions>
       </form>
     </Modal>
   );
@@ -166,15 +171,15 @@ export function ResendPasscodeModal({
   return (
     <Modal title={t('instructors.detail.resendTitle', { name: instructorName(instructor) })} onClose={onClose}>
       {error ? <ErrorBanner message={error} /> : null}
-      <p style={{ marginTop: 0 }}>{t('instructors.detail.resendDescription', { email: instructor.email })}</p>
-      <div style={{ display: 'flex', gap: 8 }}>
-        <Button onClick={handleSend} loading={resend.isPending}>
-          {t('instructors.detail.resendConfirm')}
-        </Button>
+      <p>{t('instructors.detail.resendDescription', { email: instructor.email })}</p>
+      <ModalActions>
         <Button variant="secondary" onClick={onClose}>
           {t('common.cancel')}
         </Button>
-      </div>
+        <Button onClick={handleSend} loading={resend.isPending}>
+          {t('instructors.detail.resendConfirm')}
+        </Button>
+      </ModalActions>
     </Modal>
   );
 }
@@ -196,13 +201,13 @@ export function RevokeBlockedModal({
   const t = useT();
   return (
     <Modal title={t('instructors.detail.revokeBlockedTitle', { name: instructorName(instructor) })} onClose={onClose}>
-      <p style={{ marginTop: 0 }}>{t('instructors.detail.revokeBlockedDescription')}</p>
-      <div style={{ display: 'flex', gap: 8 }}>
-        <Button onClick={onHandOver}>{t('instructors.detail.handOver')}</Button>
+      <p>{t('instructors.detail.revokeBlockedDescription')}</p>
+      <ModalActions>
         <Button variant="secondary" onClick={onClose}>
           {t('common.cancel')}
         </Button>
-      </div>
+        <Button onClick={onHandOver}>{t('instructors.detail.handOver')}</Button>
+      </ModalActions>
     </Modal>
   );
 }
