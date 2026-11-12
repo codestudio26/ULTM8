@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { addPerson, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
 
 /**
@@ -7,6 +7,15 @@ import { addPerson, cleanup, db, seedGradingSchool, signIn, type GradingSchool }
  * prevents it) can now pick which one they're acting as, the same way
  * coach-school-switcher.spec.ts already covers for coaches.
  */
+/** The switcher is the new look's own drop-down (a combobox button and its
+ * listbox, not a browser <select>): the School it shows, and a pick by name. */
+const switcherOf = (page: Page) => page.getByRole('combobox', { name: 'Switch School' });
+const shownSchool = (page: Page) => switcherOf(page).locator('[data-shown="true"]');
+async function openSwitcher(page: Page) {
+  await switcherOf(page).click();
+  return page.getByRole('listbox', { name: 'Switch School' });
+}
+
 let s1: GradingSchool;
 let s2: GradingSchool;
 
@@ -43,26 +52,26 @@ test('an Owner at two Schools can switch which one they act as, and it sticks ac
   await signIn(page, owner.token);
   await page.goto('/school');
 
-  const switcher = page.getByRole('combobox', { name: 'Switch School' });
+  const switcher = switcherOf(page);
   await expect(switcher).toBeVisible();
-  await expect(switcher).toHaveValue(firstSchool.id);
+  await expect(shownSchool(page)).toHaveText(firstSchool.name);
   await expect(page.getByRole('heading', { name: 'School profile' })).toBeVisible();
   // The page header's own subtitle class (the new look's NewLookPageHeader),
   // not `getByText`/`getByRole('paragraph')` —
-  // the switcher's own <option> carries the same School name text, and an
+  // the switcher's own options carry the same School name text, and an
   // unaffiliated School's own "This School is independent" copy is also a
   // plain <p>, so either of those generic queries hits a strict-mode
   // ambiguity this scoped selector avoids.
   const subtitle = page.locator('.u8n-page-header__subtitle');
   await expect(subtitle).toHaveText(firstSchool.name);
 
-  await switcher.selectOption(secondSchool.id);
+  await (await openSwitcher(page)).getByRole('option', { name: secondSchool.name, exact: true }).click();
   await expect(subtitle).toHaveText(secondSchool.name);
 
   // The pick survives a full navigation away and back (sessionStorage-backed).
   await page.goto('/dashboard');
   await page.goto('/school');
-  await expect(switcher).toHaveValue(secondSchool.id);
+  await expect(shownSchool(page)).toHaveText(secondSchool.name);
   await expect(subtitle).toHaveText(secondSchool.name);
 });
 
@@ -79,9 +88,9 @@ test('the switcher offers both owned School names as options', async ({ page }) 
   await signIn(page, owner.token);
   await page.goto('/dashboard');
 
-  const switcher = page.getByRole('combobox', { name: 'Switch School' });
-  await expect(switcher.getByRole('option', { name: firstSchool.name })).toBeAttached();
-  await expect(switcher.getByRole('option', { name: secondSchool.name })).toBeAttached();
+  const list = await openSwitcher(page);
+  await expect(list.getByRole('option', { name: firstSchool.name })).toBeAttached();
+  await expect(list.getByRole('option', { name: secondSchool.name })).toBeAttached();
 });
 
 test('an Owner of one School who also coaches at a second starts on the School they own', async ({ page }) => {
@@ -94,7 +103,8 @@ test('an Owner of one School who also coaches at a second starts on the School t
   // Coaches review CP4: the switcher now also lists the coached School (see
   // coach-school-switcher.spec.ts), but until they pick it they work as owner.
   await expect(page).toHaveURL(/\/dashboard$/);
-  await expect(page.getByRole('combobox', { name: 'Switch School' })).toHaveValue(s1.schoolId);
+  const ownedSchool = await db.school.findUniqueOrThrow({ where: { id: s1.schoolId } });
+  await expect(shownSchool(page)).toHaveText(`${ownedSchool.name} · School Owner`);
   // Transactions is a page of Billing.
   await expect(page.getByRole('navigation', { name: 'Main menu' }).getByRole('link', { name: 'Billing' })).toBeVisible();
 });

@@ -270,10 +270,139 @@
   .fd-signup-long { display: none; }
 }
 
-/* The Recent check-ins card is the third column of the staff page. */
-.fd-split > .fd-recent-card { flex: 1 1 280px; min-width: 0; margin: 0; }
+/* ---- The staff Check-in page in the new look (Decision 453; DESIGN.md →
+ * "Check-in and front-desk mode", staff tab). Only this page has .fd-staff,
+ * so front-desk mode keeps its own look. Recent check-ins is the right-hand
+ * panel (NewLookPage), which moves below the page on narrower screens. ---- */
+[data-look='redesign'] .fd-staff {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+[data-look='redesign'] .fd-staff > .ultm8-banner {
+  margin: 0;
+}
+[data-look='redesign'] .fd-staff .fd-classes {
+  background: var(--u8n-ci-column, #eef1f3);
+  border-radius: 16px;
+}
+[data-look='redesign'] .fd-classes__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+[data-look='redesign'] .fd-classes__date {
+  font-size: 13px;
+  color: var(--u8n-quiet);
+  white-space: nowrap;
+}
+[data-look='redesign'] .fd-classes__foot {
+  margin-top: auto;
+  padding-top: 8px;
+  display: flex;
+  justify-content: center;
+}
+[data-look='redesign'] .fd-staff .fd-class {
+  background: var(--u8n-surface);
+}
+[data-look='redesign'] .fd-staff .fd-main {
+  background: var(--u8n-surface);
+  border-radius: 16px;
+  box-shadow: var(--u8n-shadow);
+}
+/* Front-desk tablets and your own code to leave one (Decision 380): a white card. */
+[data-look='redesign'] .fd-staff .fd-tablets {
+  margin: 0;
+  padding: 20px 22px;
+  background: var(--u8n-surface);
+  border-radius: 10px;
+  box-shadow: var(--u8n-shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+[data-look='redesign'] .fd-staff .fd-tablets .fd-class__meta {
+  margin: 0;
+}
+[data-look='redesign'] .fd-staff .fd-tablets .fd-recent__row {
+  flex-wrap: wrap;
+}
+[data-look='redesign'] .u8n-inspector .fd-recent__row:first-child {
+  border-top: 0;
+}
+/* Header buttons that are links read as buttons, not underlined text. */
+[data-look='redesign'] .u8n-page-header__actions a.u8n-pill {
+  text-decoration: none;
+}
+/* The welcome card's class rows, notes and plain tags sit on a soft grey,
+ * which in dark mode is a soft light (it was near-white with light text). */
+[data-look='redesign'] .fd-staff .fd-tick {
+  background: var(--u8n-ci-soft, var(--color-neutral-50));
+}
+[data-look='redesign'] .fd-staff .fd-note,
+[data-look='redesign'] .fd-staff .fd-tag:not(.fd-tag--ok):not(.fd-tag--info):not(.fd-tag--warn) {
+  background: var(--u8n-ci-soft, var(--color-neutral-100));
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-look='redesign']:not([data-theme='light']) {
+    --u8n-ci-column: rgba(255, 255, 255, 0.04);
+    --u8n-ci-soft: rgba(255, 255, 255, 0.06);
+  }
+}
+:root[data-look='redesign'][data-theme='dark'] {
+  --u8n-ci-column: rgba(255, 255, 255, 0.04);
+  --u8n-ci-soft: rgba(255, 255, 255, 0.06);
+}
+/* A class row in the welcome card: the tick, then the time over the name, and
+ * the note on the right, so a long name or note never runs into the other. */
+[data-look='redesign'] .fd-staff .fd-tick:not(.fd-tick--guest) {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  column-gap: 12px;
+  row-gap: 2px;
+  align-items: center;
+  padding: 10px 14px;
+}
+[data-look='redesign'] .fd-staff .fd-tick:not(.fd-tick--guest) .fd-tick__box {
+  grid-row: 1 / span 2;
+}
+[data-look='redesign'] .fd-staff .fd-tick:not(.fd-tick--guest) .fd-tick__time {
+  grid-column: 2;
+  grid-row: 1;
+  font-size: 13px;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .fd-staff .fd-tick:not(.fd-tick--guest) .fd-tick__name {
+  grid-column: 2;
+  grid-row: 2;
+}
+[data-look='redesign'] .fd-staff .fd-tick:not(.fd-tick--guest) .fd-tick__meta {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  max-width: 14em;
+  text-align: end;
+}
+@media (max-width: 767px) {
+  [data-look='redesign'] .fd-staff .fd-classes,
+  [data-look='redesign'] .fd-staff .fd-main {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  /* On a phone the note goes under the name. */
+  [data-look='redesign'] .fd-staff .fd-tick:not(.fd-tick--guest) {
+    grid-template-columns: 24px minmax(0, 1fr);
+  }
+  [data-look='redesign'] .fd-staff .fd-tick:not(.fd-tick--guest) .fd-tick__box {
+    grid-row: 1 / span 3;
+  }
+  [data-look='redesign'] .fd-staff .fd-tick:not(.fd-tick--guest) .fd-tick__meta {
+    grid-column: 2;
+    grid-row: 3;
+    text-align: start;
+  }
+}
 
 /* Check-in page: tablets in front-desk mode and the caller's own code (Decision 380). */
-.fd-tablets { margin-top: 16px; }
 .fd-link { border: 0; background: none; padding: 0; font: inherit; color: var(--text-success); text-decoration: underline; cursor: pointer; }
 .fd-link:disabled { opacity: 0.6; cursor: default; }

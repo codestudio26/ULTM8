@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { expect, test } from '@playwright/test';
 import { addBranch, addPerson, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
+import { pickOption } from './team-helpers';
 
 /**
  * Check-in and front-desk mode (DESIGN.md → "Check-in and front-desk mode";
@@ -321,8 +322,8 @@ test('the owner starts an open mat from the Check-in page; it is a one-off class
   await page.goto('/check-in');
   await page.getByRole('button', { name: '+ Open mat session' }).click();
   const dialog = page.getByRole('dialog', { name: 'Start an open mat' });
-  await expect(dialog.getByLabel('Style')).toHaveValue(s.disciplineId);
-  await dialog.getByLabel('Length').selectOption('90');
+  await expect(dialog.getByRole('combobox', { name: 'Style', exact: true }).locator('[data-shown="true"]')).toHaveText('BJJ');
+  await pickOption(dialog, 'Length', '90 min');
   await dialog.getByRole('button', { name: 'Start open mat' }).click();
   await expect(page.getByText('Open mat started. Students told in the app: 1.')).toBeVisible();
   await expect(page.getByTestId('fd-class').filter({ hasText: 'Open mat' })).toHaveCount(1);
@@ -502,7 +503,7 @@ test('the owner sets the check-in rules from Check-in; one class at a time untic
   const several = page.getByRole('switch', { name: 'Check in to several classes at once' });
   await expect(several).toHaveAttribute('aria-checked', 'true');
   await several.click();
-  await page.getByLabel('Check-in closes').selectOption('after');
+  await pickOption(page, 'Check-in closes', 'A set time after the start');
   await page.getByLabel('Minutes after the start (0 = at the start)').fill('20');
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByText('Check-in rules saved.')).toBeVisible();
@@ -608,7 +609,9 @@ test('a used-up Class Pack can be sold at the desk, and the card then checks the
   await expect(note).toContainText('Five classes');
   await expect(note).toContainText('Take the payment, then record it here.');
   // Decision 448 item 5: Pix is offered only to a School in Brazil.
-  await note.getByLabel('Paid by').selectOption('CARD_TERMINAL');
+  // The new look's drop-down (NewLookSelect): open it, pick the method.
+  await note.getByRole('combobox', { name: 'Paid by' }).click();
+  await note.getByRole('option', { name: 'Card terminal' }).click();
   await note.getByRole('button', { name: 'Record payment' }).click();
 
   await expect(page.getByText('Checked in ✓')).toBeVisible({ timeout: 15_000 });

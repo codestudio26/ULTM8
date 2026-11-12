@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { expect, test } from '@playwright/test';
 import { cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
+import { pickOption } from './team-helpers';
 
 /**
  * Decision 316 item 5 / Decision 435 items 10-15: the owner sets a member
@@ -30,7 +31,7 @@ test('the owner sets a member limit on a plan, and clears it', async ({ page }) 
   await page.goto('/membership-plans');
   await page.getByRole('button', { name: 'Add plan' }).click();
   await page.getByLabel('Title').fill('Competition team');
-  await page.getByLabel('Type').selectOption('WEEKLY_PASS');
+  await pickOption(page, 'Type', 'Weekly Pass');
   await page.getByRole('button', { name: '2. Pricing & Access' }).click();
   await page.getByLabel('Price').fill('40');
   await page.getByLabel('Expiry duration (days)').fill('30');

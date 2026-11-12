@@ -22,7 +22,9 @@ test('an instructor chooses their belt; it shows "Not verified"', async ({ page 
   await signIn(page, coach.token);
   await page.goto('/coach');
   await page.getByRole('link', { name: 'My belts' }).click();
-  await page.getByLabel('Your belt in BJJ').selectOption({ label: 'White 1' });
+  // The belt drop-down shows belt pictures (DESIGN.md → "Drop-downs").
+  await page.getByRole('combobox', { name: 'Your belt in BJJ' }).click();
+  await page.getByRole('option', { name: 'White 1', exact: true }).click();
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByText('Saved. The School owner will verify it.')).toBeVisible();
   await expect(page.getByText('Not verified')).toBeVisible();
@@ -47,7 +49,10 @@ test('the owner verifies an instructor\'s belt, then corrects it', async ({ page
 
   await section.getByRole('button', { name: "Correct Cody Coach's BJJ belt" }).click();
   const dialog = page.getByRole('dialog', { name: "Cody Coach's BJJ belt" });
-  await dialog.getByLabel('Belt').selectOption({ label: 'Blue 0' });
+  // The belt picker shows belt pictures (DESIGN.md → "Drop-downs").
+  await dialog.getByRole('combobox', { name: 'Belt' }).click();
+  await dialog.getByRole('option', { name: 'Blue 0' }).click();
+  await expect(dialog.getByLabel('Belt')).toHaveText(/Blue 0/);
   await dialog.getByRole('button', { name: 'Save and verify' }).click();
   await expect(dialog).toBeHidden();
   await expect(section.getByRole('row', { name: /Cody Coach BJJ Blue 0 Verified/ })).toBeVisible();

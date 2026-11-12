@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Button, ErrorBanner, Field, Modal, PhoneField, SelectField, TextField } from '@ultm8/ui';
+import { Button, ErrorBanner, Field, Modal, ModalActions, PhoneField, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { branchSelectOptions, type BranchResponse } from '../branches/branchQueries';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import { fetchInviteCandidate, type InviteCandidateResponse } from '../roleGrants/roleGrantQueries';
 import { Trans } from '../i18n/Trans';
 import { useT } from '../i18n/I18nProvider';
+import { NewLookSelect } from '../layout/NewLookSelect';
 
 /**
  * "Invite to Instructor Role" — the gap `instructors.service.ts`'s own
@@ -111,14 +112,16 @@ export function InviteToInstructorRoleModal({
           <Field label={t('instructors.inviteModal.phone')} htmlFor="invite-instructor-phone" hint={t('instructors.inviteModal.phoneHint')}>
             <PhoneField value={phone} onChange={setPhone} defaultCountry={guessDefaultCountry()} />
           </Field>
-          <Button type="submit" loading={findLoading}>
-            {t('instructors.inviteModal.find')}
-          </Button>
+          <ModalActions>
+            <Button type="submit" loading={findLoading}>
+              {t('instructors.inviteModal.find')}
+            </Button>
+          </ModalActions>
         </form>
       ) : (
         <form onSubmit={handleGrant}>
           {error ? <ErrorBanner message={error} /> : null}
-          <p className="ultm8-field">
+          <p className="u8t-found">
             <Trans
               k="instructors.inviteModal.found"
               vars={{ email: candidate.email ?? '' }}
@@ -132,27 +135,27 @@ export function InviteToInstructorRoleModal({
             />
           </p>
           {requiresBranch ? (
-            <Field
-              label={t('instructors.inviteModal.branch')}
-              htmlFor="invite-instructor-branch"
-              hint={t('instructors.inviteModal.branchHint')}
-            >
-              <SelectField
-                required
+            // No browser `required` check: handleGrant's own branch check
+            // (and its message) decides.
+            <div className="u8n-dd-field">
+              <NewLookSelect
+                id="invite-instructor-branch"
+                label={t('instructors.inviteModal.branch')}
                 value={branchId}
-                onChange={(e) => setBranchId(e.target.value)}
+                onChange={setBranchId}
                 options={[{ value: '', label: t('instructors.inviteModal.branchPlaceholder') }, ...branchSelectOptions(branches, t('branches.archivedBadge'))]}
               />
-            </Field>
+              <span className="ultm8-field__hint u8n-dd-field__hint">{t('instructors.inviteModal.branchHint')}</span>
+            </div>
           ) : null}
-          <div style={{ display: 'flex', gap: 8 }}>
-            <Button type="submit" loading={submitting}>
-              {t('instructors.inviteModal.grant')}
-            </Button>
+          <ModalActions>
             <Button type="button" variant="secondary" onClick={searchAgain}>
               {t('instructors.inviteModal.searchAgain')}
             </Button>
-          </div>
+            <Button type="submit" loading={submitting}>
+              {t('instructors.inviteModal.grant')}
+            </Button>
+          </ModalActions>
         </form>
       )}
     </Modal>

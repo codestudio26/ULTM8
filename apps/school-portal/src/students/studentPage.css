@@ -763,15 +763,9 @@
   background: none;
 }
 
-/* Dialogs: 14px corners, the new look's light heading, buttons as pills. */
+/* Dialogs: the shared new-look dialog (redesign-fixes.css §6), in the page's text colour. */
 [data-look='redesign'] .u8sp .ultm8-modal {
-  border-radius: 14px;
   color: var(--u8n-text);
-}
-[data-look='redesign'] .u8sp .ultm8-modal > h2.ultm8-page-header__title {
-  font-size: 22px;
-  font-weight: 400;
-  letter-spacing: 0.02em;
 }
 
 /* ------------------------------------------------------------- Phone */

@@ -2,6 +2,8 @@ export const classes = {
   title: 'Classes',
   subtitle: 'One-off and recurring Classes Students can book into.',
   subtitleReadOnly: "The School's Classes. Open one for its roll call or QR code.",
+  /** The right-hand panel's label: the selected class. */
+  panelLabel: 'Class',
   addClass: 'Add class',
   editClass: 'Edit class',
   disciplineFilterLabel: 'Discipline',

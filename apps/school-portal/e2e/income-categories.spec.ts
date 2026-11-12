@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { expect, test } from '@playwright/test';
 import { cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
+import { pickOption } from './team-helpers';
 
 /**
  * Income categories (Decision 316 item 10), the owner's side: the School
@@ -64,7 +65,7 @@ test('a plan and a charge take a category; one in use has no Delete button', asy
   await page.getByRole('button', { name: '2. Pricing & Access' }).click();
   await page.getByLabel('Price').fill('40');
   await page.getByRole('button', { name: '3. Policies' }).click();
-  await page.getByLabel('Income category').selectOption({ label: 'Kids programme' });
+  await pickOption(page, 'Income category', 'Kids programme');
   await page.getByRole('button', { name: '5. Visibility' }).click();
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByRole('cell', { name: 'Kids monthly', exact: true })).toBeVisible();
@@ -77,7 +78,7 @@ test('a plan and a charge take a category; one in use has no Delete button', asy
   const create = page.getByTestId('create-charge-form');
   await create.getByLabel('Description').fill('Kids T-shirt');
   await create.getByLabel('Price').fill('15');
-  await create.getByLabel('Income category').selectOption({ label: 'Kids programme' });
+  await pickOption(create, 'Income category', 'Kids programme');
   await create.getByRole('button', { name: 'Create charge' }).click();
   await expect(create).toHaveCount(0);
   await expect(page.getByRole('row', { name: /Kids T-shirt/ })).toContainText('Income category: Kids programme');

@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { expect, test } from '@playwright/test';
 import { cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
+import { pickOption } from './team-helpers';
 
 /**
  * Decision 291 — the School page's "Class cancellations" settings, the
@@ -45,13 +46,13 @@ test('the owner chooses the class cancellation settings on the School page', asy
   await signIn(page, s.ownerToken);
   await page.goto('/school');
   const card = page.locator('form').filter({ hasText: 'Class cancellations' });
-  await card.getByLabel('Class cancellation policy').selectOption('AUTO_REFUND');
-  await card.getByLabel('When the policy applies').selectOption('ANY_TIME');
+  await pickOption(card, 'Class cancellation policy', 'Auto-refund');
+  await pickOption(card, 'When the policy applies', 'Any time');
   await card.getByLabel('Default cutoff (hours before class)').fill('12');
   await card.getByLabel("Charge the class's late-cancellation fee after the cutoff").uncheck();
   // Decision 368 (S3) — typed in normal units: 5 means 5.00, stored as 500.
   await card.getByLabel('No-show fee').fill('5');
-  await card.getByLabel('When the school cancels a whole class').selectOption('FOLLOW_POLICY');
+  await pickOption(card, 'When the school cancels a whole class', 'Follow the policy above');
   await card.getByRole('button', { name: 'Save changes' }).click();
 
   await expect(card.getByText('Saved.')).toBeVisible();
@@ -74,6 +75,8 @@ test('Cancellations to resolve: the owner gives a class credit back', async ({ p
   const row = page.getByRole('row').filter({ hasText: 'Sam Lee' });
   await expect(row).toContainText('Evening Open Mat');
   await expect(row).toContainText('Needs a decision');
+  // Decision 458 item 2: the row leads with the class's avatar (no banner, so its initials).
+  await expect(row.locator('.u8s-avatar')).toHaveText('EO');
   await row.getByRole('button', { name: 'Give credit back' }).click();
 
   await expect(page.getByText('Nothing to resolve')).toBeVisible();
@@ -106,7 +109,7 @@ test('an owner who has not chosen a policy is asked to, until they save one', as
 
   const card = page.locator('form').filter({ hasText: 'Class cancellations' });
   await expect(card.getByText('Choose your cancellation policy.')).toBeVisible();
-  await card.getByLabel('Class cancellation policy').selectOption('AUTO_CREDIT');
+  await pickOption(card, 'Class cancellation policy', 'Auto-credit');
   await card.getByRole('button', { name: 'Save changes' }).click();
   await expect(card.getByText('Saved.')).toBeVisible();
   await expect(card.getByText('Choose your cancellation policy.')).toHaveCount(0);
@@ -122,8 +125,8 @@ test('a branch can use its own cancellation settings instead of the school\'s', 
   const card = page.locator('form').filter({ hasText: 'Settings for this branch' });
   // Same as the school: the school's values, read-only.
   await expect(card.getByLabel('Class cancellation policy')).toBeDisabled();
-  await card.getByLabel('Settings for this branch').selectOption('OWN');
-  await card.getByLabel('Class cancellation policy').selectOption('AUTO_REFUND');
+  await pickOption(card, 'Settings for this branch', "This branch's own settings");
+  await pickOption(card, 'Class cancellation policy', 'Auto-refund');
   await card.getByLabel('No-show fee').fill('2.50');
   await card.getByRole('button', { name: 'Save changes' }).click();
   await expect(card.getByText('Branch settings saved.')).toBeVisible();

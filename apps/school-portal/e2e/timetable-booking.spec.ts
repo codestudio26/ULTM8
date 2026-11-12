@@ -1,6 +1,11 @@
 import { randomUUID } from 'crypto';
 import { expect, test } from '@playwright/test';
 import { cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
+import { pickOption } from './team-helpers';
+
+/** The calendar itself, without the right-hand panel, which names the
+ * selected class and holds its actions as buttons (Decision 455). */
+const calendar = (page: import('@playwright/test').Page) => page.locator('.u8n-page__body');
 
 /**
  * Timetable page redesign (v1.2 backend backlog, "Timetable page") — the three
@@ -124,7 +129,7 @@ test('picking today\'s occurrence opens the booking dialog, gates Confirm on a S
   const confirmBtn = dialog.getByRole('button', { name: 'Confirm' });
   await expect(confirmBtn).toBeDisabled();
 
-  await dialog.getByLabel('Student').selectOption({ label: 'Sam Lee' });
+  await pickOption(dialog, 'Student', 'Sam Lee');
   await expect(confirmBtn).toBeEnabled();
   await confirmBtn.click();
 
@@ -144,7 +149,7 @@ test('a date past the 4-week horizon shows "Opens for booking later" and no Book
   const laterKey = dateKey(new Date(Date.now() + 42 * 86_400_000));
   const trigger = page.getByRole('button', { name: `Actions for ${slotTitle} on ${laterKey}` });
   await expect(trigger).toBeVisible();
-  await expect(page.getByText('Opens for booking later')).toBeVisible();
+  await expect(calendar(page).getByText('Opens for booking later')).toBeVisible();
   await trigger.click();
   await expect(page.getByRole('menuitem', { name: 'Edit slot' })).toBeVisible();
   await expect(page.getByRole('menuitem', { name: 'Book' })).toHaveCount(0);

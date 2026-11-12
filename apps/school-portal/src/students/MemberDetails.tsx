@@ -13,6 +13,9 @@ export type MemberContacts = {
 export type MemberContactKey = keyof MemberContacts;
 
 /**
+ * In the new look these sit inside a form chapter (StudentFormParts): the
+ * emergency contact and the "+ …" buttons take a whole row.
+ *
  * The secondary phone and email, and the emergency contact (someone who is
  * not a Guardian and has no account), as form fields. With `collapsed` (Add
  * student), each part starts as a "+ …" button and opens when pressed, or
@@ -60,13 +63,9 @@ export function MemberContactFields({
         </Field>
       ) : null}
       {show.emergency ? (
-        <fieldset style={{ border: 'none', padding: 0, margin: '0 0 12px' }}>
-          <legend className="ultm8-field__label" style={{ fontSize: 15 }}>
-            {t('students.update.emergencyHeading')}
-          </legend>
-          <p className="ultm8-field__hint" style={{ marginTop: 0 }}>
-            {t('students.update.emergencyHint')}
-          </p>
+        <fieldset className="u8f-group">
+          <legend className="u8f-group__title">{t('students.update.emergencyHeading')}</legend>
+          <p className="ultm8-field__hint u8f-group__hint">{t('students.update.emergencyHint')}</p>
           <Field label={t('students.update.emergencyName')} htmlFor={`${idPrefix}-emergency-name`}>
             <TextField maxLength={100} value={value.emergencyContactName} onChange={(e) => onChange('emergencyContactName', e.target.value)} />
           </Field>
@@ -78,7 +77,7 @@ export function MemberContactFields({
           </Field>
         </fieldset>
       ) : null}
-      {closed.length > 0 ? <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '0 0 12px' }}>{closed}</div> : null}
+      {closed.length > 0 ? <div className="u8f-openers">{closed}</div> : null}
     </>
   );
 }

@@ -229,18 +229,6 @@
   letter-spacing: normal;
 }
 
-/* Button pairs: two buttons side by side share the row equally. */
-[data-look='redesign'] .u8o-pair {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  margin-top: 16px;
-}
-[data-look='redesign'] .u8o-pair > * {
-  width: 100%;
-  white-space: normal;
-}
-
 /* A drop-down in a dialog: its own row, with room under the one before. */
 [data-look='redesign'] .u8o-modal-field {
   margin: 0 0 16px;
@@ -653,16 +641,6 @@
   box-shadow: inset 0 0 0 1px var(--border);
   border-radius: var(--form-field-radius);
   padding: 0 var(--space-3);
-}
-
-/* Dialogs on these pages: the light heading and 14px corners. */
-[data-look='redesign'] .u8o .ultm8-modal {
-  border-radius: 14px;
-}
-[data-look='redesign'] .u8o .ultm8-modal > h2.ultm8-page-header__title {
-  font-size: 22px;
-  font-weight: 400;
-  letter-spacing: 0.02em;
 }
 
 /* The School page: its setting cards in one column. */

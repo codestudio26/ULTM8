@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { expect, test } from '@playwright/test';
 import { addBranch, addCoach, addPerson, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
+import { pickOption } from './team-helpers';
 
 /**
  * Instructor "Add Manually" (Decision 1/230/237) and self-service profile
@@ -51,12 +52,11 @@ test('a School with branches requires one before Add Manually will submit', asyn
   await page.getByLabel('Surname').fill('Branch');
   await page.getByLabel('Email', { exact: false }).fill(`needs.branch.${randomUUID()}@example.test`);
   await page.getByRole('button', { name: 'Add instructor' }).last().click();
-  // The Branch <select> is a native `required` field — the browser blocks
-  // submission on its own before React's onSubmit ever runs, so the modal
-  // stays open with nothing created, rather than any particular message text.
+  // The Branch drop-down is required — submission is blocked client-side
+  // before anything is sent, so the modal stays open with nothing created.
   await expect(page.getByRole('dialog', { name: 'Add instructor manually' })).toBeVisible();
 
-  await page.getByRole('dialog').getByLabel('Branch').selectOption({ label: 'North' });
+  await pickOption(page.getByRole('dialog'), 'Branch', 'North');
   await page.getByRole('button', { name: 'Add instructor' }).last().click();
   await expect(page.getByText(/was added/)).toBeVisible();
 });
@@ -97,8 +97,7 @@ test('the owner invites an existing eligible user (already a Student) to the Ins
   // (see InstructorsService.create()'s own header comment); "Add instructor"
   // opens next with them already picked (Decision 312).
   const add = page.getByRole('dialog', { name: /Add instructor/i });
-  await expect(add.getByLabel('User')).toHaveValue(existing.id);
-  await expect(add.getByLabel('User')).toContainText(`Already AStudent (${existing.email})`);
+  await expect(add.getByRole('combobox', { name: 'User', exact: true }).locator('[data-shown="true"]')).toHaveText(`Already AStudent (${existing.email})`);
 });
 
 test('no existing account is found by email/phone — a clear message, no grant created', async ({ page }) => {
@@ -121,15 +120,15 @@ test('a School with branches requires one before granting the Instructor role wi
   await page.getByLabel('Email').fill(existing.email);
   await page.getByRole('button', { name: 'Find' }).click();
   await page.getByRole('button', { name: 'Grant Instructor role' }).click();
-  // The Branch <select> is a native `required` field — submission is blocked
-  // client-side, same regression class the "Add Manually" branch test above
-  // already covers.
+  // The Branch drop-down is required — submission is blocked client-side,
+  // same regression class the "Add Manually" branch test above already
+  // covers.
   await expect(page.getByRole('dialog', { name: 'Invite to Instructor role' })).toBeVisible();
   await expect(
     db.roleGrant.findFirst({ where: { userId: existing.id, schoolId: s.schoolId, role: 'INSTRUCTOR' } }),
   ).resolves.toBeNull();
 
-  await page.getByRole('dialog').getByLabel('Branch').selectOption({ label: 'North' });
+  await pickOption(page.getByRole('dialog'), 'Branch', 'North');
   await page.getByRole('button', { name: 'Grant Instructor role' }).click();
   await expect(page.getByText(/Instructor role granted/)).toBeVisible();
   const grant = await db.roleGrant.findFirst({ where: { userId: existing.id, schoolId: s.schoolId, role: 'INSTRUCTOR' } });
@@ -141,7 +140,11 @@ test("an Instructor completes their own profile's deferred fields", async ({ pag
   await db.instructor.create({ data: { id: randomUUID(), userId: coach.id, schoolId: s.schoolId } });
   await signIn(page, coach.token);
   await page.goto('/complete-instructor-profile');
-  await page.getByLabel('Country', { exact: true }).selectOption('GB');
+  // Decision 460: Country is a searchable picker (type, then pick the match).
+  const country = page.getByRole('combobox', { name: 'Country', exact: true });
+  await country.click();
+  await country.fill('United Kingdom');
+  await page.getByRole('listbox').getByRole('option', { name: 'United Kingdom', exact: true }).click();
   await page.getByLabel('Address line 1').fill('123 Mat Street');
   // A UK address needs a postcode: the form says so before anything is sent.
   await page.getByLabel('Town/City').fill('Leeds');

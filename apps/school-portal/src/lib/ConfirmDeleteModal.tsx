@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, ErrorBanner, Modal } from '@ultm8/ui';
+import { Button, ErrorBanner, Modal, ModalActions } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useT } from '../i18n/I18nProvider';
 
@@ -54,14 +54,15 @@ export function ConfirmDeleteModal({
       {error ? <ErrorBanner message={error} /> : null}
       <p style={{ marginTop: 0 }}>{description}</p>
       {children}
-      <div style={{ display: 'flex', gap: 8 }}>
-        <Button variant="danger" onClick={confirm} loading={busy} disabled={!!error}>
-          {confirmLabel ?? t('lib.confirmDelete.delete')}
-        </Button>
+      {/* The new look's button band: Cancel first, the action last. */}
+      <ModalActions>
         <Button variant="secondary" onClick={onClose}>
           {error ? t('lib.confirmDelete.close') : t('common.cancel')}
         </Button>
-      </div>
+        <Button variant="danger" onClick={confirm} loading={busy} disabled={!!error}>
+          {confirmLabel ?? t('lib.confirmDelete.delete')}
+        </Button>
+      </ModalActions>
     </Modal>
   );
 }

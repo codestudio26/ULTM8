@@ -1,11 +1,15 @@
 import React, { useMemo, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
-import { Button, Card, EmptyState, ErrorBanner, Field, PageHeader, SelectField, Spinner, Table, TextField } from '@ultm8/ui';
+import { Button, EmptyState, ErrorBanner, Spinner, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useAuth, useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
 import { useMyStaffAccess } from '../roleGrants/roleGrantQueries';
 import { useT } from '../i18n/I18nProvider';
 import { useStudents, type StudentSummary } from './studentQueries';
+import { BillingCard, BillingPage } from '../billing/BillingLook';
+import { NewLookPageHeader } from '../layout/NewLookPage';
+import { NewLookSelect } from '../layout/NewLookSelect';
+import { FitTable } from './StudentsSectionLook';
 import {
   ROSTER_NAME_MAX,
   useAddRosterStudents,
@@ -28,6 +32,12 @@ const fullName = (s: StudentSummary) => `${s.firstName} ${s.surname}`.trim();
  * Being on a roster doesn't change who can book. Members never see rosters.
  * The same people as the Students page manage them: the owner, and Branch
  * Staff with the Students switch, for the students they cover.
+ *
+ * New look (Decision 453): the approved design draws no Rosters screen, so the
+ * page keeps its lists, forms and actions and takes the new header (with
+ * "‹ Students" in place of the old back link), white cards, soft fields, the
+ * new drop-down and pill buttons; the students table becomes cards when it
+ * doesn't fit.
  */
 export function RostersPage() {
   const t = useT();
@@ -48,38 +58,37 @@ export function RostersPage() {
   const open = items.find((r) => r.id === openId) ?? null;
 
   return (
-    <>
-      <PageHeader title={t('students.rosters.title')} subtitle={t('students.rosters.subtitle')} />
-      <p>
-        <Link to="/students">{t('students.rosters.back')}</Link>
-      </p>
-      <Card>
+    <BillingPage>
+      <NewLookPageHeader parent={{ to: '/students', label: t('layout.nav.students') }} title={t('students.rosters.title')} subtitle={t('students.rosters.subtitle')} />
+      <BillingCard>
         {rosters.isLoading ? <Spinner /> : null}
         {rosters.error ? <ErrorBanner message={errorText(rosters.error, t('students.rosters.loadFailed'))} /> : null}
         {create.error ? <ErrorBanner message={errorText(create.error, t('students.rosters.failed'))} /> : null}
         {!rosters.isLoading && items.length === 0 ? <EmptyState title={t('students.rosters.emptyTitle')} description={t('students.rosters.emptyDescription')} /> : null}
-        <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {items.map((roster) => (
-            <RosterRow key={`${roster.id}-${roster.name}`} schoolId={schoolId} roster={roster} isOpen={roster.id === openId} onOpen={() => setOpenId(roster.id === openId ? null : roster.id)} />
-          ))}
-        </ul>
+        {items.length ? (
+          <ul className="u8st-rosters">
+            {items.map((roster) => (
+              <RosterRow key={`${roster.id}-${roster.name}`} schoolId={schoolId} roster={roster} isOpen={roster.id === openId} onOpen={() => setOpenId(roster.id === openId ? null : roster.id)} />
+            ))}
+          </ul>
+        ) : null}
         <form
-          style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginTop: 12 }}
+          className="u8st-inline-form u8st-roster-new"
           onSubmit={(e) => {
             e.preventDefault();
             if (clean(name)) create.mutate(clean(name), { onSuccess: (r) => { setName(''); setOpenId(r.id); } });
           }}
         >
-          <div style={{ flex: '1 1 220px', minWidth: 0 }}>
+          <div className="u8st-inline-form__field">
             <TextField aria-label={t('students.rosters.newLabel')} placeholder={t('students.rosters.newPlaceholder')} maxLength={ROSTER_NAME_MAX} value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <Button type="submit" variant="secondary" disabled={!clean(name)} loading={create.isPending}>
             {t('students.rosters.add')}
           </Button>
         </form>
-      </Card>
+      </BillingCard>
       {open ? <RosterMembersCard schoolId={schoolId} roster={open} /> : null}
-    </>
+    </BillingPage>
   );
 }
 
@@ -93,19 +102,20 @@ function RosterRow({ schoolId, roster, isOpen, onOpen }: { schoolId: string; ros
   const changed = clean(name) !== '' && clean(name) !== roster.name;
 
   return (
-    <li>
+    <li className={'u8st-roster' + (isOpen ? ' u8st-roster--open' : '')}>
       {error ? <ErrorBanner message={errorText(error, t('students.rosters.failed'))} /> : null}
       <form
-        style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}
+        className="u8st-inline-form"
         onSubmit={(e) => {
           e.preventDefault();
           if (changed) rename.mutate({ rosterId: roster.id, name: clean(name) });
         }}
       >
-        <div style={{ flex: '1 1 220px', minWidth: 0 }}>
+        <div className="u8st-inline-form__field">
           <TextField aria-label={t('students.rosters.nameLabel', { roster: roster.name })} maxLength={ROSTER_NAME_MAX} value={name} onChange={(e) => setName(e.target.value)} />
         </div>
-        <span className="ultm8-field__hint">{t('students.rosters.count', { count: roster.memberCount })}</span>
+        <span className="u8b-note u8st-roster__count">{t('students.rosters.count', { count: roster.memberCount })}</span>
+        <div className="u8st-roster__actions">
         <Button type="button" variant={isOpen ? 'primary' : 'secondary'} onClick={onOpen}>
           {isOpen ? t('students.rosters.close') : t('students.rosters.open')}
         </Button>
@@ -114,7 +124,7 @@ function RosterRow({ schoolId, roster, isOpen, onOpen }: { schoolId: string; ros
         </Button>
         {confirming ? (
           <>
-            <span>{t('students.rosters.confirmDelete')}</span>
+            <span className="u8st-roster__confirm">{t('students.rosters.confirmDelete')}</span>
             <Button type="button" variant="danger" loading={remove.isPending} onClick={() => remove.mutate(roster.id)}>
               {t('students.rosters.delete')}
             </Button>
@@ -127,6 +137,7 @@ function RosterRow({ schoolId, roster, isOpen, onOpen }: { schoolId: string; ros
             {t('students.rosters.delete')}
           </Button>
         )}
+        </div>
       </form>
     </li>
   );
@@ -147,25 +158,23 @@ function RosterMembersCard({ schoolId, roster }: { schoolId: string; roster: Ros
   const error = add.error ?? remove.error ?? members.error ?? students.error;
 
   return (
-    <Card>
-      <h2 style={{ fontSize: 18, margin: '0 0 12px' }}>{roster.name}</h2>
+    <BillingCard title={roster.name}>
       {error ? <ErrorBanner message={errorText(error, t('students.rosters.failed'))} /> : null}
       <form
-        style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 12 }}
+        className="u8st-inline-form u8st-roster-add"
         onSubmit={(e) => {
           e.preventDefault();
           if (picked) add.mutate([picked], { onSuccess: () => setPicked('') });
         }}
       >
-        <div style={{ flex: '1 1 260px', minWidth: 0 }}>
-          <Field label={t('students.rosters.addStudentLabel')} htmlFor="roster-add-student">
-            <SelectField
-              id="roster-add-student"
-              value={picked}
-              onChange={(e) => setPicked(e.target.value)}
-              options={[{ value: '', label: t('students.rosters.pickStudent') }, ...others.map((s) => ({ value: s.id, label: fullName(s) }))]}
-            />
-          </Field>
+        <div className="u8n-dd-field">
+          <NewLookSelect
+            id="roster-add-student"
+            label={t('students.rosters.addStudentLabel')}
+            value={picked}
+            onChange={setPicked}
+            options={[{ value: '', label: t('students.rosters.pickStudent') }, ...others.map((s) => ({ value: s.id, label: fullName(s) }))]}
+          />
         </div>
         <Button type="submit" variant="secondary" disabled={!picked} loading={add.isPending}>
           {t('students.rosters.addStudent')}
@@ -174,17 +183,17 @@ function RosterMembersCard({ schoolId, roster }: { schoolId: string; roster: Ros
       {members.isLoading || students.isLoading ? (
         <Spinner />
       ) : onRoster.length === 0 ? (
-        <p className="ultm8-field__hint">{t('students.rosters.noMembers')}</p>
+        <p className="u8b-note">{t('students.rosters.noMembers')}</p>
       ) : (
-        <Table<StudentSummary>
+        <FitTable<StudentSummary>
           rows={onRoster}
           columns={[
-            { key: 'name', header: t('students.columnName'), render: (s) => <Link to={`/students/${s.id}`}>{fullName(s)}</Link> },
+            { key: 'name', header: t('students.columnName'), main: true, render: (s) => <Link to={`/students/${s.id}`} className="u8b-name">{fullName(s)}</Link> },
             {
               key: 'remove',
               header: '',
               render: (s) => (
-                <Button variant="secondary" loading={remove.isPending && remove.variables === s.id} onClick={() => remove.mutate(s.id)} aria-label={t('students.rosters.removeStudent', { name: fullName(s) })}>
+                <Button variant="secondary" className="u8b-pill--row" loading={remove.isPending && remove.variables === s.id} onClick={() => remove.mutate(s.id)} aria-label={t('students.rosters.removeStudent', { name: fullName(s) })}>
                   {t('students.rosters.remove')}
                 </Button>
               ),
@@ -192,6 +201,6 @@ function RosterMembersCard({ schoolId, roster }: { schoolId: string; roster: Ros
           ]}
         />
       )}
-    </Card>
+    </BillingCard>
   );
 }

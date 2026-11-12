@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Button, Card, Checkbox, ErrorBanner, Field, TextArea, TextField } from '@ultm8/ui';
+import { Button, Checkbox, ErrorBanner, Field, TextArea, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { MoneyField } from '../lib/MoneyField';
 import { useT } from '../i18n/I18nProvider';
 import { useSetPlanContract, type MembershipPlanResponse } from './membershipPlanQueries';
+import { Chapter } from '../students/StudentFormParts';
 
 /**
  * Decision 316 item 6: the School's own contract on a plan. Members sign it
@@ -48,20 +49,23 @@ export function PlanContractCard({ plan, currency }: { plan: MembershipPlanRespo
     }
   }
 
+  // A sheet of its own under the plan form (form pattern "F"), saved on its own.
   return (
-    <Card>
-      <form onSubmit={handleSave} aria-label={t('membershipPlans.contract.title')}>
-        <h2 className="ultm8-page-header__title" style={{ fontSize: 16, marginBottom: 4 }}>
-          {t('membershipPlans.contract.title')}
-        </h2>
-        <p className="ultm8-field__hint" style={{ marginTop: 0 }}>{t('membershipPlans.contract.subtitle')}</p>
-        <p className="ultm8-field__hint">
+    <form className="u8f-sheet u8p-contract" onSubmit={handleSave} aria-label={t('membershipPlans.contract.title')}>
+      <Chapter title={t('membershipPlans.contract.title')} description={t('membershipPlans.contract.subtitle')}>
+        <p className="ultm8-field__hint u8f-wide u8p-note">
           {plan.contractVersion != null ? t('membershipPlans.contract.version', { version: plan.contractVersion }) : t('membershipPlans.contract.none')}
         </p>
-        {error ? <ErrorBanner message={error} /> : null}
-        <Field label={t('membershipPlans.contract.bodyLabel')} htmlFor="plan-contract-body" hint={t('membershipPlans.contract.bodyHint')}>
-          <TextArea id="plan-contract-body" rows={10} value={body} maxLength={20000} onChange={(e) => setBody(e.target.value)} />
-        </Field>
+        {error ? (
+          <div className="u8f-wide">
+            <ErrorBanner message={error} />
+          </div>
+        ) : null}
+        <div className="u8f-wide">
+          <Field label={t('membershipPlans.contract.bodyLabel')} htmlFor="plan-contract-body" hint={t('membershipPlans.contract.bodyHint')}>
+            <TextArea id="plan-contract-body" rows={10} value={body} maxLength={20000} onChange={(e) => setBody(e.target.value)} />
+          </Field>
+        </div>
         {isSubscription ? (
           <>
             <Field label={t('membershipPlans.contract.minimumTermLabel')} htmlFor="plan-contract-term" hint={t('membershipPlans.contract.minimumTermHint')}>
@@ -80,24 +84,32 @@ export function PlanContractCard({ plan, currency }: { plan: MembershipPlanRespo
               />
             </Field>
             {/* Decision 435 item 16: stops at the end of the minimum term instead of renewing. */}
-            <Checkbox
-              id="plan-contract-ends-after-term"
-              label={t('membershipPlans.contract.endsAfterTermLabel')}
-              checked={endsAfterTerm && !!term.trim()}
-              disabled={!term.trim()}
-              onChange={(e) => setEndsAfterTerm(e.target.checked)}
-            />
-            <p className="ultm8-field__hint" style={{ marginTop: 0 }}>{t('membershipPlans.contract.endsAfterTermHint')}</p>
+            <div className="u8f-wide">
+              <Checkbox
+                id="plan-contract-ends-after-term"
+                label={t('membershipPlans.contract.endsAfterTermLabel')}
+                checked={endsAfterTerm && !!term.trim()}
+                disabled={!term.trim()}
+                onChange={(e) => setEndsAfterTerm(e.target.checked)}
+              />
+              <p className="ultm8-field__hint u8p-check-hint">{t('membershipPlans.contract.endsAfterTermHint')}</p>
+            </div>
           </>
         ) : (
-          <p className="ultm8-field__hint">{t('membershipPlans.contract.subscriptionOnly')}</p>
+          <p className="ultm8-field__hint u8f-wide u8p-note">{t('membershipPlans.contract.subscriptionOnly')}</p>
         )}
-        <p className="ultm8-field__hint">{t('membershipPlans.contract.deskNote')}</p>
-        {saved ? <p role="status">{t('membershipPlans.contract.saved')}</p> : null}
+        <p className="ultm8-field__hint u8f-wide u8p-note">{t('membershipPlans.contract.deskNote')}</p>
+        {saved ? (
+          <p role="status" className="u8f-wide u8p-note">
+            {t('membershipPlans.contract.saved')}
+          </p>
+        ) : null}
+      </Chapter>
+      <div className="u8f-actions">
         <Button type="submit" loading={save.isPending}>
           {plan.contractVersion != null ? t('membershipPlans.contract.update') : t('membershipPlans.contract.add')}
         </Button>
-      </form>
-    </Card>
+      </div>
+    </form>
   );
 }

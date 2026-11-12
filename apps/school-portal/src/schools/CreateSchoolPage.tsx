@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AddressFields, AuthCard, Button, Checkbox, CurrencyField, ErrorBanner, Field, PhoneField, SelectField, TextField, TimezoneField, postalAddressFromRecord, preparePostalAddress, type PostalAddressErrors } from '@ultm8/ui';
+import { AddressFields, Button, Checkbox, CurrencyField, ErrorBanner, Field, PhoneField, TextField, TimezoneField, postalAddressFromRecord, preparePostalAddress, type PostalAddressErrors } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useAuth } from '../auth/AuthContext';
 import { guessDefaultCountry } from '../lib/phoneCountry';
@@ -9,6 +9,9 @@ import { useCreateSchool } from './schoolQueries';
 import { useT } from '../i18n/I18nProvider';
 import { LegalAgreeCheckbox } from '../legal/LegalAgreeCheckbox';
 import { languageName } from '../i18n/format';
+import { NewLookSelect } from '../layout/NewLookSelect';
+import { SignInCard } from '../auth/SignInCard';
+import '../organisation/organisationForms.css';
 
 /**
  * Self-service School creation (Decision 79) — the creator becomes SCHOOL_OWNER_MANAGER
@@ -100,17 +103,18 @@ export function CreateSchoolPage() {
 
   if (created) {
     return (
-      <AuthCard title={t('schools.create.createdTitle')} subtitle={t('schools.create.createdSubtitle')}>
+      <SignInCard wide title={t('schools.create.createdTitle')} subtitle={t('schools.create.createdSubtitle')}>
         <p>{t('schools.create.reloginBody')}</p>
         <Button fullWidth onClick={logout}>
           {t('schools.create.reloginButton')}
         </Button>
-      </AuthCard>
+      </SignInCard>
     );
   }
 
   return (
-    <AuthCard
+    <SignInCard
+      wide
       title={t('schools.create.title')}
       subtitle={t('schools.create.subtitle')}
       // This page has no app shell around it, so it carries its own way out:
@@ -139,14 +143,15 @@ export function CreateSchoolPage() {
         <Field label={t('schools.form.facilities')} htmlFor="school-facilities" hint={t('schools.form.commaSeparated')}>
           <TextField value={form.facilities} onChange={(e) => set('facilities', e.target.value)} />
         </Field>
-        <Field label={t('schools.form.defaultLanguage')} htmlFor="school-language">
-          <SelectField
+        <div className="u8n-dd-field">
+          <NewLookSelect
             id="school-language"
+            label={t('schools.form.defaultLanguage')}
             value={form.defaultLanguage}
-            onChange={(e) => set('defaultLanguage', e.target.value)}
+            onChange={(v) => set('defaultLanguage', v)}
             options={[{ value: '', label: t('schools.form.notSet') }, ...(languages ?? []).map((l) => ({ value: l.code, label: languageName(l.code, l.name) }))]}
           />
-        </Field>
+        </div>
         <Field label={t('schools.form.defaultCurrency')} htmlFor="school-currency">
           <CurrencyField
             id="school-currency"
@@ -162,17 +167,19 @@ export function CreateSchoolPage() {
         <Field label={t('schools.form.description')} htmlFor="school-description">
           <TextField value={form.description} onChange={(e) => set('description', e.target.value)} />
         </Field>
-        <Field label={t('schools.form.cancellationPolicy')} htmlFor="school-policy">
-          <SelectField
+        <div className="u8n-dd-field">
+          <NewLookSelect
+            id="school-policy"
+            label={t('schools.form.cancellationPolicy')}
             value={form.classCancellationPolicy}
-            onChange={(e) => set('classCancellationPolicy', e.target.value as typeof form.classCancellationPolicy)}
+            onChange={(v) => set('classCancellationPolicy', v as typeof form.classCancellationPolicy)}
             options={[
               { value: 'MANUAL', label: t('schools.form.policyManual') },
               { value: 'AUTO_REFUND', label: t('schools.form.policyAutoRefund') },
               { value: 'AUTO_CREDIT', label: t('schools.form.policyAutoCredit') },
             ]}
           />
-        </Field>
+        </div>
         <Field label={t('schools.form.waitlistWindow')} htmlFor="school-waitlist">
           <TextField
             type="number"
@@ -193,6 +200,6 @@ export function CreateSchoolPage() {
           </Button>
         </div>
       </form>
-    </AuthCard>
+    </SignInCard>
   );
 }

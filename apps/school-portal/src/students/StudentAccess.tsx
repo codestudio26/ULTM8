@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
-import { Button, Card, ErrorBanner } from '@ultm8/ui';
+import { Button, ErrorBanner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useT } from '../i18n/I18nProvider';
+import { BillingCard } from '../billing/BillingLook';
+import './studentNotices.css';
 import { useChildInvites, useNewTemporaryPasscode, useTemporaryPasscodeStatus, useWithdrawChildInvite } from './studentAccessQueries';
 
 /**
  * Children added for a Guardian who already has an account, waiting for the
  * Guardian to accept in the app (Decision 403). The owner can withdraw one.
- * Hidden when there are none.
+ * Hidden when there are none. In the new look (Decision 453): a white card
+ * above the Students list, like the freeze requests.
  */
 export function ChildInvitesCard({ schoolId }: { schoolId: string }) {
   const t = useT();
@@ -16,31 +19,35 @@ export function ChildInvitesCard({ schoolId }: { schoolId: string }) {
   const items = invites.data?.items ?? [];
   if (items.length === 0) return null;
   return (
-    <div style={{ marginBottom: 16 }}>
-      <Card>
+    <div className="u8n-notice">
+      <BillingCard>
         <section aria-label={t('students.childInvites.title')}>
-          <h2 className="ultm8-page-header__title" style={{ fontSize: 15, marginBottom: 4 }}>
-            {t('students.childInvites.title')}
-          </h2>
-          <p className="ultm8-field__hint" style={{ marginTop: 0 }}>
-            {t('students.childInvites.hint')}
-          </p>
+          <h2 className="u8b-card__title">{t('students.childInvites.title')}</h2>
+          <p className="u8b-note u8n-notice__hint">{t('students.childInvites.hint')}</p>
           {withdraw.error ? <ErrorBanner message={withdraw.error instanceof ApiError ? withdraw.error.message : t('common.tryAgain')} /> : null}
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8 }}>
+          <ul className="u8n-notice__rows">
             {items.map((i) => {
               const child = `${i.childFirstName} ${i.childSurname}`.trim();
               return (
-                <li key={i.id} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <span style={{ flex: 1, minWidth: 200 }}>{t('students.childInvites.row', { child, guardian: i.guardianName ?? i.guardianEmail ?? '' })}</span>
-                  <Button variant="secondary" disabled={withdraw.isPending} onClick={() => withdraw.mutate(i.id)} aria-label={t('students.childInvites.withdrawAria', { child })}>
-                    {t('students.childInvites.withdraw')}
-                  </Button>
+                <li key={i.id} className="u8n-notice__row">
+                  <span className="u8n-notice__text">{t('students.childInvites.row', { child, guardian: i.guardianName ?? i.guardianEmail ?? '' })}</span>
+                  <span className="u8n-notice__actions">
+                    <Button
+                      variant="secondary"
+                      className="u8b-pill u8b-pill--row"
+                      disabled={withdraw.isPending}
+                      onClick={() => withdraw.mutate(i.id)}
+                      aria-label={t('students.childInvites.withdrawAria', { child })}
+                    >
+                      {t('students.childInvites.withdraw')}
+                    </Button>
+                  </span>
                 </li>
               );
             })}
           </ul>
         </section>
-      </Card>
+      </BillingCard>
     </div>
   );
 }
@@ -66,9 +73,12 @@ export function TemporaryPasscodeCard({ schoolId, studentId }: { schoolId: strin
       {shown ? (
         <>
           <p className="u8sp-panel__text">{t('students.passcode.shown', { name: shown.name })}</p>
-          <p className="u8sp-ticket__code" data-testid="temporary-passcode" style={{ margin: '8px 0 0' }}>
-            {shown.passcode}
-          </p>
+          {/* Shown once, in the same dashed ticket as the check-in code above it. */}
+          <div className="u8sp-ticket">
+            <p className="u8sp-ticket__code" data-testid="temporary-passcode">
+              {shown.passcode}
+            </p>
+          </div>
           <p className="u8sp-panel__note">{t('students.addManually.passcodeOnceDays')}</p>
         </>
       ) : (

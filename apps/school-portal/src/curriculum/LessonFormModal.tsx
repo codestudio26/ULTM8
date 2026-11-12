@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { Button, Checkbox, ErrorBanner, Field, Modal, SelectField, TextArea, TextField } from '@ultm8/ui';
+import React, { useRef, useState } from 'react';
+import { Button, Checkbox, ErrorBanner, Field, Modal, ModalActions, TextArea, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { instructorSelectOptions, type InstructorResponse } from '../instructors/instructorQueries';
 import type { DisciplineSkillGroup } from './curriculumQueries';
 import type { LessonCategory, LessonResponse } from './curriculumQueries';
 import { useT } from '../i18n/I18nProvider';
+import { NewLookSelect } from '../layout/NewLookSelect';
 
 /** Fields match CreateLessonDto/UpdateLessonDto exactly —
  * apps/api/src/curriculum/dto/create-lesson.dto.ts. `videoRef`/`captionStatus`/
@@ -63,6 +64,16 @@ export function LessonFormModal({
   });
   const [error, setError] = useState<string | null>(null);
   const t = useT();
+  const formRef = useRef<HTMLFormElement>(null);
+
+  /** A drop-down change counts as an edit, as it did with the browser
+   * <select> (whose change fired an `input` event): the dialog's guard then
+   * keeps it open on an outside click or Escape. NewLookSelect is a button,
+   * so the form sends that same `input` event itself. */
+  function picked(update: (f: typeof form) => typeof form) {
+    setForm(update);
+    formRef.current?.dispatchEvent(new Event('input', { bubbles: true }));
+  }
 
   function toggleSkill(skillId: string, checked: boolean) {
     setForm((f) => ({
@@ -107,19 +118,23 @@ export function LessonFormModal({
 
   return (
     <Modal title={title} onClose={onClose}>
-      <form onSubmit={handleSubmit}>
+      <form ref={formRef} onSubmit={handleSubmit}>
         {error ? <ErrorBanner message={error} /> : null}
         <Field label={t('curriculum.form.titleLabel')} htmlFor="lesson-title">
           <TextField required value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} />
         </Field>
-        <Field label={t('curriculum.form.categoryLabel')} htmlFor="lesson-category" hint={t('curriculum.form.categoryHint')}>
-          <SelectField
+        {/* The new look's own drop-downs (DESIGN.md → "Drop-downs"), each
+            with its hint under it as before. */}
+        <div className="u8c-dd">
+          <NewLookSelect
             id="lesson-category"
+            label={t('curriculum.form.categoryLabel')}
             value={form.categoryId}
-            onChange={(e) => setForm((f) => ({ ...f, categoryId: e.target.value }))}
+            onChange={(v) => picked((f) => ({ ...f, categoryId: v }))}
             options={[{ value: '', label: t('curriculum.noCategory') }, ...categories.map((c) => ({ value: c.id, label: c.name }))]}
           />
-        </Field>
+          <p className="ultm8-field__hint">{t('curriculum.form.categoryHint')}</p>
+        </div>
         <Checkbox
           label={t('curriculum.form.free')}
           checked={form.free}
@@ -128,7 +143,7 @@ export function LessonFormModal({
         <p className="ultm8-field__hint" style={{ marginTop: 0 }}>
           {t('curriculum.form.freeHint')}
         </p>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="u8c-duration">
           <Field label={t('curriculum.form.durationMinutes')} htmlFor="lesson-duration-minutes">
             <TextField type="number" min={0} max={1440} value={form.durationMinutes} onChange={(e) => setForm((f) => ({ ...f, durationMinutes: e.target.value }))} />
           </Field>
@@ -139,26 +154,31 @@ export function LessonFormModal({
         <Field label={t('curriculum.form.description')} htmlFor="lesson-description">
           <TextArea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
         </Field>
-        <Field label={t('curriculum.form.format')} htmlFor="lesson-format">
-          <SelectField
+        <div className="u8c-dd">
+          <NewLookSelect
+            id="lesson-format"
+            label={t('curriculum.form.format')}
             value={form.format}
-            onChange={(e) => setForm((f) => ({ ...f, format: e.target.value as 'PRERECORDED' | 'LIVE' }))}
+            onChange={(v) => picked((f) => ({ ...f, format: v as 'PRERECORDED' | 'LIVE' }))}
             options={[
               { value: 'PRERECORDED', label: t('curriculum.formatPrerecorded') },
               { value: 'LIVE', label: t('curriculum.formatLive') },
             ]}
           />
-        </Field>
-        <Field label={t('curriculum.form.instructor')} htmlFor="lesson-instructor" hint={t('curriculum.form.instructorHint')}>
-          <SelectField
+        </div>
+        <div className="u8c-dd">
+          <NewLookSelect
+            id="lesson-instructor"
+            label={t('curriculum.form.instructor')}
             value={form.instructorId}
-            onChange={(e) => setForm((f) => ({ ...f, instructorId: e.target.value }))}
+            onChange={(v) => picked((f) => ({ ...f, instructorId: v }))}
             options={[
               { value: '', label: t('curriculum.form.none') },
               ...instructorSelectOptions(instructors, { archived: t('instructors.pickerArchived'), revoked: t('instructors.pickerRevoked') }, initial?.instructorId),
             ]}
           />
-        </Field>
+          <p className="ultm8-field__hint">{t('curriculum.form.instructorHint')}</p>
+        </div>
 
         <div className="ultm8-field" style={{ marginTop: 16 }}>
           <p className="ultm8-field__label" style={{ marginBottom: 8 }}>
@@ -170,38 +190,40 @@ export function LessonFormModal({
           {!skillGroups.some((g) => !g.archived && g.skills.length > 0) && !initial?.skillIds?.length ? (
             <p className="ultm8-field__hint">{t('curriculum.form.noSkills')}</p>
           ) : (
-            skillGroups.map((group) => {
-              // An archived style shows only the skills this lesson already
-              // has from it, so they can be unticked but not newly picked (C10).
-              const skills = group.archived ? group.skills.filter((s) => initial?.skillIds?.includes(s.id)) : group.skills;
-              return skills.length === 0 ? null : (
-                <div key={group.disciplineId} style={{ marginBottom: 10 }}>
-                  <strong style={{ fontSize: 13 }}>
-                    {group.disciplineName}
-                    {group.archived ? <span className="ultm8-field__hint"> {t('curriculum.form.archivedStyle')}</span> : null}
-                  </strong>
-                  {skills.map((skill) => (
-                    <Checkbox
-                      key={skill.id}
-                      label={skill.name}
-                      checked={form.skillIds.includes(skill.id)}
-                      onChange={(e) => toggleSkill(skill.id, e.target.checked)}
-                    />
-                  ))}
-                </div>
-              );
-            })
+            <div className="u8c-skills">
+              {skillGroups.map((group) => {
+                // An archived style shows only the skills this lesson already
+                // has from it, so they can be unticked but not newly picked (C10).
+                const skills = group.archived ? group.skills.filter((s) => initial?.skillIds?.includes(s.id)) : group.skills;
+                return skills.length === 0 ? null : (
+                  <div key={group.disciplineId} className="u8c-skills__group">
+                    <strong className="u8c-skills__name">
+                      {group.disciplineName}
+                      {group.archived ? <span className="ultm8-field__hint"> {t('curriculum.form.archivedStyle')}</span> : null}
+                    </strong>
+                    {skills.map((skill) => (
+                      <Checkbox
+                        key={skill.id}
+                        label={skill.name}
+                        checked={form.skillIds.includes(skill.id)}
+                        onChange={(e) => toggleSkill(skill.id, e.target.checked)}
+                      />
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
 
-        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-          <Button type="submit" loading={submitting}>
-            {t('common.save')}
-          </Button>
+        <ModalActions>
           <Button type="button" variant="secondary" onClick={onClose}>
             {t('common.cancel')}
           </Button>
-        </div>
+          <Button type="submit" loading={submitting}>
+            {t('common.save')}
+          </Button>
+        </ModalActions>
       </form>
     </Modal>
   );

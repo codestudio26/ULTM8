@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Checkbox, ErrorBanner, Field, Modal, SelectField, TextArea, TextField } from '@ultm8/ui';
+import { Button, Checkbox, ErrorBanner, Field, Modal, ModalActions, TextArea, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import type { DisciplineResponse } from '../disciplines/disciplineQueries';
 import { type Rung, startingClassesFor } from './ladder';
@@ -21,6 +21,8 @@ import {
 import { useT, type TranslateFn, type TranslationKey } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
 import { formatHours } from './hours';
+import { NewLookSelect } from '../layout/NewLookSelect';
+import './gradingDialogs.css';
 
 function errorText(err: unknown, t: TranslateFn): string {
   return err instanceof ApiError ? err.message : t('common.tryAgain');
@@ -34,23 +36,27 @@ function todayLocal(): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
+/** The dialog's button band (ModalActions): Cancel first, the action last.
+ * It is the form's last child, so Enter in a field submits. */
 function Actions({ submitting, disabled, label, onClose }: { submitting: boolean; disabled?: boolean; label: string; onClose: () => void }) {
   const t = useT();
   return (
-    <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-      <Button type="submit" loading={submitting} disabled={disabled}>
-        {label}
-      </Button>
+    <ModalActions>
       <Button type="button" variant="secondary" onClick={onClose}>
         {t('common.cancel')}
       </Button>
-    </div>
+      <Button type="submit" loading={submitting} disabled={disabled}>
+        {label}
+      </Button>
+    </ModalActions>
   );
 }
 
+/** An amber note (missing skills, days short); a skip or a move to Adult is
+ * a blue note (DESIGN.md → "Promote selected: pick the rank"). */
 function Warning({ children }: { children: React.ReactNode }) {
   return (
-    <p role="note" style={{ margin: '0 0 12px', padding: '8px 12px', borderRadius: 8, background: 'var(--bg-warning)', color: 'var(--text-warning)' }}>
+    <p role="note" className="u8gd-note u8gd-note--warn">
       {children}
     </p>
   );
@@ -173,12 +179,14 @@ export function GradeModal({
               />
             </Field>
             {toAdult ? (
-              <p role="note" style={{ margin: '0 0 12px', padding: '8px 12px', borderRadius: 8, background: 'var(--bg-accent)', color: 'var(--text-primary)' }}>
+              <p role="note" className="u8gd-note u8gd-note--info">
                 {t('grading.modals.grade.adultNote')}
               </p>
             ) : null}
             {skipped > 0 ? (
-              <Warning>{t('grading.modals.grade.skips', { count: skipped })}</Warning>
+              <p role="note" className="u8gd-note u8gd-note--info">
+                {t('grading.modals.grade.skips', { count: skipped })}
+              </p>
             ) : null}
             {blockedBySkills ? (
               <Warning>{t('grading.modals.grade.blockedBySkills', { count: missingSkills.length })}</Warning>
@@ -195,7 +203,7 @@ export function GradeModal({
               </Field>
             ) : null}
             {starting.kind === 'BY_TYPE' ? (
-              <fieldset style={{ border: 'none', padding: 0, margin: '0 0 12px' }}>
+              <fieldset className="u8gd-fieldset">
                 <legend className="ultm8-field__label">{t('grading.modals.grade.startingByTypeLegend')}</legend>
                 {starting.classTypes.map((type) => (
                   <Field key={type} label={type} htmlFor={`grade-starting-${type}`}>
@@ -375,7 +383,7 @@ export function VoidEntryModal({
     <Modal title={t('grading.modals.void.title')} onClose={onClose}>
       <form onSubmit={handleSubmit}>
         {error ? <ErrorBanner message={error} /> : null}
-        <p style={{ marginTop: 0 }}>{summary}</p>
+        <p className="u8gd-summary">{summary}</p>
         <p className="ultm8-field__hint">{t('grading.modals.void.explanation')}</p>
         <Field label={t('grading.modals.reasonLabel')} htmlFor="void-reason" hint={t('grading.modals.void.reasonHint')}>
           <TextArea id="void-reason" required maxLength={1000} value={reason} onChange={(e) => setReason(e.target.value)} />
@@ -510,27 +518,33 @@ export function LogClassModal({
     <Modal title={t('grading.modals.logClass.title', { style: discipline.name })} onClose={onClose}>
       <form onSubmit={handleSubmit}>
         {error ? <ErrorBanner message={error} /> : null}
-        <fieldset style={{ border: 0, padding: 0, margin: '0 0 12px' }}>
-          <legend className="ultm8-field__label" style={{ marginBottom: 6 }}>
-            {t('grading.modals.logClass.whichLabel')}
-          </legend>
-          <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
-            <input type="radio" name="log-class-mode" checked={!byTime} disabled={list.length === 0} onChange={() => setMode('class')} />
-            {t('grading.modals.logClass.aClass')}
-          </label>
-          <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <input type="radio" name="log-class-mode" checked={byTime} onChange={() => setMode('time')} />
-            {t('grading.modals.logClass.noClass')}
-          </label>
+        {/* "A class" or "No class": two radio buttons drawn as the new look's
+            pills (one tap, both in view), still radios for the keyboard and
+            screen readers. */}
+        <fieldset className="u8gd-fieldset">
+          <legend className="ultm8-field__label">{t('grading.modals.logClass.whichLabel')}</legend>
+          <div className="u8gd-choice">
+            <label className="u8gd-choice__option">
+              <input type="radio" name="log-class-mode" checked={!byTime} disabled={list.length === 0} onChange={() => setMode('class')} />
+              <span>{t('grading.modals.logClass.aClass')}</span>
+            </label>
+            <label className="u8gd-choice__option">
+              <input type="radio" name="log-class-mode" checked={byTime} onChange={() => setMode('time')} />
+              <span>{t('grading.modals.logClass.noClass')}</span>
+            </label>
+          </div>
         </fieldset>
         {!byTime ? (
-          <Field label={t('grading.modals.logClass.classLabel')} htmlFor="log-class-class" hint={t('grading.modals.logClass.classHint')}>
-            <SelectField
+          <div className="u8n-dd-field">
+            <NewLookSelect
+              id="log-class-class"
+              label={t('grading.modals.logClass.classLabel')}
               value={picked?.id ?? ''}
-              onChange={(e) => pickClass(e.target.value)}
+              onChange={pickClass}
               options={list.map((c) => ({ value: c.id, label: classLabel(c, t) }))}
             />
-          </Field>
+            <span className="ultm8-field__hint u8n-dd-field__hint">{t('grading.modals.logClass.classHint')}</span>
+          </div>
         ) : (
           <>
             {!classes.isLoading && list.length === 0 ? <p className="ultm8-field__hint">{t('grading.modals.logClass.noRecentClasses')}</p> : null}
@@ -540,17 +554,18 @@ export function LogClassModal({
           </>
         )}
         {choices.length > 0 ? (
-          <Field
-            label={t('grading.modals.logClass.typeLabel')}
-            htmlFor="log-class-type"
-            hint={ticked.length > 0 ? t('grading.modals.logClass.typeHintTicked') : t('grading.modals.logClass.typeHintAny')}
-          >
-            <SelectField
+          <div className="u8n-dd-field">
+            <NewLookSelect
+              id="log-class-type"
+              label={t('grading.modals.logClass.typeLabel')}
               value={classType}
-              onChange={(e) => setClassType(e.target.value)}
+              onChange={setClassType}
               options={[...(ticked.length > 0 ? [] : [{ value: '', label: t('grading.modals.logClass.noType') }]), ...choices.map((type) => ({ value: type, label: type }))]}
             />
-          </Field>
+            <span className="ultm8-field__hint u8n-dd-field__hint">
+              {ticked.length > 0 ? t('grading.modals.logClass.typeHintTicked') : t('grading.modals.logClass.typeHintAny')}
+            </span>
+          </div>
         ) : null}
         <p className="ultm8-field__hint">
           {loggedMinutes !== null
@@ -608,7 +623,7 @@ export function EditNoteModal({
     <Modal title={t('grading.modals.editNote.title')} onClose={onClose}>
       <form onSubmit={handleSubmit}>
         {error ? <ErrorBanner message={error} /> : null}
-        <p style={{ marginTop: 0 }}>{summary}</p>
+        <p className="u8gd-summary">{summary}</p>
         <Field label={t('grading.modals.noteLabel')} htmlFor="history-note" hint={t('grading.modals.editNote.hint')}>
           <TextArea id="history-note" maxLength={2000} value={text} onChange={(e) => setText(e.target.value)} />
         </Field>
@@ -631,12 +646,12 @@ export function NoteLogModal({ studentId, schoolId, eventId, summary, onClose }:
   const items = log.data?.items ?? [];
   return (
     <Modal title={t('grading.modals.noteLog.title')} onClose={onClose}>
-      <p style={{ marginTop: 0 }}>{summary}</p>
+      <p className="u8gd-summary">{summary}</p>
       {log.error ? <ErrorBanner message={errorText(log.error, t)} /> : null}
       {!log.isLoading && items.length === 0 ? <p className="ultm8-field__hint">{t('grading.modals.noteLog.empty')}</p> : null}
-      <ol aria-label={t('grading.modals.noteLog.title')} style={{ paddingLeft: 20 }}>
+      <ol aria-label={t('grading.modals.noteLog.title')} className="u8gd-log">
         {items.map((c) => (
-          <li key={c.id} style={{ marginBottom: 8 }}>
+          <li key={c.id}>
             <strong>{t(CHANGE_LABEL[c.change])}</strong>{' '}
             {t('grading.modals.noteLog.meta', { date: new Date(c.createdAt).toLocaleString(formatLocale()), name: c.changedByName ?? t('grading.modals.noteLog.formerStaff') })}
             {c.change === 'EDITED' ? (
@@ -650,9 +665,11 @@ export function NoteLogModal({ studentId, schoolId, eventId, summary, onClose }:
           </li>
         ))}
       </ol>
-      <Button type="button" onClick={onClose}>
-        {t('grading.modals.noteLog.close')}
-      </Button>
+      <ModalActions>
+        <Button type="button" onClick={onClose}>
+          {t('grading.modals.noteLog.close')}
+        </Button>
+      </ModalActions>
     </Modal>
   );
 }

@@ -1,0 +1,20 @@
+/* A plan's Members page in the new look (Decision 460 item 17): the
+ * waiting list card under the members. The rest is the Billing pages' pieces
+ * (billingLook.css) and FitTable (studentsSection.css). Look only. */
+
+[data-look='redesign'] .u8pm-plain {
+  margin: 12px 0 0;
+  font-size: 14px;
+}
+[data-look='redesign'] .u8pm-waitlist {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding-inline-start: 20px;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+[data-look='redesign'] .u8pm-waitlist a {
+  font-weight: 500;
+  color: var(--u8n-tile-icon);
+}

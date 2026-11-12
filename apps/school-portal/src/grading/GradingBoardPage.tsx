@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Badge, Button, Card, Checkbox, EmptyState, ErrorBanner, Field, Modal, PageHeader, SelectField, Spinner, TextField, ViewToggle, type ViewMode } from '@ultm8/ui';
+import { Badge, Button, Checkbox, EmptyState, ErrorBanner, Field, Modal, ModalActions, Spinner, TextField, ViewToggle, type ViewMode } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useAuth, useGradingSchoolId } from '../auth/AuthContext';
 import { useDisciplines, type DisciplineResponse } from '../disciplines/disciplineQueries';
@@ -21,7 +21,12 @@ import {
 } from './gradingQueries';
 import { BulkPromoteModal } from './BulkPromoteModal';
 import { GradeModal } from './GradingModals';
-import { GradingTabs } from './GradingTabs';
+import { useGradingHeaderTabs } from './GradingTabs';
+import { NewLookSelect } from '../layout/NewLookSelect';
+import { NewLookPageHeader } from '../layout/NewLookPage';
+import { BillingCard } from '../billing/BillingLook';
+import './gradingDialogs.css';
+import './gradingBoard.css';
 import { Avatar, DecideDialog, FeeTag, SelectionPanel, StudentPanel, fullName } from './BoardPanels';
 import { feeRankName } from './feeRank';
 import { programPair, useAdultProgram } from './adultProgram';
@@ -64,6 +69,11 @@ type Panel = { kind: 'student'; studentId: string } | { kind: 'selection' } | nu
  * confirmation, since it rewrites their progress and is recorded). The owner
  * also sees a "No branch" group of students without a home branch, whom no
  * branch coach sees, and gives each one a branch there (Decision 148.2).
+ *
+ * New look (Decision 460): the new page header with the Grading tabs, white
+ * cards, our own drop-downs for the style and a student's home branch, and
+ * the new look's pills, tick boxes and tags (gradingBoard.css). Same
+ * filters, sort, selection, columns and actions as before.
  */
 export function GradingBoardPage() {
   const schoolId = useGradingSchoolId();
@@ -75,6 +85,7 @@ export function GradingBoardPage() {
   const feeSettings = usePromotionFeeSettings(schoolId);
   const instructors = useInstructors(schoolId);
   const t = useT();
+  const headerTabs = useGradingHeaderTabs();
   // A coach sees only the styles they grade in (Decisions 181, 184).
   const styles = (disciplines.data?.items ?? []).filter((d) => my.mayGradeStyle(d.id));
   const [disciplineId, setDisciplineId] = useState<string | null>(null);
@@ -155,7 +166,7 @@ export function GradingBoardPage() {
   const shown = (key: string, list: GradingBoardItem[]) => (expanded.includes(key) ? list : list.slice(0, PAGE));
   const showAll = (key: string, total: number) =>
     total > PAGE && !expanded.includes(key) ? (
-      <div style={{ marginTop: 10 }}>
+      <div className="u8gb-show-all">
         <Button variant="secondary" fullWidth onClick={() => setExpanded((x) => [...x, key])}>
           {t('grading.board.showAll', { count: total })}
         </Button>
@@ -225,37 +236,36 @@ export function GradingBoardPage() {
         : t('grading.board.sort.zToA');
 
   return (
-    <div className={showPill ? 'ultm8-board--pill-space' : undefined}>
-      <PageHeader title={t('grading.board.title')} subtitle={t('grading.board.subtitle')} />
-      <GradingTabs />
+    <div className={`u8b u8gb${showPill ? ' ultm8-board--pill-space' : ''}`}>
+      <NewLookPageHeader title={t('grading.board.title')} subtitle={t('grading.board.subtitle')} {...headerTabs} />
       {styles.length === 0 ? (
-        <Card>
+        <BillingCard>
           {my.isOwner ? (
             <EmptyState title={t('grading.noStylesTitle')} description={t('grading.board.noStylesDescription')} />
           ) : (
             <EmptyState title={t('grading.noStylesToGradeTitle')} description={t('grading.noStylesToGradeDescription')} />
           )}
-        </Card>
+        </BillingCard>
       ) : (
         <>
-          <Card>
-            <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap' }}>
-              <div style={{ minWidth: 180 }}>
-                <Field label={t('grading.board.styleLabel')} htmlFor="board-style">
-                  <SelectField
-                    value={disciplineId ?? ''}
-                    onChange={(e) => {
-                      setDisciplineId(e.target.value);
-                      setSelected([]);
-                      setExpanded([]);
-                      setPanel(null);
-                    }}
-                    options={styles.map((d) => ({ value: d.id, label: d.name }))}
-                  />
-                </Field>
+          <BillingCard>
+            <div className="u8gb-tools">
+              <div className="u8n-dd-field">
+                <NewLookSelect
+                  id="board-style"
+                  label={t('grading.board.styleLabel')}
+                  value={disciplineId ?? ''}
+                  onChange={(v) => {
+                    setDisciplineId(v);
+                    setSelected([]);
+                    setExpanded([]);
+                    setPanel(null);
+                  }}
+                  options={styles.map((d) => ({ value: d.id, label: d.name }))}
+                />
               </div>
               {pair ? (
-                <div role="group" aria-label={t('grading.board.programLabel')} className="ultm8-view-toggle" style={{ alignSelf: 'flex-end' }}>
+                <div role="group" aria-label={t('grading.board.programLabel')} className="ultm8-view-toggle u8gb-switch">
                   {(['kids', 'adult'] as const).map((which) => {
                     const target = pair[which];
                     const allowed = styles.some((d) => d.id === target.id);
@@ -279,34 +289,34 @@ export function GradingBoardPage() {
                   })}
                 </div>
               ) : null}
-              <div style={{ minWidth: 200 }}>
+              <div className="u8gb-search">
                 <Field label={t('grading.board.searchLabel')} htmlFor="board-search">
                   <TextField type="search" value={search} onChange={(e) => setSearch(e.target.value)} />
                 </Field>
               </div>
-              <div style={{ paddingBottom: 12 }}>
+              <div className="u8gb-check">
                 <Checkbox label={t('grading.board.activeOnly')} checked={activeOnly} onChange={(e) => setActiveOnly(e.target.checked)} />
                 {activeOnly && board.data && board.data.hiddenInactive > 0 ? (
-                  <span className="ultm8-field__hint"> {t('grading.board.inactiveHidden', { count: board.data.hiddenInactive })}</span>
+                  <span className="u8gb-hint"> {t('grading.board.inactiveHidden', { count: board.data.hiddenInactive })}</span>
                 ) : null}
                 {board.data && board.data.atTopRank > 0 ? (
-                  <span className="ultm8-field__hint"> {t('grading.board.atTopRank', { count: board.data.atTopRank })}</span>
+                  <span className="u8gb-hint"> {t('grading.board.atTopRank', { count: board.data.atTopRank })}</span>
                 ) : null}
               </div>
               {style ? (
-                <div style={{ paddingBottom: 12, display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <span className="ultm8-field__hint">
+                <div className="u8gb-percent">
+                  <span className="u8gb-hint">
                     {t('grading.board.columnsAt', { gettingThere: style.boardGettingThere, readyToGrade: style.boardReadyToGrade })}
                   </span>
                   {my.can(style.id, 'canChangeBoardThresholds') ? (
-                    <Button variant="secondary" onClick={() => setEditingThresholds(true)}>
+                    <Button variant="secondary" className="u8gb-pill--small" onClick={() => setEditingThresholds(true)}>
                       {t('grading.board.changePercent')}
                     </Button>
                   ) : null}
                 </div>
               ) : null}
             </div>
-            <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginTop: 4 }}>
+            <div className="u8gb-tools u8gb-tools--views">
               <ViewToggle value={view} onChange={setView} aria-label={t('grading.board.viewAria')} />
               <div className="ultm8-view-toggle" role="group" aria-label={t('grading.board.sort.aria')}>
                 {(['belt', 'name'] as const).map((key) => (
@@ -324,19 +334,19 @@ export function GradingBoardPage() {
                   </button>
                 ))}
               </div>
-              <Button variant="secondary" onClick={() => setAscending((a) => !a)} aria-label={t('grading.board.sort.directionAria', { direction: sortLabel })}>
+              <Button variant="secondary" className="u8gb-pill--small" onClick={() => setAscending((a) => !a)} aria-label={t('grading.board.sort.directionAria', { direction: sortLabel })}>
                 {sortLabel}
               </Button>
-              <div style={{ flex: 1 }} />
+              <div className="u8gb-tools__gap" />
               {canPromote && selectedItems.length > 0 ? (
-                <Button variant="secondary" onClick={() => setPanel({ kind: 'selection' })} aria-label={t('grading.board.selection.openAria', { count: selectedItems.length })}>
+                <Button variant="secondary" className="u8gb-pill--small" onClick={() => setPanel({ kind: 'selection' })} aria-label={t('grading.board.selection.openAria', { count: selectedItems.length })}>
                   {t('grading.board.selectedCount', { count: selectedItems.length })} ▸
                 </Button>
               ) : null}
               {canPromote && hiddenSelected > 0 ? (
-                <span className="ultm8-field__hint">
+                <span className="u8gb-hint">
                   {t('grading.board.hiddenBySearch', { count: hiddenSelected })}{' '}
-                  <Button variant="secondary" onClick={() => setSearch('')}>
+                  <Button variant="secondary" className="u8gb-pill--small" onClick={() => setSearch('')}>
                     {t('grading.board.showThem')}
                   </Button>
                 </span>
@@ -347,7 +357,7 @@ export function GradingBoardPage() {
                 </Button>
               ) : null}
             </div>
-          </Card>
+          </BillingCard>
 
           {board.isLoading || ranks.isLoading ? (
             <Spinner />
@@ -355,25 +365,14 @@ export function GradingBoardPage() {
             <ErrorBanner message={board.error instanceof ApiError ? board.error.message : t('grading.board.loadBoardFailed')} />
           ) : (
             <div className={`ultm8-board-layout${openItem || showSelection ? ' ultm8-board-layout--with-panel' : ''}`}>
-              <div style={{ minWidth: 0 }}>
+              <div className="u8gb-board">
                 {noBranch.length > 0 && schoolId ? (
-                  <section aria-label={t('grading.board.noBranch')} className="ultm8-board-tray" style={{ marginBottom: 16 }}>
-                    <h2 className="ultm8-page-header__title" style={{ fontSize: 16, margin: '0 0 4px' }}>
-                      {t('grading.board.noBranch')} <Badge>{noBranch.length}</Badge>
+                  <section aria-label={t('grading.board.noBranch')} className="u8gb-no-branch">
+                    <h2 className="u8gb-stage__title">
+                      {t('grading.board.noBranch')} <Badge variant="warning">{noBranch.length}</Badge>
                     </h2>
-                    <p className="ultm8-field__hint" style={{ marginTop: 0 }}>
-                      {t('grading.board.noBranchHint')}
-                    </p>
-                    <ul
-                      style={{
-                        listStyle: 'none',
-                        padding: 0,
-                        margin: 0,
-                        display: 'grid',
-                        gap: 10,
-                        gridTemplateColumns: view === 'grid' ? 'repeat(auto-fill, minmax(260px, 1fr))' : '1fr',
-                      }}
-                    >
+                    <p className="u8gb-hint u8gb-no-branch__hint">{t('grading.board.noBranchHint')}</p>
+                    <ul className={`u8gb-cards${view === 'grid' ? ' u8gb-cards--grid' : ''}`}>
                       {shown('NO_BRANCH', noBranch).map((item) =>
                         view === 'grid' ? (
                           <BoardCard key={item.studentId} {...cardProps(item)} onDragStart={() => setDraggingId(null)} footer={<AssignHomeBranch schoolId={schoolId} item={item} />} />
@@ -391,21 +390,17 @@ export function GradingBoardPage() {
                       const list = byColumn(col.key);
                       return (
                         <section key={col.key} aria-label={t(col.label)} className="ultm8-board-tray" {...dropProps(col.key)}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 8 }}>
-                            <h2 className="ultm8-page-header__title" style={{ fontSize: 16, margin: 0 }}>
+                          <div className="u8gb-stage__head">
+                            <h2 className="u8gb-stage__title">
                               {t(col.label)} <Badge>{list.length}</Badge>
-                              <span className="ultm8-field__hint" style={{ fontWeight: 400, marginLeft: 6 }}>
-                                {columnRange(col.key)}
-                              </span>
+                              <span className="u8gb-hint u8gb-stage__range">{columnRange(col.key)}</span>
                             </h2>
                             {selectAll(col, list)}
                           </div>
                           {list.length === 0 ? (
-                            <p className="ultm8-field__hint" style={{ textAlign: 'center', padding: '16px 0' }}>
-                              {t('grading.board.noStudentsHere')}
-                            </p>
+                            <p className="u8gb-hint u8gb-stage__empty">{t('grading.board.noStudentsHere')}</p>
                           ) : (
-                            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 10 }}>
+                            <ul className="u8gb-cards">
                               {shown(col.key, list).map((item) => (
                                 <BoardCard
                                   key={item.studentId}
@@ -427,21 +422,17 @@ export function GradingBoardPage() {
                     const list = byColumn(col.key);
                     return (
                       <section key={col.key} aria-label={t(col.label)} className={`ultm8-board-group ultm8-board-group--${LEVEL_CLASS[col.key]}`} {...dropProps(col.key)}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 8 }}>
-                          <h2 className="ultm8-page-header__title" style={{ fontSize: 16, margin: 0 }}>
+                        <div className="u8gb-stage__head">
+                          <h2 className="u8gb-stage__title">
                             {t(col.label)} <Badge>{list.length}</Badge>
-                            <span className="ultm8-field__hint" style={{ fontWeight: 400, marginLeft: 6 }}>
-                              {columnRange(col.key)}
-                            </span>
+                            <span className="u8gb-hint u8gb-stage__range">{columnRange(col.key)}</span>
                           </h2>
                           {selectAll(col, list)}
                         </div>
                         {list.length === 0 ? (
-                          <p className="ultm8-field__hint" style={{ margin: 0 }}>
-                            {t('grading.board.noStudentsHere')}
-                          </p>
+                          <p className="u8gb-hint u8gb-stage__empty u8gb-stage__empty--row">{t('grading.board.noStudentsHere')}</p>
                         ) : (
-                          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8 }}>
+                          <ul className="u8gb-cards u8gb-cards--rows">
                             {shown(col.key, list).map((item) => (
                               <BoardRow key={item.studentId} {...cardProps(item)} onMove={canMove ? () => setMoving({ item }) : undefined} />
                             ))}
@@ -587,7 +578,7 @@ function ProgressBar({ item, onProgress }: { item: GradingBoardItem; onProgress?
       {bar}
     </button>
   ) : (
-    <span style={{ display: 'block', padding: '3px 0' }}>{bar}</span>
+    <span className="u8gb-bar">{bar}</span>
   );
 }
 
@@ -630,9 +621,9 @@ interface CardProps {
   footer?: React.ReactNode;
 }
 
-/** A click on the card (not on its tick box, link or buttons) opens the panel. */
+/** A click on the card (not on its tick box, link, buttons or drop-down) opens the panel. */
 const openOnClick = (onOpen: () => void) => (e: React.MouseEvent) => {
-  if ((e.target as HTMLElement).closest('a, button, input, select, label, textarea')) return;
+  if ((e.target as HTMLElement).closest('a, button, input, select, label, textarea, .u8n-select')) return;
   onOpen();
 };
 
@@ -642,6 +633,7 @@ function TickBox({ item, selected, onToggle }: { item: GradingBoardItem; selecte
   return (
     <input
       type="checkbox"
+      className="u8gb-tick"
       checked={selected}
       disabled={item.hardBlocked || !item.active}
       onChange={onToggle}
@@ -672,29 +664,28 @@ function BoardCard({ item, rung, selected, open, onOpen, onToggle, onProgress, o
       onClick={openOnClick(onOpen)}
       aria-label={name}
       aria-current={open ? 'true' : undefined}
-      className={`ultm8-board-card${open ? ' ultm8-board-card--open' : ''}${selected ? ' ultm8-board-card--ticked' : ''}`}
-      style={{ cursor: onMove ? 'grab' : 'pointer', opacity: item.active ? 1 : 0.7 }}
+      className={`ultm8-board-card${open ? ' ultm8-board-card--open' : ''}${selected ? ' ultm8-board-card--ticked' : ''}${onMove ? ' u8gb-card--drag' : ''}${item.active ? '' : ' u8gb-card--inactive'}`}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div className="u8gb-card__top">
         {onToggle ? <TickBox item={item} selected={selected} onToggle={onToggle} /> : null}
         <Avatar person={item} size={40} />
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <Link to={`/students/${item.studentId}`} state={{ name }} style={{ fontWeight: 700 }}>
+        <div className="u8gb-card__name">
+          <Link to={`/students/${item.studentId}?tab=ranks`} state={{ name }}>
             {name}
           </Link>
         </div>
-        <div style={{ fontSize: 18, fontWeight: 800, color: percent >= 100 ? '#3a7556' : undefined }}>{percent}%</div>
+        <div className={`u8gb-card__pct${percent >= 100 ? ' u8gb-pct--full' : ''}`}>{percent}%</div>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '8px 0 4px' }}>
+      <div className="u8gb-card__belt">
         {rung ? <BeltChip rung={rung} /> : null}
-        <span className="ultm8-field__hint">{rung?.name ?? t('grading.board.card.rankNotOnLadder')}</span>
+        <span className="u8gb-hint">{rung?.name ?? t('grading.board.card.rankNotOnLadder')}</span>
       </div>
       <ProgressBar item={item} onProgress={onProgress} />
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', marginTop: 6 }}>
+      <div className="u8gb-card__tags">
         <Tags item={item} />
-        <span style={{ flex: 1 }} />
+        <span className="u8gb-card__gap" />
         {onMove ? (
-          <Button variant="secondary" onClick={onMove} aria-label={t('grading.board.card.moveAria', { name })}>
+          <Button variant="secondary" className="u8gb-pill--small" onClick={onMove} aria-label={t('grading.board.card.moveAria', { name })}>
             {t('grading.board.card.move')}
           </Button>
         ) : null}
@@ -716,38 +707,37 @@ function BoardRow({ item, rung, next, selected, open, onOpen, onToggle, onProgre
       onClick={openOnClick(onOpen)}
       aria-label={name}
       aria-current={open ? 'true' : undefined}
-      className={`ultm8-board-card${open ? ' ultm8-board-card--open' : ''}${selected ? ' ultm8-board-card--ticked' : ''}`}
-      style={{ opacity: item.active ? 1 : 0.7 }}
+      className={`ultm8-board-card${open ? ' ultm8-board-card--open' : ''}${selected ? ' ultm8-board-card--ticked' : ''}${item.active ? '' : ' u8gb-card--inactive'}`}
     >
       <div className="ultm8-board-row">
         <span>{onToggle ? <TickBox item={item} selected={selected} onToggle={onToggle} /> : null}</span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+        <div className="u8gb-row__who">
           <Avatar person={item} size={40} />
-          <div style={{ minWidth: 0 }}>
-            <Link to={`/students/${item.studentId}`} state={{ name }} style={{ fontWeight: 700 }}>
+          <div className="u8gb-card__name">
+            <Link to={`/students/${item.studentId}?tab=ranks`} state={{ name }}>
               {name}
             </Link>
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
+            <div className="u8gb-row__tags">
               <Tags item={item} />
             </div>
           </div>
         </div>
-        <div className="ultm8-board-row__belt" style={{ minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div className="ultm8-board-row__belt u8gb-row__belt">
+          <div className="u8gb-card__belt">
             {rung ? <BeltChip rung={rung} /> : null}
             <span>{rung?.name ?? t('grading.board.card.rankNotOnLadder')}</span>
           </div>
-          {next ? <div className="ultm8-field__hint">→ {next.name}</div> : null}
+          {next ? <div className="u8gb-hint">→ {next.name}</div> : null}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ flex: 1 }}>
+        <div className="u8gb-row__progress">
+          <div className="u8gb-row__bar">
             <ProgressBar item={item} onProgress={onProgress} />
           </div>
-          <strong style={{ color: percent >= 100 ? '#3a7556' : undefined }}>{percent}%</strong>
+          <strong className={percent >= 100 ? 'u8gb-pct--full' : undefined}>{percent}%</strong>
         </div>
         <div className="ultm8-board-row__actions">
           {onMove ? (
-            <Button variant="secondary" onClick={onMove} aria-label={t('grading.board.card.moveAria', { name })}>
+            <Button variant="secondary" className="u8gb-pill--small" onClick={onMove} aria-label={t('grading.board.card.moveAria', { name })}>
               {t('grading.board.card.move')}
             </Button>
           ) : null}
@@ -768,18 +758,18 @@ function AssignHomeBranch({ schoolId, item }: { schoolId: string; item: GradingB
   const name = fullName(item);
   const id = `home-branch-${item.studentId}`;
   return (
-    <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', marginTop: 10, flexWrap: 'wrap' }}>
-      <div style={{ flex: 1, minWidth: 140 }}>
-        <Field label={t('grading.board.assign.label', { name })} htmlFor={id}>
-          <SelectField
-            id={id}
-            value={branchId}
-            onChange={(e) => setBranchId(e.target.value)}
-            options={[{ value: '', label: t('grading.board.assign.placeholder') }, ...branchSelectOptions(branches.data?.items ?? [], t('branches.archivedBadge'))]}
-          />
-        </Field>
+    <div className="u8gb-assign">
+      <div className="u8n-dd-field">
+        <NewLookSelect
+          id={id}
+          label={t('grading.board.assign.label', { name })}
+          value={branchId}
+          onChange={setBranchId}
+          options={[{ value: '', label: t('grading.board.assign.placeholder') }, ...branchSelectOptions(branches.data?.items ?? [], t('branches.archivedBadge'))]}
+        />
       </div>
       <Button
+        className="u8gb-pill--small"
         onClick={() => assign.mutate({ studentId: item.studentId, branchId })}
         disabled={!branchId}
         loading={assign.isPending}
@@ -829,22 +819,28 @@ function MoveDialog({
     <Modal title={t('grading.board.moveDialog.title', { name: fullName(item) })} onClose={onClose}>
       <form onSubmit={handleSubmit}>
         {error ? <ErrorBanner message={error} /> : null}
-        <Field label={t('grading.board.moveDialog.toLabel')} htmlFor="move-to">
-          <SelectField value={to} onChange={(e) => setTo(e.target.value as BoardColumn)} options={others.map((c) => ({ value: c.key, label: t(c.label) }))} />
-        </Field>
+        <div className="u8n-dd-field">
+          <NewLookSelect
+            id="move-to"
+            label={t('grading.board.moveDialog.toLabel')}
+            value={to}
+            onChange={(v) => setTo(v as BoardColumn)}
+            options={others.map((c) => ({ value: c.key, label: t(c.label) }))}
+          />
+        </div>
         <p className="ultm8-field__hint">
           {item.eligibility.timeOnly
             ? t('grading.board.moveDialog.hintTimeOnly', { column: label ?? '' })
             : t('grading.board.moveDialog.hintClasses', { column: label ?? '' })}
         </p>
-        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-          <Button type="submit" loading={move.isPending}>
-            {t('grading.board.moveDialog.submit')}
-          </Button>
+        <ModalActions>
           <Button type="button" variant="secondary" onClick={onClose}>
             {t('common.cancel')}
           </Button>
-        </div>
+          <Button type="submit" loading={move.isPending}>
+            {t('grading.board.moveDialog.submit')}
+          </Button>
+        </ModalActions>
       </form>
     </Modal>
   );
@@ -878,9 +874,7 @@ function ThresholdsDialog({ style, onClose }: { style: DisciplineResponse; onClo
     <Modal title={t('grading.board.thresholds.title', { style: style.name })} onClose={onClose}>
       <form onSubmit={handleSubmit}>
         {error ? <ErrorBanner message={error} /> : null}
-        <p className="ultm8-field__hint" style={{ marginTop: 0 }}>
-          {t('grading.board.thresholds.explanation')}
-        </p>
+        <p className="ultm8-field__hint u8gd-summary">{t('grading.board.thresholds.explanation')}</p>
         <Field label={t('grading.board.thresholds.gettingThereLabel')} htmlFor="threshold-getting-there">
           <TextField type="number" min={1} max={98} step={1} required value={gettingThere} onChange={(e) => setGettingThere(e.target.value)} />
         </Field>
@@ -896,9 +890,9 @@ function ThresholdsDialog({ style, onClose }: { style: DisciplineResponse; onClo
             {t('grading.board.thresholds.invalid')}
           </p>
         )}
-        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-          <Button type="submit" loading={set.isPending} disabled={!valid}>
-            {t('common.save')}
+        <ModalActions>
+          <Button type="button" variant="secondary" onClick={onClose}>
+            {t('common.cancel')}
           </Button>
           <Button
             type="button"
@@ -910,10 +904,10 @@ function ThresholdsDialog({ style, onClose }: { style: DisciplineResponse; onClo
           >
             {t('grading.board.thresholds.reset')}
           </Button>
-          <Button type="button" variant="secondary" onClick={onClose}>
-            {t('common.cancel')}
+          <Button type="submit" loading={set.isPending} disabled={!valid}>
+            {t('common.save')}
           </Button>
-        </div>
+        </ModalActions>
       </form>
     </Modal>
   );

@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { AuthCard, Button, ErrorBanner, Field, PhoneField } from '@ultm8/ui';
+import { Button, ErrorBanner, Field, PhoneField } from '@ultm8/ui';
 import { ApiError, unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useT } from '../i18n/I18nProvider';
 import { Trans } from '../i18n/Trans';
+import { SignInCard } from './SignInCard';
 
 export function ForgotPasscodePage() {
   const t = useT();
@@ -32,7 +33,7 @@ export function ForgotPasscodePage() {
   }
 
   return (
-    <AuthCard
+    <SignInCard
       title={t('auth.forgot.title')}
       subtitle={t('auth.forgot.subtitle')}
       footer={
@@ -44,10 +45,12 @@ export function ForgotPasscodePage() {
         <Field label={t('auth.phoneLabel')} htmlFor="forgot-phone">
           <PhoneField required value={phone} onChange={setPhone} defaultCountry={guessDefaultCountry()} />
         </Field>
-        <Button type="submit" fullWidth loading={submitting}>
-          {t('auth.forgot.sendCode')}
-        </Button>
+        <div className="u8si-actions">
+          <Button type="submit" fullWidth loading={submitting}>
+            {t('auth.forgot.sendCode')}
+          </Button>
+        </div>
       </form>
-    </AuthCard>
+    </SignInCard>
   );
 }

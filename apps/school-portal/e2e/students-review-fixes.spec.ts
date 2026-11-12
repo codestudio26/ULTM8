@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { expect, test } from '@playwright/test';
 import { addBranch, addPerson, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
+import { pickOption } from './team-helpers';
 
 /**
  * Students page review fixes (Decision 341), in a real browser against the
@@ -25,10 +26,15 @@ test('the edit form opens with the saved profile, and emptying a field clears it
   await expect(page.getByLabel('Nationality')).toHaveValue('Brazilian');
   await expect(page.getByLabel('Kimono size')).toHaveValue('A2');
   await expect(page.getByLabel('Date of birth')).toHaveValue('2000-01-01');
-  await expect(page.locator('#student-update-language')).toHaveValue('pt-BR');
+  // Language is the new look's own drop-down: the saved one is the chosen
+  // option. (The page's header has its own Language picker, for the portal.)
+  const personal = page.getByRole('group', { name: 'Personal details' });
+  await personal.getByRole('combobox', { name: 'Language', exact: true }).click();
+  await expect(personal.getByRole('listbox', { name: 'Language', exact: true }).getByRole('option', { name: 'Portuguese (BR)', exact: true })).toHaveAttribute('aria-selected', 'true');
+  await personal.getByRole('combobox', { name: 'Language', exact: true }).click();
 
   await page.getByLabel('Nationality').fill('');
-  await page.locator('#student-update-language').selectOption('es');
+  await pickOption(personal, 'Language', 'Spanish');
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByText('Profile saved.')).toBeVisible();
 
@@ -120,7 +126,7 @@ test('branch staff can open and edit a student of their own branch', async ({ pa
   await expect(page.getByRole('heading', { level: 1, name: s.student.name })).toBeVisible();
   await page.getByRole('link', { name: `Edit ${s.student.name}` }).click();
   await expect(page.getByLabel('First name')).toHaveValue('Sam');
-  await page.getByLabel('Gender').selectOption('MALE');
+  await page.getByRole('group', { name: 'Gender' }).getByRole('button', { name: 'Male', exact: true }).click();
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByText('Profile saved.')).toBeVisible();
   expect((await db.user.findUniqueOrThrow({ where: { id: s.student.id } })).gender).toBe('MALE');
@@ -192,7 +198,7 @@ test('Add manually makes an adult\'s account and enrols them; the list finds the
     await page.getByLabel('Surname').fill('Lovelace');
     await page.getByLabel('Date of birth').fill('1990-05-01');
     await page.getByLabel('Email').fill(email);
-    await page.getByLabel('Home branch').selectOption(north.id);
+    await pickOption(page, 'Home branch', 'North');
     await page.getByRole('button', { name: 'Add Student' }).click();
     await expect(page.getByText('Ada Lovelace has been added.')).toBeVisible();
     const user = await db.user.findUniqueOrThrow({ where: { email } });

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Button, COUNTRY_NAMES, Card, ErrorBanner, Field, SelectField, SuccessBanner, Switch, TextArea, TextField } from '@ultm8/ui';
+import { Button, COUNTRY_NAMES, Card, ErrorBanner, Field, SuccessBanner, Switch, TextArea, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useT } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
@@ -7,6 +7,7 @@ import { useUpdateSchool, type SchoolResponse } from '../schools/schoolQueries';
 import { parseRate, rateText, useStandardTaxRates } from './chargeQueries';
 import { TaxLineFields, taxLineBody, taxLineDraft, taxLinesProblem, type TaxLineDraft } from './TaxLineFields';
 import { offersPix } from '../lib/deskMethods';
+import { NewLookSelect } from '../layout/NewLookSelect';
 
 /** Country names in the reader's language, sorted in it. */
 function useCountryOptions() {
@@ -139,18 +140,18 @@ export function ChargeSettingsCard({ schoolId, school }: { schoolId: string; sch
         <p style={{ color: 'var(--text-muted)', margin: '0 0 16px' }}>{t('charges.settings.subtitle')}</p>
         {error ? <ErrorBanner message={error} /> : null}
         {saved ? <SuccessBanner message={t('schools.profile.saved')} /> : null}
-        <Field
-          label={t('charges.settings.countryLabel')}
-          htmlFor="charge-tax-country"
-          hint={standard && !standard.national ? t('charges.settings.noNationalRate', { country: countryLabel }) : t('charges.settings.countryHint')}
-        >
-          <SelectField
+        <div className="u8n-dd-field">
+          <NewLookSelect
             id="charge-tax-country"
+            label={t('charges.settings.countryLabel')}
             value={country}
-            onChange={(e) => chooseCountry(e.target.value)}
+            onChange={chooseCountry}
             options={[{ value: '', label: t('charges.settings.countryNone') }, ...countries]}
           />
-        </Field>
+          <span className="ultm8-field__hint u8n-dd-field__hint">
+            {standard && !standard.national ? t('charges.settings.noNationalRate', { country: countryLabel }) : t('charges.settings.countryHint')}
+          </span>
+        </div>
         <Field label={t('charges.settings.taxNameLabel')} htmlFor="charge-tax-name" hint={t('charges.settings.taxNameHint')}>
           <TextField
             id="charge-tax-name"
@@ -179,12 +180,13 @@ export function ChargeSettingsCard({ schoolId, school }: { schoolId: string; sch
             }}
           />
         </Field>
-        <Field label={t('charges.settings.pricesLabel')} htmlFor="charge-tax-inclusive">
-          <SelectField
+        <div className="u8n-dd-field">
+          <NewLookSelect
             id="charge-tax-inclusive"
+            label={t('charges.settings.pricesLabel')}
             value={inclusive ? 'include' : 'add'}
-            onChange={(e) => {
-              setInclusive(e.target.value === 'include');
+            onChange={(v) => {
+              setInclusive(v === 'include');
               changed();
             }}
             options={[
@@ -192,7 +194,7 @@ export function ChargeSettingsCard({ schoolId, school }: { schoolId: string; sch
               { value: 'add', label: t('charges.settings.pricesAddOnTop') },
             ]}
           />
-        </Field>
+        </div>
         <Field label={t('charges.settings.taxIdLabel')} htmlFor="charge-tax-id" hint={t('charges.settings.taxIdHint')}>
           <TextField
             id="charge-tax-id"

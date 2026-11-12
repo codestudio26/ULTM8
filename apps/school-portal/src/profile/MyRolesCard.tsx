@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Button, Card } from '@ultm8/ui';
+import { Button } from '@ultm8/ui';
 import { useGradingSchoolId } from '../auth/AuthContext';
 import { useCurrentUser } from '../auth/currentUserQueries';
 import { useBranches } from '../branches/branchQueries';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
+import { Chapter } from '../students/StudentFormParts';
 import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import { useIsMainOwner, useRevokeRoleGrant, useUserRoleGrants, type RoleGrantResponse } from '../roleGrants/roleGrantQueries';
 
@@ -18,7 +19,8 @@ const ROLE_KEYS: Record<string, TranslationKey> = {
  * Branch Staff member gives up their own role at the School they're working
  * in. The main owner's role is never listed: it can't be given up here
  * (Decision 370). The API refuses a coach who still teaches upcoming classes
- * there, with what to do; the message shows in the confirm dialog.
+ * there, with what to do; the message shows in the confirm dialog. On My
+ * profile it is a sheet of its own in the new look (Decision 460 item 17).
  */
 export function MyRolesCard() {
   const t = useT();
@@ -42,13 +44,11 @@ export function MyRolesCard() {
   };
 
   return (
-    <Card>
-      <section aria-label={t('roleGrants.staff.myRolesTitle')}>
-        <h2 style={{ fontSize: 18, margin: '0 0 4px' }}>{t('roleGrants.staff.myRolesTitle')}</h2>
-        <p style={{ color: 'var(--text-muted)', margin: '0 0 16px' }}>{t('roleGrants.staff.myRolesIntro')}</p>
-        <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 8 }}>
+    <section className="u8f-sheet" aria-label={t('roleGrants.staff.myRolesTitle')}>
+      <Chapter title={t('roleGrants.staff.myRolesTitle')} description={t('roleGrants.staff.myRolesIntro')}>
+        <ul className="u8f-wide u8me-roles">
           {mine.map((g) => (
-            <li key={g.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+            <li key={g.id} className="u8me-roles__row">
               <span>{label(g)}</span>
               <Button type="button" variant="secondary" onClick={() => setConfirming({ grant: g, label: label(g) })}>
                 {t('roleGrants.staff.stepDown')}
@@ -56,7 +56,7 @@ export function MyRolesCard() {
             </li>
           ))}
         </ul>
-      </section>
+      </Chapter>
       {confirming ? (
         <ConfirmDeleteModal
           title={t('roleGrants.staff.stepDownTitle', { role: confirming.label })}
@@ -71,6 +71,6 @@ export function MyRolesCard() {
           onClose={() => setConfirming(null)}
         />
       ) : null}
-    </Card>
+    </section>
   );
 }

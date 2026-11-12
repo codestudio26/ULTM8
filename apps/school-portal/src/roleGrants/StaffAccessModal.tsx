@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Button, ErrorBanner, Modal, Switch } from '@ultm8/ui';
+import { Button, ErrorBanner, Modal, ModalActions, Switch } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
+import '../team/teamForms.css';
 import { ROLE_LABELS } from '../lib/enumLabels';
 import { useSetCoachAccess, useSetStaffAccess, type CoachAccess, type StaffAccess, type StaffMember } from './roleGrantQueries';
 
@@ -116,25 +117,25 @@ export function StaffAccessModal({
         <p>{t(access ? 'roleGrants.access.intro' : 'roleGrants.access.coachIntro')}</p>
         {error ? <ErrorBanner message={error} /> : null}
         {access ? (
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 12 }}>
-            <span>{t('roleGrants.access.presets')}</span>
-            {PRESETS.map((p) => (
-              <Button
-                key={p.name}
-                type="button"
-                variant={preset === p.name ? undefined : 'secondary'}
-                aria-pressed={preset === p.name}
-                onClick={() => setAccess(p.access)}
-              >
-                {t(p.name)}
-              </Button>
-            ))}
-            <span style={{ fontSize: 13, opacity: 0.75 }}>{preset ? t('roleGrants.access.usingPreset', { name: t(preset) }) : t('roleGrants.access.custom')}</span>
+          // The presets only tick the switches below: a choice of pills, the
+          // chosen one white on the grey track (DESIGN.md → "One accent").
+          <div className="ultm8-field u8t-access-presets">
+            <span className="ultm8-field__label" id="staff-access-presets-label">
+              {t('roleGrants.access.presets')}
+            </span>
+            <div className="ultm8-pills" role="group" aria-labelledby="staff-access-presets-label">
+              {PRESETS.map((p) => (
+                <button key={p.name} type="button" className="ultm8-pills__option" aria-pressed={preset === p.name} onClick={() => setAccess(p.access)}>
+                  {t(p.name)}
+                </button>
+              ))}
+            </div>
+            <span className="ultm8-field__hint">{preset ? t('roleGrants.access.usingPreset', { name: t(preset) }) : t('roleGrants.access.custom')}</span>
           </div>
         ) : null}
         {access && GROUPS.map((g) => (
-          <fieldset key={g.heading} style={{ border: 0, padding: 0, margin: '0 0 12px' }}>
-            <legend style={{ fontWeight: 600, marginBottom: 4 }}>{t(g.heading)}</legend>
+          <fieldset key={g.heading} className="u8t-access-group">
+            <legend>{t(g.heading)}</legend>
             {g.keys.map((k) => (
               <Switch
                 key={k}
@@ -148,8 +149,8 @@ export function StaffAccessModal({
           </fieldset>
         ))}
         {coachAccess ? (
-          <fieldset style={{ border: 0, padding: 0, margin: '0 0 12px' }}>
-            {access ? <legend style={{ fontWeight: 600, marginBottom: 4 }}>{t(ROLE_LABELS.INSTRUCTOR!)}</legend> : null}
+          <fieldset className="u8t-access-group">
+            {access ? <legend>{t(ROLE_LABELS.INSTRUCTOR!)}</legend> : null}
             <Switch
               id="staff-access-coachManageStudents"
               label={t('roleGrants.access.coachManageStudents')}
@@ -159,15 +160,15 @@ export function StaffAccessModal({
             />
           </fieldset>
         ) : null}
-        <p style={{ fontSize: 13, opacity: 0.75 }}>{t('roleGrants.access.ownerOnly')}</p>
-        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-          <Button type="submit" loading={save.isPending || saveCoach.isPending}>
-            {t('common.save')}
-          </Button>
+        <p className="ultm8-field__hint">{t('roleGrants.access.ownerOnly')}</p>
+        <ModalActions>
           <Button type="button" variant="secondary" onClick={onClose}>
             {t('common.cancel')}
           </Button>
-        </div>
+          <Button type="submit" loading={save.isPending || saveCoach.isPending}>
+            {t('common.save')}
+          </Button>
+        </ModalActions>
       </form>
     </Modal>
   );

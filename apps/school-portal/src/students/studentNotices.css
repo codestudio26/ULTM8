@@ -1,0 +1,62 @@
+/* The Students list's notice cards in the new look (Decision 453): Freeze
+ * requests (FreezeRequestsCard.tsx) and Waiting for a Guardian
+ * (StudentAccess.tsx → ChildInvitesCard). Each is a Billing card
+ * (billing/BillingLook.tsx) above the list: one line per item, its buttons at
+ * the end of the line; on a phone the buttons go under the text, full width,
+ * a pair sharing the row equally (DESIGN.md → "Button pairs", "Phone
+ * layout"). Scoped to [data-look='redesign'], which the portal always sets. */
+
+[data-look='redesign'] .u8n-notice {
+  margin-bottom: 16px;
+}
+[data-look='redesign'] .u8n-notice .ultm8-banner {
+  margin: 0 0 12px;
+}
+[data-look='redesign'] .u8n-notice__hint {
+  margin: -4px 0 12px;
+}
+[data-look='redesign'] .u8n-notice__rows {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+[data-look='redesign'] .u8n-notice__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 12px 0;
+  border-top: 1px solid var(--u8n-line);
+  font-size: 14px;
+}
+[data-look='redesign'] .u8n-notice__row:last-child {
+  padding-bottom: 0;
+}
+[data-look='redesign'] .u8n-notice__text {
+  flex: 1 1 240px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+[data-look='redesign'] .u8n-notice__name {
+  font-weight: 500;
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .u8n-notice__actions {
+  display: flex;
+  gap: 8px;
+}
+
+@media (max-width: 767px) {
+  [data-look='redesign'] .u8n-notice__actions {
+    flex: 1 1 100%;
+  }
+  [data-look='redesign'] .u8n-notice__actions > .ultm8-btn {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 44px;
+    font-size: 14px;
+  }
+}

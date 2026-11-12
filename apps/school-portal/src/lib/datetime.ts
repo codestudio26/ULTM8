@@ -73,6 +73,12 @@ export function endsNextDayInZone(startIso: string, endIso: string, zone: string
   return DateTime.fromISO(endIso, { zone: z }).toISODate()! > DateTime.fromISO(startIso, { zone: z }).toISODate()!;
 }
 
+/** Whether `iso` falls on today's date on `zone`'s clock. */
+export function isTodayInZone(iso: string, zone: string, now: Date = new Date()): boolean {
+  const z = safeZone(zone);
+  return DateTime.fromISO(iso, { zone: z }).toISODate() === DateTime.fromJSDate(now, { zone: z }).toISODate();
+}
+
 /** The zone a Class runs on: its Branch's, else the School's, else UTC. */
 export function classZone(branchTimezone: string | null | undefined, schoolTimezone: string | null | undefined): string {
   return safeZone(branchTimezone || schoolTimezone || 'UTC');

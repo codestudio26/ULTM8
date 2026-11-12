@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Badge, Button, Card, ErrorBanner, Modal, Spinner } from '@ultm8/ui';
+import { Badge, Button, ErrorBanner, Modal, ModalActions, Spinner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { BeltChip } from './BeltChip';
 import type { Rung } from './ladder';
@@ -12,6 +12,7 @@ import { useT } from '../i18n/I18nProvider';
 import { feeRankName } from './feeRank';
 import { eventRankDisplay, historyTypeLabel } from './historyLabels';
 import { formatHours } from './hours';
+import './gradingDialogs.css';
 
 export const fullName = (i: { firstName: string; surname: string }) => `${i.firstName} ${i.surname}`.trim();
 
@@ -135,14 +136,12 @@ export function StudentPanel({
   }
 
   return (
-    <Card>
+    <div className="u8b-card u8gb-panel">
       <section aria-label={t('grading.board.panel.aria', { name })}>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
           <Avatar person={item} size={64} />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <h2 className="ultm8-page-header__title" style={{ fontSize: 18, margin: 0 }}>
-              {name}
-            </h2>
+            <h2 className="u8gb-panel__title">{name}</h2>
           </div>
           <button type="button" className="ultm8-round-button" onClick={onClose} aria-label={t('grading.board.panel.close')}>
             ✕
@@ -157,7 +156,7 @@ export function StudentPanel({
               marginTop: 16,
               padding: 12,
               borderRadius: 10,
-              background: item.feeStatus === 'declined' || item.feeStatus === 'blocked' ? 'var(--bg-danger)' : item.feeStatus === 'toDecide' ? '#e5ecf6' : 'var(--bg-warning)',
+              background: item.feeStatus === 'declined' || item.feeStatus === 'blocked' ? 'var(--bg-danger)' : item.feeStatus === 'toDecide' ? 'var(--u8gd-info-bg)' : 'var(--bg-warning)',
             }}
           >
             <FeeTag item={item} />
@@ -295,12 +294,12 @@ export function StudentPanel({
 
         <div style={{ display: 'flex', gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
           {canPromote && e.hasNext && !waiting && item.active ? <Button onClick={() => onPromote()}>{t('grading.board.panel.promote')}</Button> : null}
-          <Link to={`/students/${item.studentId}`} state={{ name }} className="ultm8-btn ultm8-btn--secondary">
+          <Link to={`/students/${item.studentId}?tab=ranks`} state={{ name }} className="ultm8-btn ultm8-btn--secondary">
             {t('grading.board.panel.openStudent')}
           </Link>
         </div>
       </section>
-    </Card>
+    </div>
   );
 }
 
@@ -333,12 +332,10 @@ export function SelectionPanel({
   const t = useT();
   const rung = (id: string | null | undefined) => ladder.find((r) => r.id === id) ?? null;
   return (
-    <Card>
+    <div className="u8b-card u8gb-panel">
       <section aria-label={t('grading.board.selection.aria')}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <h2 className="ultm8-page-header__title" style={{ fontSize: 18, margin: 0, flex: 1 }}>
-            {t('grading.board.selectedCount', { count: items.length })}
-          </h2>
+          <h2 className="u8gb-panel__title">{t('grading.board.selectedCount', { count: items.length })}</h2>
           <button type="button" className="ultm8-round-button" onClick={onMinimise} aria-label={t('grading.board.selection.minimise')}>
             –
           </button>
@@ -387,7 +384,7 @@ export function SelectionPanel({
           </Button>
         </div>
       </section>
-    </Card>
+    </div>
   );
 }
 
@@ -418,21 +415,25 @@ export function DecideDialog({
   const toName = to?.name ?? rank;
   return (
     <Modal title={t('grading.board.decide.title', { name })} onClose={onClose}>
-      <p style={{ color: '#2b4f80', marginTop: 0 }}>{t('grading.board.decide.cancelled', { rank: toName })}</p>
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-        {from ? <BeltChip rung={from} /> : null}
-        <span>{from?.name}</span>
+      <p className="u8gd-decide__cancelled">{t('grading.board.decide.cancelled', { rank: toName })}</p>
+      <div className="u8gd-decide__ranks">
+        <span className="u8gd-decide__rank">
+          {from ? <BeltChip rung={from} /> : null}
+          <span>{from?.name}</span>
+        </span>
         <span aria-hidden="true">→</span>
-        {to ? <BeltChip rung={to} /> : null}
-        <span>{toName}</span>
+        <span className="u8gd-decide__rank">
+          {to ? <BeltChip rung={to} /> : null}
+          <span>{toName}</span>
+        </span>
       </div>
       <p className="ultm8-field__hint">{t('grading.board.decide.explanation', { name: firstName, rank: toName })}</p>
-      <div style={{ display: 'flex', gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
+      <ModalActions>
         <Button variant="secondary" onClick={onClose}>
           {t('grading.board.decide.notNow')}
         </Button>
         {canPromote ? <Button onClick={onPromote}>{t('grading.board.fee.promoteTo', { rank: toName })}</Button> : null}
-      </div>
+      </ModalActions>
     </Modal>
   );
 }

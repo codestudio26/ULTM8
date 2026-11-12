@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { addBranch, addCoachInvite, addPerson, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
+import { pickOption } from './team-helpers';
 
 /**
  * Decision 396: "New staff must accept first". With it on, "Give role" for a
@@ -32,8 +33,8 @@ test('with the setting on, "Give role" sends a Branch Staff invite instead', asy
   await card.getByLabel('Email').fill(bea.email);
   await card.getByRole('button', { name: 'Find' }).click();
   await expect(card.getByText('Found Bea Hire.')).toBeVisible();
-  await card.getByLabel('Role').selectOption('BRANCH_STAFF');
-  await card.getByLabel('Branch').selectOption(north.id);
+  await pickOption(card, 'Role', 'Branch Staff');
+  await pickOption(card, 'Branch', 'North');
   await card.getByRole('button', { name: 'Send invite' }).click();
   // No email provider in the test environment: the invite is kept, with a warning.
   await expect(page.getByText("The invite for Bea Hire was made, but the email couldn't be sent.", { exact: false })).toBeVisible();
@@ -51,7 +52,7 @@ test('with the setting on, "Give role" sends a Branch Staff invite instead', asy
   const cara = await addPerson('Cara', 'Partner');
   await card.getByLabel('Email').fill(cara.email);
   await card.getByRole('button', { name: 'Find' }).click();
-  await card.getByLabel('Role').selectOption('SCHOOL_OWNER_MANAGER');
+  await pickOption(card, 'Role', 'Co-owner');
   await expect(card.getByRole('button', { name: 'Give role' })).toBeVisible();
 });
 

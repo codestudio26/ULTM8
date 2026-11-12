@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Button, Modal } from '@ultm8/ui';
+import { Button, Modal, ModalActions } from '@ultm8/ui';
 import { useGradingSchoolId } from '../auth/AuthContext';
 import { clearVerifyNoticeDue, isVerifyNoticeDue } from '../auth/verifyNoticeFlag';
 import { usePendingVerifications } from './gradingQueries';
@@ -36,16 +36,18 @@ export function VerifyBeltsNotice() {
       <ul aria-label={t('grading.verifyNotice.listAria')} style={{ paddingLeft: 20, maxHeight: 320, overflowY: 'auto' }}>
         {items.map((i) => (
           <li key={i.studentRankId}>
-            <Link to={`/students/${i.studentId}`} state={{ name: `${i.firstName} ${i.surname}` }} onClick={close}>
+            <Link to={`/students/${i.studentId}?tab=ranks`} state={{ name: `${i.firstName} ${i.surname}` }} onClick={close}>
               {i.firstName} {i.surname}
             </Link>{' '}
             — {i.disciplineName}
           </li>
         ))}
       </ul>
-      <Button type="button" onClick={close}>
-        {t('grading.verifyNotice.later')}
-      </Button>
+      <ModalActions>
+        <Button type="button" onClick={close}>
+          {t('grading.verifyNotice.later')}
+        </Button>
+      </ModalActions>
     </Modal>
   );
 }

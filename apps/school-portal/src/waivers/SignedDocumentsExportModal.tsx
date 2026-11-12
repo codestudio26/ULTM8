@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Checkbox, ErrorBanner, Modal, Spinner } from '@ultm8/ui';
+import { Button, Checkbox, ErrorBanner, Modal, ModalActions, Spinner } from '@ultm8/ui';
 import { ApiError, unwrap, type components } from '@ultm8/api-client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../api';
@@ -145,14 +145,18 @@ export function SignedDocumentsExportModal({ schoolId, onClose }: { schoolId: st
         </div>
       ) : null}
 
-      <div style={{ display: 'flex', gap: 8 }}>
+      {/* Close first, the main action last (ModalActions). */}
+      <ModalActions>
+        <Button variant="secondary" onClick={onClose}>
+          {t('waivers.exportAll.close')}
+        </Button>
         {current?.status === 'READY' ? (
           <>
-            <Button onClick={() => void onDownload(current.id)} loading={download.isPending}>
-              {t('waivers.exportAll.download')}
-            </Button>
             <Button variant="secondary" onClick={() => void onStart()} loading={start.isPending}>
               {t('waivers.exportAll.makeNew')}
+            </Button>
+            <Button onClick={() => void onDownload(current.id)} loading={download.isPending}>
+              {t('waivers.exportAll.download')}
             </Button>
           </>
         ) : (
@@ -160,10 +164,7 @@ export function SignedDocumentsExportModal({ schoolId, onClose }: { schoolId: st
             {t('waivers.exportAll.start')}
           </Button>
         )}
-        <Button variant="secondary" onClick={onClose}>
-          {t('waivers.exportAll.close')}
-        </Button>
-      </div>
+      </ModalActions>
     </Modal>
   );
 }

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { Button, ErrorBanner, Field, Modal, Spinner, TextField } from '@ultm8/ui';
+import { Button, ErrorBanner, Field, Modal, ModalActions, Spinner, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import {
@@ -533,14 +533,14 @@ function PaperSignatureModal({ schoolId, waiver, signature, onClose }: { schoolI
         <Field label={t('waivers.paper.photo')} htmlFor="paper-photo" hint={t('waivers.paper.photoHint')}>
           <input id="paper-photo" type="file" accept="image/jpeg,image/png" onChange={(e) => setPhoto(e.target.files?.[0] ?? null)} />
         </Field>
-        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-          <Button type="submit" loading={record.isPending} disabled={!signerFullName.trim() || !signedDate || !photo}>
-            {t('waivers.paper.save')}
-          </Button>
+        <ModalActions>
           <Button type="button" variant="secondary" onClick={onClose}>
             {t('common.cancel')}
           </Button>
-        </div>
+          <Button type="submit" loading={record.isPending} disabled={!signerFullName.trim() || !signedDate || !photo}>
+            {t('waivers.paper.save')}
+          </Button>
+        </ModalActions>
       </form>
     </Modal>
   );
@@ -585,12 +585,14 @@ function EditWaiverModal({ schoolId, waiver, onClose }: { schoolId: string; waiv
             </Button>
             <p className="ultm8-field__hint" style={{ margin: '4px 0 0' }}>{t('waivers.resign.resignHint')}</p>
           </div>
-          <div>
-            <Button variant="secondary" onClick={() => setPending(null)}>
-              {t('common.cancel')}
-            </Button>
-          </div>
         </div>
+        {/* The two choices stay above, each with what it means; Cancel sits
+            in the dialog's button band. */}
+        <ModalActions>
+          <Button variant="secondary" onClick={() => setPending(null)}>
+            {t('common.cancel')}
+          </Button>
+        </ModalActions>
       </Modal>
     );
   }

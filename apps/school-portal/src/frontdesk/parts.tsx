@@ -3,6 +3,7 @@ import { useQuery, useQueryClient, type UseMutationResult } from '@tanstack/reac
 import { Spinner } from '@ultm8/ui';
 import { firstGrapheme } from '@ultm8/i18n';
 import { Avatar } from '../lib/Avatar';
+import { NewLookSelect } from '../layout/NewLookSelect';
 import { QrScanModal } from '../attendance/QrScanModal';
 import type { ClassResponse } from '../classes/classQueries';
 import type { BookingResponse } from '../bookings/bookingQueries';
@@ -813,18 +814,15 @@ function PackUsedUp({
             ) : null}
           </div>
         ) : selling && sell && !paid && !status.data?.expired ? (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-            <label className="fd-class__meta" htmlFor="fd-pack-method">
-              {t('frontDesk.packUsedUp.paidBy')}
-            </label>
-            <select id="fd-pack-method" value={method} onChange={(e) => setMethod(e.target.value as DeskPaymentMethod)}>
-              {/* Decision 448 item 5: Pix only at a School in Brazil. */}
-              {deskMethodsFor(DESK_PAYMENT_METHODS, !!recharge.offersPix).map((m) => (
-                <option key={m} value={m}>
-                  {t(PAYMENT_METHOD_LABELS[m])}
-                </option>
-              ))}
-            </select>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'flex-end' }}>
+            {/* The new look's own drop-down (DESIGN.md → "Drop-downs"). Decision 448 item 5: Pix only at a School in Brazil. */}
+            <NewLookSelect
+              id="fd-pack-method"
+              label={t('frontDesk.packUsedUp.paidBy')}
+              value={method}
+              onChange={(v) => setMethod(v as DeskPaymentMethod)}
+              options={deskMethodsFor(DESK_PAYMENT_METHODS, !!recharge.offersPix).map((m) => ({ value: m, label: t(PAYMENT_METHOD_LABELS[m]) }))}
+            />
             <button type="button" className="fd-pill fd-pill--go" disabled={busy} onClick={recordSale}>
               {t('frontDesk.packUsedUp.recordSale')}
             </button>

@@ -53,7 +53,7 @@ test('the owner gives back part of a cash payment, then sees it in the billing r
   // The payments table sits below the card's header (`student-charges`).
   await page.getByRole('row', { name: /Cash/ }).getByRole('button', { name: 'Refund' }).click();
   const refund = page.getByTestId('refund-charge-payment-form');
-  await expect(refund.getByLabel('Where the money goes')).toHaveValue('MONEY_BACK');
+  await expect(refund.getByRole('combobox', { name: 'Where the money goes', exact: true }).locator('[data-shown="true"]')).toHaveText('Given back to the member (cash, bank transfer or card terminal)');
   await refund.getByLabel('Amount to refund').fill('20');
   // Notes are required by default.
   await expect(refund.getByRole('button', { name: 'Refund' })).toBeDisabled();

@@ -3,6 +3,7 @@
 export const ui = {
   loading: 'Loading',
   dismiss: 'Dismiss',
+  closeDialog: 'Close dialog',
   showPasscode: 'Show passcode',
   hidePasscode: 'Hide passcode',
   noMatchingTimezone: 'No matching timezone',

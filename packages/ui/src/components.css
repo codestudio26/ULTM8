@@ -394,6 +394,14 @@
 .ultm8-row-actions__item--danger {
   color: var(--text-danger);
 }
+.ultm8-row-actions__hint {
+  display: block;
+  max-width: 240px;
+  padding: 0 var(--space-3) var(--space-2);
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
 
 /* Card */
 .ultm8-card {
@@ -1039,6 +1047,41 @@
      bottom (and its Save button) being cut off. */
   max-height: calc(100vh - 2 * var(--space-6));
   overflow-y: auto;
+}
+/* A dialog's header: its title, and the round ✕ that closes it on the right. */
+.ultm8-modal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.ultm8-modal__head > h2 {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.ultm8-modal__close {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface-1);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font: inherit;
+  line-height: 1;
+}
+/* A dialog's buttons (ModalActions): one row, on the right. */
+.ultm8-modal__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
 }
 /* A two-column editor (the belt editor): the form and its live preview. */
 .ultm8-modal--wide {
@@ -1764,25 +1807,6 @@
   cursor: pointer;
   font: inherit;
 }
-.ultm8-tabs {
-  display: flex;
-  gap: var(--space-1);
-  flex-wrap: wrap;
-  margin: 0 0 var(--space-4);
-  border-bottom: 1px solid var(--border);
-}
-.ultm8-tabs__tab {
-  padding: var(--space-2) var(--space-3);
-  border-bottom: 2px solid transparent;
-  color: var(--text-secondary);
-  text-decoration: none;
-  font-weight: var(--font-weight-medium, 500);
-}
-.ultm8-tabs__tab--active {
-  color: var(--text-primary);
-  border-bottom-color: var(--color-success);
-}
-
 /* Switch: an on/off setting. */
 .ultm8-switch-row {
   display: flex;

@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { addBranch, addPerson, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
+import { pickOption } from './team-helpers';
 
 /**
  * Invite a Student (v1.2 backend backlog), against the real API: the owner
@@ -82,7 +83,7 @@ test('a School with branches requires choosing the new Student\'s home branch', 
   await page.getByRole('button', { name: 'Enroll' }).click();
   await expect(page.getByText('Select this Student\'s home branch.')).toBeVisible();
 
-  await page.getByLabel('Home branch').selectOption({ label: 'North' });
+  await pickOption(page, 'Home branch', 'North');
   await page.getByRole('button', { name: 'Enroll' }).click();
   await expect(page.getByText('Enrolled.')).toBeVisible();
 

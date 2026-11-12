@@ -8263,6 +8263,34 @@ User (Code), 11 Nov 2026: "ok to all, carry on", answering the questions on #541
 
 ---
 
+## Decision 455 — New look: the owner's answers on the Schedule pages (Classes and Timetable)
+
+**Date:** 11 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 453, 454 · **Raised in:** #545 (Schedule: Classes list and Timetable)
+
+### Decision
+
+**As built**
+1. **The look.** The approved design has no Classes or Timetable board, so both pages follow the template rules (DESIGN-BRIEF §8) and DESIGN.md in the same style as the Students list: white cards, class avatars, the new look's own drop-downs, pill buttons and phone layouts.
+2. **Classes table columns.** Instructor and Branch are not columns of their own. They sit under the class name as "coach · branch", in DESIGN.md's class-row order.
+3. **Controls the template doesn't draw** stay where they are. Rows / Grid and Show archived sit at the right of the toolbar, the pager at the foot of the Classes card, and Day / Week / Month with Prev / Today / Next at the top of the Timetable card.
+4. **Week Grid** still scrolls sideways when the seven day columns don't fit.
+
+**Built in #545**
+5. **A right-hand panel on both pages** shows the selected class. On Classes that is the picked row (the first until another is picked); on Timetable it is the picked slot or class date in the Day and Week views (Month books from its dots and has no panel). It uses the shell's right panel (`NewLookPage`), and on a phone it sits below the list.
+   - **It never repeats the selected row** (DESIGN.md "nothing shown twice"). The owner was asked whether the panel should keep repeating the row (A) or follow that rule (B), and answered "B" (11 Nov 2026). The panel shows the 64px avatar and the class name, as the Students and Team panels do, and then only what the row doesn't show.
+   - On Classes the row already shows the status tags, "coach · branch", Starts, Ends, Capacity and the tags, so the panel has no facts of its own.
+   - On Timetable the row already shows "coach · branch", the time, the seats booked, the tags and the status, and its day heading shows the date. The panel adds only a timetable slot's capacity, which its row doesn't show (a slot with no class yet has no seats line).
+   - The row's own ⋮ actions sit as buttons straight under the content.
+   - Nothing new is fetched from the API.
+6. **Timetable rows name the coach** as "coach · branch", as on Classes. The calendar already carries each class's and slot's instructor, and the page already loads the Instructors list, so no API change was needed.
+7. **Month dots** use the same soft colours as the class avatars, ringed in the colour's darker shade so they stay clearly visible in light and dark mode.
+
+### Recorded by
+
+User (Code), 11 Nov 2026: "ok to all, carry on", answering the 7 questions on #545; and "B", answering whether the class panel keeps repeating the row (item 5).
+
+---
+
 ## Decision 456 — New look: the owner's answers on the Team pages
 
 **Date:** 11 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 453, 454 · **Raised in:** #547 (Team)
@@ -8284,3 +8312,114 @@ User (Code), 11 Nov 2026, answering the questions on #547:
 - On the switch tables: "keep it".
 - On the old look: "everything should look like the new design and nothing from the old should be kept".
 - On one Team page with three tabs, and where the extra features sit: "ok".
+
+---
+
+## Decision 457 — New look: the owner's answers on Schedule, Curriculum and the Student page
+
+**Date:** 11 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 453, 455, 456 · **Raised in:** #545 (Schedule), #553 (Student page), #554 (Curriculum)
+
+### Decision
+
+**Schedule (#545)**
+1. **The class panel shows nothing the row already shows (option B, DESIGN.md "nothing shown twice").** The Classes row already shows the name, "coach · branch", Starts, Ends, Capacity, the status tags and the activity tags, so the Classes panel is the class's avatar and name as its heading, then the row's actions as buttons (View bookings, Show QR, Roll call, Edit, Archive/Unarchive). On Timetable the panel adds only Capacity, and only for a slot with no class yet (that row has no seats line), then the row's actions. (When the owner was asked, the example wrongly listed Branch and Coach as staying in the panel; they don't, because the row already shows them. The owner's answer was the rule, "B".)
+
+**Curriculum (#554)**
+2. **Restyle only.** Curriculum keeps its current layout and features in the new look. No new Curriculum screen is designed.
+3. **Lesson actions in a ⋮ menu.** Each lesson row keeps Comments, ↑, ↓ and Edit as buttons. Upload video (or Upload again), Archive (or Unarchive) and Delete move into the row's ⋮ menu, with the same rules and the same "video uploads are off" reason as before.
+
+**Student page (#553, merged)**
+4. **The page actions stay in the header.** Log attendance, Merge a duplicate, Re-enrol and Revoke enrollment stay as buttons on the right of the page header.
+5. **From grading, the student page opens on Ranks.** Links to a student from the Grading Board (the card or row name and the panel's "Open student page") and from the "Belts waiting to be verified" notice open the student page on its Ranks tab (`?tab=ranks`). All other links still open Profile.
+6. **The Profile card order stays as built:** Upcoming Booking, Memberships, Notes, Payments, then the other cards.
+7. **The Guardians sit under Contact** in the student panel, with the owner's Remove and "+ Add another Guardian". There is no separate "Manage family account" screen.
+8. **The panel shows the student's phone, birthday with age, and gender**, to the same staff who saw the old member details card.
+
+This is a layout and navigation change only. Business rules, the data model, API contracts, tenancy/RLS and permissions are unchanged.
+
+### Recorded by
+
+User (Code), 11 Nov 2026:
+- On the Schedule panel (A or B): "B".
+- On Curriculum: "restyling".
+- On the lesson buttons: "use the ⋮ menu".
+- On the five Student page questions: "ok to all".
+
+---
+
+## Decision 458 — New look: the owner's answers on Cancellations
+
+**Date:** 11 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 453, 454 · **Raised in:** #556 (Cancellations)
+
+### Decision
+
+1. **Restyle only.** The approved design has no Cancellations screen and none is to be drawn. Cancellations to resolve keeps its columns, data, actions and per-role rules, and takes the new look: page header, one white card with the table, soft status tags and pill buttons.
+2. **Class avatars on the rows, as a follow-up.** Each row is to show the class avatar (DESIGN.md → "Avatars") once the Schedule PR's class avatar (#545) is merged. Not in #556.
+3. **Cards on a phone.** When the table doesn't fit its card (a phone, a tablet or a narrow window), each row becomes a card: the class, the student, the status, the membership, payment and refund lines, then the buttons stacked. Nothing scrolls sideways. A computer wide enough keeps the table.
+
+This is a layout change only. Business rules, the data model, API contracts, tenancy/RLS and permissions are unchanged.
+
+### Recorded by
+
+User (Code), 11 Nov 2026, answering the questions on #556:
+- On the missing design: "Ok".
+- On class avatars: "yes".
+- On the phone layout: "go with your recommendation".
+
+---
+
+## Decision 459 — Check-in stays in both places; CHANGELOG entries are added in batches
+
+**Date:** 11 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 453, 454
+
+### Decision
+
+1. **Check-in keeps both tabs.** For coaches and Branch Staff, "Check-in" shows both in the top tabs and in the Students page's own tabs. Both stay, as an owner-approved exception to DESIGN.md's "nothing shown twice": they open the same page, and keeping both keeps Check-in one click away from anywhere in the Students section. (Decision 454 had left this open.)
+2. **CHANGELOG entries are added in batches.** New-look page PRs no longer edit `CHANGELOG.md`; each states its entry in its PR description, and the entries are added under `## Unreleased` in a batch PR every few merges. Decision-log entries made while several PRs are open go in the same batch. Every user-visible change is still recorded; this only stops parallel PRs clashing on the same lines, which forced a fresh 35-minute check run after every merge.
+3. **The Platform Admin new look runs in a second session**, in parallel, under the same rules as the School Portal pages; its decisions use numbers 470–479.
+4. **CI keeps the browser tests running when Ubuntu's mirrors are unreachable** (#557).
+
+### Recorded by
+
+User (Code), 11 Nov 2026:
+- On Check-in shown twice: "why not have both".
+- On batching the CHANGELOG, a second session for Platform Admin, and the CI fix: "yes to all three".
+
+---
+
+## Decision 460 — New look: the owner's answers on Check-in, the coach dashboard, Waiver settings and the Students forms
+
+**Date:** 11 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 453, 457, 459 · **Raised in:** #559 (Check-in), #558 (coach dashboard), #561 (Waiver settings), #563 (Students forms)
+
+### Decision
+
+**Check-in (#559), kept as built**
+1. Front-desk tablets (the owner's exit code, ending a tablet) stays as a card under the check-in area.
+2. The Branch picker stays above the classes for Schools with more than one Branch.
+3. Check-in rules stays next to Front-desk mode, for the same people as before.
+4. No "All check-ins" button: there is no page for it.
+5. The subtitle is the School's name, as in the design.
+
+**Coach dashboard (#558)**
+6. The panel's heading says "Today" when the coach's next class is today, otherwise "Next class".
+7. No "Only students of your branch" note: a coach can have several branches or none.
+8. Birthdays stays as a card; Branch Staff keep "Classes at your branch this week".
+9. Branch Staff who don't teach see only Ready to grade in the panel.
+10. When the Ready to grade list shows, the Notifications card leaves out the "ready to grade" alerts (they stay on the Notifications page).
+
+**Waiver settings (#561), kept as built**
+11. The page keeps its layout (no move to the Settings pattern), and each setting keeps both its explanation and its "most schools choose" line.
+
+**Students forms (#563) and every dialog**
+12. Date of birth keeps the restyled date picker.
+13. Every dialog gets the design's round ✕ in its header. With unsaved changes it behaves as Cancel does (it asks before discarding).
+14. The shared address fields' Country picker becomes searchable, like Currency.
+15. On Add student, "+ Secondary phone / email / Emergency contact" stay at the end of Personal details.
+16. Edit a student uses the same chapters, with no preview panel.
+17. The pages still using the old page header (Sign-ups, Import, Rosters, Attendance, Growth, the Grading pages, Disciplines, the Class page, the Membership plan form, My profile, Check-in rules and others) join the forms groups and take the new look.
+
+This is a layout change only. Business rules, the data model, API contracts, tenancy/RLS and permissions are unchanged.
+
+### Recorded by
+
+User (Code), 11 Nov 2026: "ok to all, carry on", answering the questions on #558, #559, #561 and #563 with the recommendations given.

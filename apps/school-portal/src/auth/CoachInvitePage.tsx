@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { AuthCard, Button, ErrorBanner, Spinner, SuccessBanner } from '@ultm8/ui';
+import { Button, ErrorBanner, SuccessBanner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { decodeJwtPayload } from '@ultm8/auth';
 import type { JwtClaims } from './types';
@@ -9,6 +9,7 @@ import { rememberReturnTo } from './returnTo';
 import { useAcceptCoachInvite, useCoachInviteLink } from '../roleGrants/coachInviteQueries';
 import { useT } from '../i18n/I18nProvider';
 import { Trans } from '../i18n/Trans';
+import { SignInCard, SignInLoading } from './SignInCard';
 
 const errorText = (err: unknown, fallback: string) => (err instanceof ApiError ? err.message : fallback);
 
@@ -33,12 +34,12 @@ export function CoachInvitePage() {
   const [accepted, setAccepted] = useState(false);
   const here = `/coach-invite/${token}`;
 
-  if (link.isLoading) return <Spinner />;
+  if (link.isLoading) return <SignInLoading />;
   if (link.error || !link.data) {
     return (
-      <AuthCard title={t('auth.coachInvite.title')}>
+      <SignInCard title={t('auth.coachInvite.title')}>
         <ErrorBanner message={errorText(link.error, t('auth.coachInvite.invalid'))} />
-      </AuthCard>
+      </SignInCard>
     );
   }
 
@@ -48,12 +49,14 @@ export function CoachInvitePage() {
 
   if (accepted) {
     return (
-      <AuthCard title={t(staff ? 'auth.coachInvite.staffTitle' : 'auth.coachInvite.title')}>
+      <SignInCard title={t(staff ? 'auth.coachInvite.staffTitle' : 'auth.coachInvite.title')}>
         <SuccessBanner message={t(staff ? 'auth.coachInvite.staffAccepted' : 'auth.coachInvite.accepted', { where })} />
-        <Button onClick={() => navigate(staff ? '/' : '/coach')}>
-          {t(staff ? 'auth.coachInvite.staffGoToPortal' : 'auth.coachInvite.goToDashboard')}
-        </Button>
-      </AuthCard>
+        <div className="u8si-actions">
+          <Button onClick={() => navigate(staff ? '/' : '/coach')}>
+            {t(staff ? 'auth.coachInvite.staffGoToPortal' : 'auth.coachInvite.goToDashboard')}
+          </Button>
+        </div>
+      </SignInCard>
     );
   }
 
@@ -83,16 +86,16 @@ export function CoachInvitePage() {
   }
 
   return (
-    <AuthCard title={t(staff ? 'auth.coachInvite.staffInvitedTitle' : 'auth.coachInvite.invitedTitle')} subtitle={where}>
+    <SignInCard title={t(staff ? 'auth.coachInvite.staffInvitedTitle' : 'auth.coachInvite.invitedTitle')} subtitle={where}>
       {error ? <ErrorBanner message={error} /> : null}
       {closedText ? (
         <ErrorBanner message={closedText} />
       ) : !accessToken ? (
         <>
-          <p>
+          <p className="u8si-text">
             <Trans k="auth.coachInvite.signedOutBody" nodes={{ email: <strong>{invite.email}</strong> }} />
           </p>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <div className="u8si-actions u8si-pair">
             <Button onClick={() => navigate('/login', { state: { from: { pathname: here } } })}>{t('auth.logIn')}</Button>
             <Button
               variant="secondary"
@@ -107,29 +110,33 @@ export function CoachInvitePage() {
         </>
       ) : rightAccount ? (
         <>
-          <p>
+          <p className="u8si-text">
             <Trans k={staff ? 'auth.coachInvite.staffAcceptBody' : 'auth.coachInvite.acceptBody'} nodes={{ where: <strong>{where}</strong> }} />
           </p>
-          <Button onClick={handleAccept} loading={accept.isPending}>
-            {t('auth.coachInvite.acceptButton')}
-          </Button>
+          <div className="u8si-actions">
+            <Button onClick={handleAccept} loading={accept.isPending}>
+              {t('auth.coachInvite.acceptButton')}
+            </Button>
+          </div>
         </>
       ) : (
         <>
-          <p>
+          <p className="u8si-text">
             <Trans k="auth.coachInvite.wrongAccountBody" nodes={{ email: <strong>{invite.email}</strong>, signedInAs: <strong>{signedInAs}</strong> }} />
           </p>
-          <Button
-            variant="secondary"
-            onClick={() => {
-              logout();
-              navigate('/login', { state: { from: { pathname: here } } });
-            }}
-          >
-            {t('auth.coachInvite.logInAs', { email: invite.email })}
-          </Button>
+          <div className="u8si-actions">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                logout();
+                navigate('/login', { state: { from: { pathname: here } } });
+              }}
+            >
+              {t('auth.coachInvite.logInAs', { email: invite.email })}
+            </Button>
+          </div>
         </>
       )}
-    </AuthCard>
+    </SignInCard>
   );
 }

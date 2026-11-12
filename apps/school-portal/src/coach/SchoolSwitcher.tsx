@@ -1,9 +1,9 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { SelectField } from '@ultm8/ui';
 import { useAuth, useCoachSchoolId, useCoachSchoolIds, useOwnedSchoolId, useOwnedSchoolIds } from '../auth/AuthContext';
 import { useSchoolNames } from '../schools/schoolQueries';
 import { useT } from '../i18n/I18nProvider';
+import { NewLookSelect } from '../layout/NewLookSelect';
 
 /**
  * Decision 184 item 4's own named follow-up, resolved: a coach or Branch Staff
@@ -22,6 +22,11 @@ import { useT } from '../i18n/I18nProvider';
  * Renders nothing for the common case (one School, or none, on whichever side
  * applies) — same "don't clutter the header for the normal case" judgment the
  * language picker's `languages?.length` guard makes.
+ *
+ * In the new look (Decision 453) it is the shell's own drop-down
+ * (`NewLookSelect`, DESIGN.md → "Drop-downs"), never a browser `<select>`;
+ * its name stays on screen readers only, as before (newLookShell.css,
+ * `.u8n-bar__select`).
  */
 export function SchoolSwitcher() {
   const t = useT();
@@ -49,22 +54,23 @@ export function SchoolSwitcher() {
   const value = activeOwnedSchoolId ?? activeCoachSchoolId ?? '';
 
   return (
-    <SelectField
-      aria-label={t('coach.schoolSwitcher.aria')}
-      value={value}
-      onChange={(e) => {
-        const id = e.target.value;
-        if (!id) return;
-        const toCoach = !ownedSchoolIds.includes(id);
-        const wasCoach = !activeOwnedSchoolId;
-        if (toCoach) setActiveCoachSchoolId(id);
-        else setActiveOwnedSchoolId(id);
-        // Moving between owning and coaching changes the whole menu, so start
-        // again from that side's home page.
-        if (wasCoach !== toCoach) navigate('/');
-      }}
-      options={options}
-      style={{ width: 'auto', minHeight: 36, padding: '4px 8px' }}
-    />
+    <div className="u8n-bar__select">
+      <NewLookSelect
+        id="u8n-school-switcher"
+        label={t('coach.schoolSwitcher.aria')}
+        value={value}
+        onChange={(id) => {
+          if (!id) return;
+          const toCoach = !ownedSchoolIds.includes(id);
+          const wasCoach = !activeOwnedSchoolId;
+          if (toCoach) setActiveCoachSchoolId(id);
+          else setActiveOwnedSchoolId(id);
+          // Moving between owning and coaching changes the whole menu, so start
+          // again from that side's home page.
+          if (wasCoach !== toCoach) navigate('/');
+        }}
+        options={options}
+      />
+    </div>
   );
 }

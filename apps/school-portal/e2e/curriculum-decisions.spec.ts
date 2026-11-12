@@ -18,7 +18,8 @@ test.afterAll(async () => {
   await cleanup();
 });
 
-const card = (page: Page, name: string) => page.locator('.ultm8-card', { has: page.getByRole('heading', { name, exact: true }) });
+// A card on the page in the new look (curriculum.css).
+const card = (page: Page, name: string) => page.locator('.u8c-card', { has: page.getByRole('heading', { name, exact: true }) });
 
 async function commentOn(lessonId: string, authorId: string, body: string) {
   await db.comment.create({ data: { id: randomUUID(), lessonId, authorId, schoolId: s.schoolId, body } });

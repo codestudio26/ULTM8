@@ -135,7 +135,7 @@ export function DashboardPage() {
 
           <div className="u8n-dash__lists">
             <TodaysClasses summary={data} loading={summary.isLoading} />
-            <BirthdaysCard schoolId={schoolId} linkToStudent newLook />
+            <BirthdaysCard schoolId={schoolId} linkToStudent />
           </div>
         </div>
       </NewLookPage>
@@ -224,10 +224,11 @@ function TodaysClasses({ summary, loading }: { summary: BookingsSummaryResponse 
 
 /** DESIGN.md → "Avatars": a class with no banner is a soft-coloured circle
  * with its initials; the colour, not the shape, tells classes apart. The
- * summary carries no banner, so it is always the initials here. */
+ * summary carries no banner, so it is always the initials here. `large` is
+ * the right panel's 64px size (the coach dashboard's Next class). */
 const CLASS_TILES = ['u8n-dash__av--a', 'u8n-dash__av--b', 'u8n-dash__av--c', 'u8n-dash__av--d', 'u8n-dash__av--e'];
 
-function ClassAvatar({ id, title }: { id: string; title: string }) {
+export function ClassAvatar({ id, title, large = false }: { id: string; title: string; large?: boolean }) {
   const words = title
     .replace(/[()]/g, ' ')
     .split(/[\s-]+/)
@@ -236,7 +237,7 @@ function ClassAvatar({ id, title }: { id: string; title: string }) {
   let hash = 0;
   for (const ch of id) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
   return (
-    <span className={`u8n-dash__av ${CLASS_TILES[hash % CLASS_TILES.length]}`} aria-hidden="true">
+    <span className={`u8n-dash__av ${CLASS_TILES[hash % CLASS_TILES.length]}${large ? ' u8n-dash__av--lg' : ''}`} aria-hidden="true">
       {letters}
     </span>
   );

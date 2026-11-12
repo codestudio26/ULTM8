@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { Button, Card, Checkbox, CurrencyField, ErrorBanner, Field, PageHeader, SelectField, Spinner, TextField } from '@ultm8/ui';
+import { Button, Checkbox, CurrencyField, ErrorBanner, Field, Spinner, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { useSchool, useSchoolTakesCards } from '../schools/schoolQueries';
@@ -27,6 +27,11 @@ import { OwnerOnly } from './MembershipPlansPage';
 import { PlanContractCard } from './PlanContractCard';
 import { CurrencyFirstNotice } from '../lib/CurrencyFirstNotice';
 import { incomeCategoryOptions, useIncomeCategories, type IncomeCategory } from '../charges/incomeCategoryQueries';
+import { NewLookPage, NewLookPageHeader } from '../layout/NewLookPage';
+import { NewLookSelect } from '../layout/NewLookSelect';
+import { Chapter } from '../students/StudentFormParts';
+import '../students/studentForms.css';
+import './planForm.css';
 
 /** `label`/`caption` are translation keys, resolved at render time; `value`
  * is the enum value sent to the API, never translated. */
@@ -40,15 +45,7 @@ const PLAN_TYPES = [
 
 type PlanType = (typeof PLAN_TYPES)[number]['value'];
 
-function SectionTitle({ children }: { children: React.ReactNode }) {
-  return (
-    <h2 className="ultm8-page-header__title" style={{ fontSize: 16, marginBottom: 8 }}>
-      {children}
-    </h2>
-  );
-}
-
-// Wizard steps — one per existing section, same order. Each step's Card is
+// Wizard steps — one per existing section, same order. Each step's chapter is
 // rendered alone when active (conditional mounting), not all stacked, with a
 // clickable pill row to jump directly to any step — not strictly linear,
 // since an Edit shouldn't require clicking Next four times to reach one
@@ -109,6 +106,15 @@ export function MembershipPlanFormPage() {
 
   return (
     <>
+    <NewLookPageHeader
+      title={isEdit ? t('membershipPlans.form.editTitle') : t('membershipPlans.form.addTitle')}
+      actions={
+        <Button type="button" variant="secondary" onClick={() => navigate('/membership-plans')}>
+          {t('membershipPlans.form.backToList')}
+        </Button>
+      }
+    />
+    <NewLookPage>
     <MembershipPlanForm
       mode={isEdit ? 'edit' : 'create'}
       initial={initial}
@@ -145,6 +151,7 @@ export function MembershipPlanFormPage() {
     />
     {/* Decision 316 item 6: the plan's contract, saved on its own. */}
     {isEdit && existingPlan ? <PlanContractCard key={`${existingPlan.id}-${existingPlan.contractVersion ?? 0}`} plan={existingPlan} currency={school?.defaultCurrency} /> : null}
+    </NewLookPage>
     </>
   );
 }
@@ -368,7 +375,7 @@ function MembershipPlanForm({
     // The previous single-view form relied on every field — including
     // Title/Price's native `required` — always being mounted, so the
     // browser's own constraint validation caught a blank one on submit.
-    // With only the active step's Card mounted now, an unmounted step's
+    // With only the active step's chapter mounted now, an unmounted step's
     // `required` field no longer blocks submission, so these two are
     // checked explicitly instead, jumping back to the step that needs
     // attention.
@@ -500,59 +507,49 @@ function MembershipPlanForm({
 
   return (
     <>
-      <div style={{ marginBottom: 12 }}>
-        <Button type="button" variant="secondary" onClick={onCancel}>
-          {t('membershipPlans.form.backToList')}
-        </Button>
-      </div>
-      <PageHeader title={mode === 'edit' ? t('membershipPlans.form.editTitle') : t('membershipPlans.form.addTitle')} />
       {error ? <ErrorBanner message={error} /> : null}
       {schoolCurrencyMissing ? <CurrencyFirstNotice /> : null}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+      {/* The five steps, one shown at a time; any step can be opened. */}
+      <div className="ultm8-pills u8p-steps">
         {STEPS.map((step, i) => (
-          <Button
+          <button
             key={step.label}
             type="button"
-            variant={i === stepIndex ? 'primary' : 'secondary'}
+            className="ultm8-pills__option"
+            aria-pressed={i === stepIndex}
+            aria-current={i === stepIndex ? 'step' : undefined}
             onClick={() => setStepIndex(i)}
           >
             {i + 1}. {t(step.label)}
-          </Button>
+          </button>
         ))}
       </div>
-      <form onSubmit={handleSubmit}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <form className="u8f-sheet" onSubmit={handleSubmit}>
         {stepIndex === 0 ? (
-        <Card className="ultm8-field-group">
-          <SectionTitle>{t('membershipPlans.form.steps.basics')}</SectionTitle>
-          <Field
-            label={t('membershipPlans.form.typeLabel')}
-            htmlFor="plan-type"
-            hint={
-              typeLocked
-                ? t('membershipPlans.form.typeLockedHint', { count: activeMemberCount })
-                : captionKey
-                  ? t(captionKey)
-                  : undefined
-            }
-          >
-            <SelectField
+        <Chapter number={1} title={t('membershipPlans.form.steps.basics')}>
+          <div className="u8n-dd-field">
+            <NewLookSelect
               id="plan-type"
+              label={t('membershipPlans.form.typeLabel')}
               disabled={typeLocked}
               value={form.type}
-              onChange={(e) => handleTypeChange(e.target.value as PlanType)}
+              onChange={(v) => handleTypeChange(v as PlanType)}
               options={PLAN_TYPES.map((p) => ({ value: p.value, label: t(p.label) }))}
             />
-          </Field>
+            {typeLocked || captionKey ? (
+              <span className="ultm8-field__hint u8n-dd-field__hint">
+                {typeLocked ? t('membershipPlans.form.typeLockedHint', { count: activeMemberCount }) : t(captionKey!)}
+              </span>
+            ) : null}
+          </div>
           <Field label={t('membershipPlans.form.titleLabel')} htmlFor="plan-title">
             <TextField required value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} />
           </Field>
-        </Card>
+        </Chapter>
         ) : null}
 
         {stepIndex === 1 ? (
-        <Card className="ultm8-field-group">
-          <SectionTitle>{t('membershipPlans.form.steps.pricingAccess')}</SectionTitle>
+        <Chapter number={2} title={t('membershipPlans.form.steps.pricingAccess')}>
           <Field
             label={t('membershipPlans.form.priceLabel')}
             htmlFor="plan-price"
@@ -572,36 +569,27 @@ function MembershipPlanForm({
             // relevant (see priceChangeDecisionRequired's own comment above)
             // — a required choice, not a dismissible hint, so Save stays
             // blocked (handleSubmit's own check) until one is picked.
-            <Field label={t('membershipPlans.form.priceChangeLabel')} htmlFor="plan-price-change-strategy">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <p className="ultm8-field__hint" style={{ marginTop: 0 }}>
-                  {t('membershipPlans.form.priceChangeExplanation', { count: activeSubscriberCount })}
-                </p>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <Button
-                    type="button"
-                    variant={priceChangeStrategy === 'MIGRATE' ? 'primary' : 'secondary'}
-                    onClick={() => setPriceChangeStrategy('MIGRATE')}
-                  >
-                    {t('membershipPlans.form.migrate')}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={priceChangeStrategy === 'GRANDFATHER' ? 'primary' : 'secondary'}
-                    onClick={() => setPriceChangeStrategy('GRANDFATHER')}
-                  >
-                    {t('membershipPlans.form.grandfather')}
-                  </Button>
-                </div>
-                <p className="ultm8-field__hint" style={{ marginTop: 0 }}>
-                  {priceChangeStrategy === 'MIGRATE'
-                    ? t('membershipPlans.form.migrateHint')
-                    : priceChangeStrategy === 'GRANDFATHER'
-                      ? t('membershipPlans.form.grandfatherHint')
-                      : t('membershipPlans.form.pickOne')}
-                </p>
+            <div className="ultm8-field u8f-wide u8p-choice">
+              <span className="ultm8-field__label" id="plan-price-change-strategy-label">
+                {t('membershipPlans.form.priceChangeLabel')}
+              </span>
+              <p className="ultm8-field__hint">{t('membershipPlans.form.priceChangeExplanation', { count: activeSubscriberCount })}</p>
+              <div className="ultm8-pills" role="group" aria-labelledby="plan-price-change-strategy-label">
+                <button type="button" className="ultm8-pills__option" aria-pressed={priceChangeStrategy === 'MIGRATE'} onClick={() => setPriceChangeStrategy('MIGRATE')}>
+                  {t('membershipPlans.form.migrate')}
+                </button>
+                <button type="button" className="ultm8-pills__option" aria-pressed={priceChangeStrategy === 'GRANDFATHER'} onClick={() => setPriceChangeStrategy('GRANDFATHER')}>
+                  {t('membershipPlans.form.grandfather')}
+                </button>
               </div>
-            </Field>
+              <p className="ultm8-field__hint">
+                {priceChangeStrategy === 'MIGRATE'
+                  ? t('membershipPlans.form.migrateHint')
+                  : priceChangeStrategy === 'GRANDFATHER'
+                    ? t('membershipPlans.form.grandfatherHint')
+                    : t('membershipPlans.form.pickOne')}
+              </p>
+            </div>
           ) : null}
           <Field label={t('membershipPlans.form.currencyLabel')} htmlFor="plan-currency" hint={t('membershipPlans.form.currencyHint')}>
             <CurrencyField
@@ -615,30 +603,32 @@ function MembershipPlanForm({
             // Decision 259 — a School-Owner-set-once-per-plan choice, not a
             // per-signup prompt: every new Student on this plan gets whichever
             // of the two the Owner picked here.
-            <Field label={t('membershipPlans.form.newMemberBillingLabel')} htmlFor="plan-new-member-billing-strategy">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <Button
-                    type="button"
-                    variant={form.newMemberBillingStrategy === 'FRESH_CYCLE' ? 'primary' : 'secondary'}
-                    onClick={() => setForm((f) => ({ ...f, newMemberBillingStrategy: 'FRESH_CYCLE', billingCycleAnchorDay: '' }))}
-                  >
-                    {t('membershipPlans.form.freshCycle')}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={form.newMemberBillingStrategy === 'PRORATED_TO_SHARED_CYCLE' ? 'primary' : 'secondary'}
-                    onClick={() => setForm((f) => ({ ...f, newMemberBillingStrategy: 'PRORATED_TO_SHARED_CYCLE' }))}
-                  >
-                    {t('membershipPlans.form.prorate')}
-                  </Button>
-                </div>
-                <p className="ultm8-field__hint" style={{ marginTop: 0 }}>
-                  {form.newMemberBillingStrategy === 'FRESH_CYCLE'
-                    ? t('membershipPlans.form.freshCycleHint')
-                    : t('membershipPlans.form.prorateHint')}
-                </p>
-                {form.newMemberBillingStrategy === 'PRORATED_TO_SHARED_CYCLE' ? (
+            <div className="ultm8-field u8f-wide u8p-choice">
+              <span className="ultm8-field__label" id="plan-new-member-billing-strategy-label">
+                {t('membershipPlans.form.newMemberBillingLabel')}
+              </span>
+              <div className="ultm8-pills" role="group" aria-labelledby="plan-new-member-billing-strategy-label">
+                <button
+                  type="button"
+                  className="ultm8-pills__option"
+                  aria-pressed={form.newMemberBillingStrategy === 'FRESH_CYCLE'}
+                  onClick={() => setForm((f) => ({ ...f, newMemberBillingStrategy: 'FRESH_CYCLE', billingCycleAnchorDay: '' }))}
+                >
+                  {t('membershipPlans.form.freshCycle')}
+                </button>
+                <button
+                  type="button"
+                  className="ultm8-pills__option"
+                  aria-pressed={form.newMemberBillingStrategy === 'PRORATED_TO_SHARED_CYCLE'}
+                  onClick={() => setForm((f) => ({ ...f, newMemberBillingStrategy: 'PRORATED_TO_SHARED_CYCLE' }))}
+                >
+                  {t('membershipPlans.form.prorate')}
+                </button>
+              </div>
+              <p className="ultm8-field__hint">
+                {form.newMemberBillingStrategy === 'FRESH_CYCLE' ? t('membershipPlans.form.freshCycleHint') : t('membershipPlans.form.prorateHint')}
+              </p>
+              {form.newMemberBillingStrategy === 'PRORATED_TO_SHARED_CYCLE' ? (
                   <Field label={t('membershipPlans.form.anchorDayLabel')} htmlFor="plan-billing-cycle-anchor-day" hint={t('membershipPlans.form.anchorDayHint')}>
                     <TextField
                       type="number"
@@ -650,8 +640,7 @@ function MembershipPlanForm({
                     />
                   </Field>
                 ) : null}
-              </div>
-            </Field>
+            </div>
           ) : null}
           {showClassesIncluded ? (
             <Field
@@ -675,23 +664,21 @@ function MembershipPlanForm({
             </Field>
           ) : null}
           {showScopedClass ? (
-            <Field
-              label={t('membershipPlans.form.scopedClassLabel')}
-              htmlFor="plan-scopedClass"
-              hint={t('membershipPlans.form.scopedClassHint')}
-            >
-              <SelectField
+            <div className="u8n-dd-field">
+              <NewLookSelect
+                id="plan-scopedClass"
+                label={t('membershipPlans.form.scopedClassLabel')}
                 value={form.scopedClassId}
-                onChange={(e) => {
+                onChange={(nextScopedClassId) => {
                   // Scoping a Class locks classesIncluded to 1 client-side too —
                   // otherwise a leftover higher value reached Save and bounced off
                   // the server's rejection instead of being prevented here.
-                  const nextScopedClassId = e.target.value;
                   setForm((f) => ({ ...f, scopedClassId: nextScopedClassId, classesIncluded: nextScopedClassId ? '1' : f.classesIncluded }));
                 }}
                 options={[{ value: '', label: t('membershipPlans.form.notRestricted') }, ...classes.map((c) => ({ value: c.id, label: c.title }))]}
               />
-            </Field>
+              <span className="ultm8-field__hint u8n-dd-field__hint">{t('membershipPlans.form.scopedClassHint')}</span>
+            </div>
           ) : null}
           {showExpiryDuration ? (
             <Field
@@ -729,23 +716,21 @@ function MembershipPlanForm({
 
           {/* Decision 435 item 7: the days start on the first check-in. */}
           {showTerm && !fixedDates ? (
-            <>
+            <div className="u8f-wide">
               <Checkbox
                 id="plan-first-check-in"
                 label={t('membershipPlans.form.startsOnFirstCheckIn')}
                 checked={form.startsOnFirstCheckIn}
                 onChange={(e) => setForm((f) => ({ ...f, startsOnFirstCheckIn: e.target.checked }))}
               />
-              <p className="ultm8-field__hint" style={{ margin: '4px 0 12px' }}>
-                {t('membershipPlans.form.startsOnFirstCheckInHint')}
-              </p>
-            </>
+              <p className="ultm8-field__hint u8p-check-hint">{t('membershipPlans.form.startsOnFirstCheckInHint')}</p>
+            </div>
           ) : null}
           {/* Decision 435 item 8: a plan on fixed dates, like a 6-week camp. */}
           {showTerm && !form.startsOnFirstCheckIn ? (
-            <fieldset style={{ border: 'none', padding: 0, margin: 0 }} data-testid="plan-fixed-dates">
-              <legend className="ultm8-field__label">{t('membershipPlans.form.fixedDatesLegend')}</legend>
-              <p className="ultm8-field__hint" style={{ marginTop: 0 }}>{t('membershipPlans.form.fixedDatesHint')}</p>
+            <fieldset className="u8f-group" data-testid="plan-fixed-dates">
+              <legend className="ultm8-field__label u8f-group__title">{t('membershipPlans.form.fixedDatesLegend')}</legend>
+              <p className="ultm8-field__hint u8f-group__hint">{t('membershipPlans.form.fixedDatesHint')}</p>
               <Field label={t('membershipPlans.form.fixedStartLabel')} htmlFor="plan-fixed-start">
                 <TextField id="plan-fixed-start" type="date" value={form.fixedStartDate} onChange={(e) => setForm((f) => ({ ...f, fixedStartDate: e.target.value }))} />
               </Field>
@@ -754,12 +739,11 @@ function MembershipPlanForm({
               </Field>
             </fieldset>
           ) : null}
-        </Card>
+        </Chapter>
         ) : null}
 
         {stepIndex === 2 ? (
-        <Card className="ultm8-field-group">
-          <SectionTitle>{t('membershipPlans.form.steps.policies')}</SectionTitle>
+        <Chapter number={3} title={t('membershipPlans.form.steps.policies')}>
           <Field
             label={t('membershipPlans.form.refundLabel')}
             htmlFor="plan-refundFeeDate"
@@ -797,33 +781,37 @@ function MembershipPlanForm({
                 />
               </Field>
               {form.joiningFee ? (
-                <Checkbox
-                  label={t('membershipPlans.form.joiningFeeRefundable')}
-                  checked={form.joiningFeeRefundable}
-                  onChange={(e) => setForm((f) => ({ ...f, joiningFeeRefundable: e.target.checked }))}
-                />
+                <div className="u8f-wide">
+                  <Checkbox
+                    label={t('membershipPlans.form.joiningFeeRefundable')}
+                    checked={form.joiningFeeRefundable}
+                    onChange={(e) => setForm((f) => ({ ...f, joiningFeeRefundable: e.target.checked }))}
+                  />
+                </div>
               ) : null}
               {form.joiningFee && !joiningFeesEnabled ? (
-                <p className="ultm8-field__hint" data-testid="joining-fees-off">
+                <p className="ultm8-field__hint u8f-wide" data-testid="joining-fees-off">
                   {t('membershipPlans.form.joiningFeesOff')}
                 </p>
               ) : null}
             </>
           ) : null}
-          <Checkbox
-            label={t('membershipPlans.form.waiverRequired')}
-
-            checked={form.termsWaiverRequired}
-            onChange={(e) => setForm((f) => ({ ...f, termsWaiverRequired: e.target.checked }))}
-          />
+          <div className="u8f-wide">
+            <Checkbox
+              label={t('membershipPlans.form.waiverRequired')}
+              checked={form.termsWaiverRequired}
+              onChange={(e) => setForm((f) => ({ ...f, termsWaiverRequired: e.target.checked }))}
+            />
+          </div>
           {/* Decision 435 item 9: switch to another plan when it ends;
               Decision 441 item 3: not at a School that takes no cards. */}
           {showSwitch ? (
-            <Field label={t('membershipPlans.form.switchToLabel')} htmlFor="plan-switch-to" hint={t('membershipPlans.form.switchToHint')}>
-              <SelectField
+            <div className="u8n-dd-field">
+              <NewLookSelect
                 id="plan-switch-to"
+                label={t('membershipPlans.form.switchToLabel')}
                 value={form.switchToPlanId}
-                onChange={(e) => setForm((f) => ({ ...f, switchToPlanId: e.target.value }))}
+                onChange={(v) => setForm((f) => ({ ...f, switchToPlanId: v }))}
                 options={[
                   { value: '', label: t('membershipPlans.form.switchToNone') },
                   ...switchTargets.map((p) => ({ value: p.id, label: p.title })),
@@ -831,27 +819,28 @@ function MembershipPlanForm({
                   ...(form.switchToPlanId && !switchTargets.some((p) => p.id === form.switchToPlanId) ? [{ value: form.switchToPlanId, label: form.switchToPlanId }] : []),
                 ]}
               />
-            </Field>
+              <span className="ultm8-field__hint u8n-dd-field__hint">{t('membershipPlans.form.switchToHint')}</span>
+            </div>
           ) : null}
           {/* Decision 316 item 10: shown in the Transactions export. */}
-
-          <Field label={t('charges.incomeCategories.fieldLabel')} htmlFor="plan-incomeCategory" hint={t('charges.incomeCategories.fieldHint')}>
-            <SelectField
+          <div className="u8n-dd-field">
+            <NewLookSelect
               id="plan-incomeCategory"
+              label={t('charges.incomeCategories.fieldLabel')}
               value={form.incomeCategoryId}
-              onChange={(e) => setForm((f) => ({ ...f, incomeCategoryId: e.target.value }))}
+              onChange={(v) => setForm((f) => ({ ...f, incomeCategoryId: v }))}
               options={incomeCategoryOptions(incomeCategories, t('charges.incomeCategories.none'))}
             />
-          </Field>
-        </Card>
+            <span className="ultm8-field__hint u8n-dd-field__hint">{t('charges.incomeCategories.fieldHint')}</span>
+          </div>
+        </Chapter>
         ) : null}
 
         {stepIndex === 3 ? (
-        <Card className="ultm8-field-group">
-          <SectionTitle>{t('membershipPlans.form.steps.disciplinesLessons')}</SectionTitle>
+        <Chapter number={4} title={t('membershipPlans.form.steps.disciplinesLessons')}>
           {disciplines.length > 0 ? (
-            <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
-              <legend className="ultm8-field__label">{t('membershipPlans.form.stylesLegend')}</legend>
+            <fieldset className="u8f-group u8p-styles">
+              <legend className="ultm8-field__label u8f-group__title">{t('membershipPlans.form.stylesLegend')}</legend>
               {disciplines
                 .filter((d) => !d.archivedAt || (initial?.disciplineIds ?? []).includes(d.id))
                 .map((d) => (
@@ -869,27 +858,27 @@ function MembershipPlanForm({
               ))}
             </fieldset>
           ) : null}
-          <Checkbox label={t('membershipPlans.form.includesLessons')} checked={lessonsOn} onChange={(e) => setIncludesLessons(e.target.checked)} />
-          <p className="ultm8-field__hint" style={{ marginTop: 0 }}>
-            {t('membershipPlans.form.includesLessonsHint')}
-          </p>
-        </Card>
+          <div className="u8f-wide">
+            <Checkbox label={t('membershipPlans.form.includesLessons')} checked={lessonsOn} onChange={(e) => setIncludesLessons(e.target.checked)} />
+            <p className="ultm8-field__hint u8p-check-hint">{t('membershipPlans.form.includesLessonsHint')}</p>
+          </div>
+        </Chapter>
         ) : null}
 
         {stepIndex === 4 ? (
-        <Card className="ultm8-field-group">
-          <SectionTitle>{t('membershipPlans.form.steps.visibility')}</SectionTitle>
-          <Checkbox
-            label={t('membershipPlans.form.visibleToStudents')}
-            checked={form.visible}
-            onChange={(e) => setForm((f) => ({ ...f, visible: e.target.checked }))}
-          />
-        </Card>
+        <Chapter number={5} title={t('membershipPlans.form.steps.visibility')}>
+          <div className="u8f-wide">
+            <Checkbox
+              label={t('membershipPlans.form.visibleToStudents')}
+              checked={form.visible}
+              onChange={(e) => setForm((f) => ({ ...f, visible: e.target.checked }))}
+            />
+          </div>
+        </Chapter>
         ) : null}
-        </div>
 
-        <div style={{ display: 'flex', gap: 8, marginTop: 16, justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', gap: 8 }}>
+        <div className="u8f-actions u8p-actions">
+          <div className="u8p-actions__left">
             {stepIndex > 0 ? (
               <Button type="button" variant="secondary" onClick={() => setStepIndex((i) => i - 1)}>
                 {t('membershipPlans.form.back')}

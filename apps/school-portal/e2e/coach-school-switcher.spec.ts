@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { randomUUID } from 'crypto';
 import { addPerson, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
 
@@ -8,6 +8,18 @@ import { addPerson, cleanup, db, seedGradingSchool, signIn, type GradingSchool }
  * they're acting as (apps/school-portal/src/coach/SchoolSwitcher.tsx), instead
  * of silently landing on whichever School happens to sort first.
  */
+/** The switcher is the new look's own drop-down (a combobox button and its
+ * listbox, not a browser <select>): the School it shows, and a pick by name. */
+const switcherOf = (page: Page) => page.getByRole('combobox', { name: 'Switch School' });
+const shownSchool = (page: Page) => switcherOf(page).locator('[data-shown="true"]');
+async function openSwitcher(page: Page) {
+  await switcherOf(page).click();
+  return page.getByRole('listbox', { name: 'Switch School' });
+}
+async function pickSchool(page: Page, option: string) {
+  await (await openSwitcher(page)).getByRole('option', { name: option, exact: true }).click();
+}
+
 let s1: GradingSchool;
 let s2: GradingSchool;
 
@@ -57,18 +69,18 @@ test('a coach at two Schools can switch which one they act as, and it sticks acr
   await signIn(page, coach.token);
   await page.goto('/coach');
 
-  const switcher = page.getByRole('combobox', { name: 'Switch School' });
+  const switcher = switcherOf(page);
   await expect(switcher).toBeVisible();
-  await expect(switcher).toHaveValue(firstSchool.id);
+  await expect(shownSchool(page)).toHaveText(firstSchool.name);
   await expect(page.getByRole('region', { name: 'My classes' })).not.toContainText('Kids BJJ');
 
-  await switcher.selectOption(secondSchool.id);
+  await pickSchool(page, secondSchool.name);
   await expect(page.getByRole('region', { name: 'My classes' }).getByText(/Tuesday .*Kids BJJ/)).toBeVisible();
 
   // The pick survives a full navigation away and back (sessionStorage-backed).
   await page.goto('/grading');
   await page.goto('/coach');
-  await expect(switcher).toHaveValue(secondSchool.id);
+  await expect(shownSchool(page)).toHaveText(secondSchool.name);
   await expect(page.getByRole('region', { name: 'My classes' }).getByText(/Tuesday .*Kids BJJ/)).toBeVisible();
 });
 
@@ -85,9 +97,9 @@ test('the switcher offers both School names as options', async ({ page }) => {
   await signIn(page, coach.token);
   await page.goto('/coach');
 
-  const switcher = page.getByRole('combobox', { name: 'Switch School' });
-  await expect(switcher.getByRole('option', { name: firstSchool.name })).toBeAttached();
-  await expect(switcher.getByRole('option', { name: secondSchool.name })).toBeAttached();
+  const list = await openSwitcher(page);
+  await expect(list.getByRole('option', { name: firstSchool.name })).toBeAttached();
+  await expect(list.getByRole('option', { name: secondSchool.name })).toBeAttached();
 });
 
 test('an owner who also coaches at another School picks it in the switcher and gets its coach screens (Coaches review CP4, CP6)', async ({ page }) => {
@@ -111,9 +123,9 @@ test('an owner who also coaches at another School picks it in the switcher and g
   await page.goto('/coach');
   await expect(page).toHaveURL(/\/dashboard$/);
 
-  const switcher = page.getByRole('combobox', { name: 'Switch School' });
-  await expect(switcher.getByRole('option')).toHaveText([`${ownedSchool.name} · School Owner`, `${coachedSchool.name} · Coach`]);
-  await switcher.selectOption(coachedSchool.id);
+  const list = await openSwitcher(page);
+  await expect(list.getByRole('option')).toHaveText([`${ownedSchool.name} · School Owner`, `${coachedSchool.name} · Coach`]);
+  await list.getByRole('option', { name: `${coachedSchool.name} · Coach`, exact: true }).click();
 
   await expect(page).toHaveURL(/\/coach$/);
   await expect(page.getByRole('heading', { name: 'Coach dashboard' })).toBeVisible();
@@ -124,11 +136,11 @@ test('an owner who also coaches at another School picks it in the switcher and g
   // The Grading link now opens the coached School's board, where they may promote.
   await page.getByRole('link', { name: 'Open the Grading Board' }).click();
   await expect(page).toHaveURL(/\/grading$/);
-  await expect(page.getByRole('combobox', { name: 'Switch School' })).toHaveValue(coachedSchool.id);
+  await expect(shownSchool(page)).toHaveText(`${coachedSchool.name} · Coach`);
   await expect(page.getByRole('link', { name: 'Permissions', exact: true })).toHaveCount(0);
 
   // And back to owning.
-  await page.getByRole('combobox', { name: 'Switch School' }).selectOption(ownedSchool.id);
+  await pickSchool(page, `${ownedSchool.name} · School Owner`);
   await expect(page).toHaveURL(/\/dashboard$/);
   await expect(page.getByText('School Owner', { exact: true })).toBeVisible();
 });
@@ -142,6 +154,6 @@ test('the header names the role held at the School being viewed (Coaches review 
   await signIn(page, person.token);
   await page.goto('/coach');
   await expect(page.getByText('Coach', { exact: true })).toBeVisible();
-  await page.getByRole('combobox', { name: 'Switch School' }).selectOption(secondId);
+  await pickSchool(page, (await db.school.findUniqueOrThrow({ where: { id: secondId } })).name);
   await expect(page.getByText('Branch Staff', { exact: true })).toBeVisible();
 });

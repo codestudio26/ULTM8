@@ -10,6 +10,138 @@ Compare any two versions with `git diff <old> <new>`, e.g. `git diff v1.0.0 mast
 
 Post-v1.4.0 work on `master`.
 
+- **New look: belts, styles and skills** (#573). Styles & Belts, a style's page
+  and Grading → Skills have the new header, cards and tables. Their dialogs (add
+  / edit style, start from template, duplicate, belt editor, reorder) have the
+  new drop-downs, option cards and the button band with Cancel first. A long
+  dialog on a phone no longer spills past its card.
+- **New look: Grading Board page** (#575). The Grading Board page has the new
+  header with the Grading tabs, white cards, our own drop-downs for the style
+  and a student's home branch (no browser drop-downs left), and the new look's
+  switches, pills, tick boxes and tags. Its look changed; how it works didn't.
+- **New look: searchable address picker** (#576). Every address form: Country is
+  now a searchable picker, like Currency, and a State/Province/Emirate from a
+  fixed list is the new look's drop-down. No browser drop-downs are left in the
+  address fields (Decision 460).
+- **New look: My profile, Check-in rules, My belts** (#577). My profile,
+  Check-in rules and My belts take the new look: the new page header, My
+  profile's fields in numbered chapters, check-in rules in grouped cards with
+  the new drop-downs, and the coach's belt picked from a drop-down with belt
+  pictures (Decision 460 item 17; look only).
+- **New look: Grading Settings and Permissions** (#578). Grading → Settings and
+  Grading → Permissions have the new page header with the Grading tabs, new-look
+  cards, drop-downs and switches (permissions are switches per style, one list
+  on a phone); same settings, permissions and saving.
+- **New look: Organisation forms** (#579). The Organisation forms. Add branch,
+  Add/Edit franchise, Branch settings, the School page's setting cards and
+  Create your School use the new look's own drop-downs and dialog button band.
+  Branch settings has the new page header. On a phone, a long dialog's sheet now
+  grows with the form.
+- **New look: the last old-header pages** (#580). The last pages on the old page
+  header: a class's Show QR and Roll call, the Dashboard's Bookings drill-down,
+  a membership plan's Members page, the Membership Plans "owner only" message,
+  and What's new. They get the new header, white cards and tags, our own
+  drop-downs, and they fit a phone. Look only.
+- **New look: sign-in pages** (#581). Log in, Create account, Verify phone,
+  Forgot/Reset passcode, First-login passcode, Accept the Terms, the coach
+  invite and the guest waiver link now use the new look's white card with the
+  ULTM8 mark, soft fields and pill buttons, light and dark, phone first; Create
+  account's Gender is pills and Language the new drop-down. Create your School
+  moves onto the same frame; Access paused and the legal pages take the same
+  card. Look only.
+- **New look: the last old cards and drop-downs** (#582). The Students list's
+  Freeze requests and Waiting for a Guardian cards, the student page's App
+  access passcode, and the header's School switcher and language picker now use
+  the new look's cards, buttons and drop-downs (look only).
+- **New look: Students forms and every dialog** (#563). The Students forms (Add
+  student, Edit, Invite) are in form pattern "F" with numbered chapters, and Add
+  student has a live preview and "Ready to save". Every dialog has the new
+  frame, with its buttons in a band at the foot (full screen on a phone). Log
+  attendance, Merge, Re-enrol and Export use the new look's drop-downs.
+- **Coach dashboard says "Today"** (#565). When the coach's next class is today
+  (in the School's time zone), the right panel now heads it "Today" instead of
+  "Next class".
+- **New look: student-page billing dialogs** (#566). New look for the student
+  page's billing dialogs: create charge, recurring charge, record payment,
+  refund, add credit, cancel charge, waive late fee, stop recurring charge, mark
+  as paid, sell a plan, give a Friend Pass and freeze. They now have the new
+  look's drop-downs, a button band with Cancel first, and a grey price preview
+  card. Amounts and rules are unchanged.
+- **New look: round ✕ and button bands in dialogs** (#567). Every dialog has the
+  design's round ✕ in its header (it closes the dialog as Cancel does), and the
+  Curriculum, Waivers, Notifications, Organisation, Staff, Skill and
+  Verify-belts dialogs have their buttons in the grey band at the foot, Cancel
+  first.
+- **New look: Students section pages** (#568). New look for the Students
+  section's Sign-ups (with its Approve and Reject dialogs), Attendance, Growth,
+  Import and Rosters pages: the new header and tabs, white cards, new-look
+  drop-downs, pills and tick boxes, stat rows, and tables that become cards on
+  narrow screens.
+- **New look: grading dialogs** (#570). Grading dialogs (the Ranks tab's Grade,
+  Move down, Correct date, Verify, Log a class, Void, Edit note and Note
+  changes, and the board's Move, Board columns, Promote these students and
+  "Promote {name}?") are in the new look. Buttons sit in the dialog's band with
+  Cancel first, drop-downs are the new look's own, and notes are calm amber and
+  blue boxes. Look only.
+- **New look: Transactions dialogs and Membership plan form** (#569). New look
+  for the Transactions dialogs (Mark as paid, Record a payment, Cancel payment,
+  Refund desk sale) and the Membership plan form: new header, step pills,
+  chapters on a white sheet, new-look drop-downs and pills, and buttons in the
+  dialog band. Amounts and rules are unchanged.
+- **New look: Classes and Schedule forms** (#571). The Classes and Schedule
+  forms (class and timetable-slot forms, Book a student, Booked classes,
+  Closures, Open mat, Scan a QR code) use the new look's drop-downs and button
+  band, and the class page has the new-look header, cards and tags, with its
+  lists as cards on a phone.
+- **New look: Team forms** (#572). New look for the Team forms: the Instructors
+  and Staff dialogs, Give a role and Invite coaches use the new drop-downs and
+  the button band (Cancel first). Correct a belt shows belt pictures, Staff
+  access presets are pills, and "My coach profile" is in numbered chapters with
+  the new page header.
+- **New look: the staff Check-in tab** (Decision 453; visual only). The new
+  page header with Front-desk mode (and the Students tabs for the owner),
+  today's classes in the grey column, the check-in card, and Recent check-ins
+  in the right-hand panel (below the page on a phone). The Branch and "Paid by"
+  pickers are our own drop-down. Front-desk mode is unchanged.
+- **New look: the coach dashboard** (Decision 453; visual only). Matches the
+  owner Dashboard: Grading, My classes, Notifications, Birthdays and My
+  training as new-look cards (Branch Staff keep "Classes at your branch this
+  week"), and a right-hand panel with the coach's next class (Roll call, Show
+  QR) and the Ready to grade list, whose names open the student's Ranks tab.
+  When that list shows, the Notifications card leaves out the "ready to grade"
+  alerts (still on the Notifications page).
+- **New look: Waiver settings** (Decision 453; visual only). The page keeps its
+  layout and all seven settings in one white card, each with its switch and
+  its explanation; Save changes and Discard as a button pair; notes for
+  messages; the retention rule in its own card; a number out of range now also
+  gets a red ring. One column on a phone.
+- **Cancellations to resolve: class avatars on the rows** (Decision 458 item
+  2). Each row, in the table and in the phone/tablet cards, starts with its
+  class's avatar like Classes and Timetable (the banner, or initials on a soft
+  circle). The list response gains two read-only fields, `classBannerUrl` and
+  `classTimetableSlotId`.
+- **New look: Schedule → Classes and Timetable** (Decision 453; visual only).
+  Both list pages use the new page header, white cards, class avatars (banner or
+  initials on a soft circle), the new look's own drop-downs and pill buttons,
+  and phone layouts; every view, filter and action stays as it was. A right-hand
+  panel names the selected class and holds its row actions, never repeating the
+  row; Timetable rows name the coach, and the Month dots use the soft colours
+  (Decision 455).
+- **New look: the Curriculum page** (Decision 453; visual only). The approved
+  design draws no Curriculum screen, so the page keeps its layout and every
+  feature, restyled: the new page header, white cards for Categories and for
+  each category's lessons, tags, notes, round ↑/↓ buttons, our own drop-downs
+  in the lesson form, a pill file button for video upload, and each lesson as
+  a card on a phone. A lesson row keeps Comments, ↑, ↓ and Edit in view; Upload
+  video, Archive/Unarchive and Delete move into its ⋮ menu (a greyed-out item
+  shows why under it). Same data, API calls and permissions.
+- **From grading, a student's page opens on Ranks** (Decision 457). Links from the Grading Board and from the "Belts waiting to be verified" notice open the student page on its Ranks tab, so coaches can grade without an extra click.
+- **New look: Cancellations to resolve** (Decision 453; visual only). The
+  approved design has no Cancellations screen, so the page keeps its columns
+  and actions and takes the new header, a white card with the table, soft
+  status tags and pill buttons (Refund and Mark refund paid in mint). When the
+  table doesn't fit (phone, tablet, narrow window) each row becomes a card with
+  the buttons stacked, so nothing scrolls sideways (Decision 458).
 - **New look: the student's full page** (Decision 453; visual only). Two tabs,
   Profile and Ranks; white cards with light header bars; the summary panel on
   the right (status, Edit, check-in code, contact, personal details, home
