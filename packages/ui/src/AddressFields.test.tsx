@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { render, screen, waitFor, within } from '@testing-library/react';
+import userEvent, { type UserEvent } from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import {
   ADDRESS_TEXT,
@@ -24,20 +24,29 @@ function Harness({ initial, autocomplete }: { initial: PostalAddress; autocomple
   );
 }
 
+/** Picks a country in the searchable Country picker (Decision 460), as a person does: type, then click the match. */
+async function pickCountry(user: UserEvent, name: string, label = 'Country') {
+  const box = screen.getByRole('combobox', { name: label });
+  await user.click(box);
+  await user.type(box, name);
+  await user.click(within(screen.getByRole('listbox')).getByRole('option', { name }));
+}
+
 describe('AddressFields (Decision 276)', () => {
   it("shows the chosen country's own fields and labels", async () => {
     const user = userEvent.setup();
     render(<Harness initial={{ ...EMPTY_POSTAL_ADDRESS, country: 'US' }} />);
     expect(screen.getByLabelText('ZIP code')).toBeInTheDocument();
-    expect(screen.getByLabelText('State')).toBeInstanceOf(HTMLSelectElement);
+    // A region from a fixed list is the new look's drop-down, never a browser <select>.
+    expect(screen.getByRole('combobox', { name: 'State' })).toBeInstanceOf(HTMLButtonElement);
 
-    await user.selectOptions(screen.getByLabelText('Country'), 'GB');
+    await pickCountry(user, 'United Kingdom');
     expect(screen.getByLabelText('Postcode')).toBeInTheDocument();
     expect(screen.getByLabelText('County (optional)')).toBeInstanceOf(HTMLInputElement);
     expect(screen.queryByLabelText('ZIP code')).not.toBeInTheDocument();
 
-    await user.selectOptions(screen.getByLabelText('Country'), 'AE');
-    expect(screen.getByLabelText('Emirate')).toBeInstanceOf(HTMLSelectElement);
+    await pickCountry(user, 'United Arab Emirates');
+    expect(screen.getByRole('combobox', { name: 'Emirate' })).toBeInstanceOf(HTMLButtonElement);
     expect(screen.queryByLabelText('Postcode')).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/Postal code/)).not.toBeInTheDocument();
   });
@@ -46,8 +55,91 @@ describe('AddressFields (Decision 276)', () => {
     const user = userEvent.setup();
     render(<Harness initial={{ ...EMPTY_POSTAL_ADDRESS, country: 'US' }} />);
     await user.type(screen.getByLabelText('Address line 1'), '1 Main St');
-    await user.selectOptions(screen.getByLabelText('Country'), 'CA');
+    await pickCountry(user, 'Canada');
     expect(screen.getByLabelText('Address line 1')).toHaveValue('1 Main St');
+    expect(JSON.parse(screen.getByTestId('value').textContent ?? '{}').country).toBe('CA');
+  });
+
+  it('finds a country by its name, its English name or its code, and stores the code (Decision 460)', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={{ ...EMPTY_POSTAL_ADDRESS, country: 'US' }} />);
+    const box = screen.getByRole('combobox', { name: 'Country' });
+    expect(box).toHaveValue('United States');
+    await user.click(box);
+    // Every country, "Select a country" first, until something is typed.
+    const all = within(screen.getByRole('listbox')).getAllByRole('option');
+    expect(all[0]).toHaveTextContent('Select a country');
+    expect(all.length).toBeGreaterThan(200);
+    await user.type(box, 'zeal');
+    expect(within(screen.getByRole('listbox')).getAllByRole('option').map((o) => o.textContent)).toEqual(['New Zealand']);
+    await user.clear(box);
+    await user.type(box, 'gb');
+    expect(within(screen.getByRole('listbox')).getAllByRole('option').map((o) => o.textContent)).toEqual(['United Kingdom']);
+    await user.clear(box);
+    await user.type(box, 'qqqq');
+    expect(within(screen.getByRole('listbox')).getByText('No matches.')).toBeInTheDocument();
+    await user.clear(box);
+    await user.type(box, 'brazil');
+    await user.click(within(screen.getByRole('listbox')).getByRole('option', { name: 'Brazil' }));
+    expect(JSON.parse(screen.getByTestId('value').textContent ?? '{}').country).toBe('BR');
+    expect(box).toHaveValue('Brazil');
+  });
+
+  it('picks a country and a region with the keyboard; Escape closes without a change', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={{ ...EMPTY_POSTAL_ADDRESS, country: 'GB' }} />);
+    const box = screen.getByRole('combobox', { name: 'Country' });
+    await user.click(box);
+    await user.type(box, 'austral');
+    await user.keyboard('{ArrowDown}{Enter}');
+    expect(JSON.parse(screen.getByTestId('value').textContent ?? '{}').country).toBe('AU');
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+
+    await user.click(box);
+    await user.type(box, 'japan');
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    expect(box).toHaveValue('Australia');
+
+    const state = screen.getByRole('combobox', { name: 'State' });
+    state.focus();
+    // Opens on "Select…", then down past the Australian Capital Territory to New South Wales.
+    await user.keyboard('{ArrowDown}{ArrowDown}{ArrowDown}{Enter}');
+    expect(JSON.parse(screen.getByTestId('value').textContent ?? '{}').region).toBe('NSW');
+  });
+
+  it('counts a country or region pick as an edit, as a browser <select> did', async () => {
+    const user = userEvent.setup();
+    const onInput = vi.fn();
+    render(
+      <div onInput={onInput}>
+        <Harness initial={{ ...EMPTY_POSTAL_ADDRESS, country: 'US' }} />
+      </div>,
+    );
+    const box = screen.getByRole('combobox', { name: 'Country' });
+    // Opening and closing, or picking the country already chosen, is not an edit.
+    await user.click(box);
+    await user.click(within(screen.getByRole('listbox')).getByRole('option', { name: 'United States' }));
+    expect(onInput).not.toHaveBeenCalled();
+    await user.click(box);
+    await user.click(within(screen.getByRole('listbox')).getByRole('option', { name: 'Canada' }));
+    expect(onInput).toHaveBeenCalledTimes(1);
+    await user.click(screen.getByRole('combobox', { name: 'Province' }));
+    await user.click(screen.getByRole('option', { name: 'Ontario' }));
+    expect(onInput).toHaveBeenCalledTimes(2);
+    expect(JSON.parse(screen.getByTestId('value').textContent ?? '{}')).toMatchObject({ country: 'CA', region: 'ON' });
+  });
+
+  it('shows a region error under the drop-down and tells screen readers', () => {
+    render(
+      <AddressFields idPrefix="t" value={{ ...EMPTY_POSTAL_ADDRESS, country: 'US', line1: '1 Main St', city: 'Austin' }} onChange={vi.fn()} errors={{ region: 'required', country: 'invalid' }} />,
+    );
+    const state = screen.getByRole('combobox', { name: 'State' });
+    expect(state).toHaveAttribute('aria-invalid', 'true');
+    expect(state).toHaveAccessibleDescription('State is required.');
+    const country = screen.getByRole('combobox', { name: 'Country' });
+    expect(country).toHaveAttribute('aria-invalid', 'true');
+    expect(country).toHaveAccessibleDescription('Choose a country from the list.');
   });
 
   it('has no search box without a provider', () => {
@@ -151,7 +243,7 @@ describe('postalAddressFromRecord / preparePostalAddress', () => {
       </UiStringsProvider>,
     );
     expect(screen.getByLabelText('Código ZIP')).toBeInTheDocument();
-    const country = screen.getByLabelText('País') as HTMLSelectElement;
-    expect(country.selectedOptions[0]?.textContent).toBe(new Intl.DisplayNames(['es'], { type: 'region' }).of('US'));
+    const country = screen.getByRole('combobox', { name: 'País' });
+    expect(country).toHaveValue(new Intl.DisplayNames(['es'], { type: 'region' }).of('US'));
   });
 });
