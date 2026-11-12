@@ -7,6 +7,8 @@ import { StaffAttendanceService } from './staff-attendance.service';
 import {
   AttendanceStatsQueryDto,
   AttendanceStatsResponseDto,
+  CheckInsTodayQueryDto,
+  CheckInsTodayResponseDto,
   LogAttendanceDto,
   LogClassesQueryDto,
   LogClassesResponseDto,
@@ -28,6 +30,14 @@ export class StaffAttendanceController {
   @Get('stats')
   stats(@CurrentUser() user: JwtPayload, @Param('schoolId', ParseUUIDPipe) schoolId: string, @Query() query: AttendanceStatsQueryDto) {
     return this.staffAttendance.stats(user.sub, schoolId, query);
+  }
+
+  /** Check-ins to today's classes, in the School's time zone: the Dashboard's
+   * "Check-ins today". The same count and the same people as the statistics. */
+  @ApiOkResponse({ type: CheckInsTodayResponseDto })
+  @Get('today')
+  today(@CurrentUser() user: JwtPayload, @Param('schoolId', ParseUUIDPipe) schoolId: string, @Query() query: CheckInsTodayQueryDto) {
+    return this.staffAttendance.today(user.sub, schoolId, query);
   }
 
   /** The classes on one day that attendance can be logged for. */

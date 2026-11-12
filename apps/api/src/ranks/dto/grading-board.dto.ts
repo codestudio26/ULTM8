@@ -175,6 +175,44 @@ export class GradingBoardResponseDto {
   atTopRank!: number;
 }
 
+/** One student on the Dashboard's "Ready to grade" list (Decision 454 item 8). */
+export class ReadyToGradeItemDto {
+  @ApiProperty()
+  studentId!: string;
+
+  @ApiProperty()
+  firstName!: string;
+
+  @ApiProperty()
+  surname!: string;
+
+  @ApiProperty({ type: String, nullable: true, description: 'As the Grading Board card: null when none is set or a child has no active camera consent.' })
+  photoUrl!: string | null;
+
+  @ApiProperty({ description: 'The style they are ready in.' })
+  disciplineId!: string;
+
+  @ApiProperty()
+  disciplineName!: string;
+
+  @ApiProperty({ type: String, nullable: true, description: 'The rung they hold (a stripe tier id of the style).' })
+  currentStripeId!: string | null;
+
+  @ApiProperty({ description: 'The rung they are working toward.' })
+  nextRungId!: string;
+
+  @ApiProperty({ description: 'Progress toward the next rung, as on the Grading Board.' })
+  progressPercent!: number;
+}
+
+export class ReadyToGradeResponseDto {
+  @ApiProperty({ description: 'How many students are in the Ready to Grade column across the styles counted.' })
+  total!: number;
+
+  @ApiProperty({ type: [ReadyToGradeItemDto], description: 'Every one of them, highest progress first. A student ready in two styles is listed once per style.' })
+  items!: ReadyToGradeItemDto[];
+}
+
 /** The rung a student was on when the batch was checked (Decision 284). */
 export class BulkExpectedRungDto {
   @ApiProperty()

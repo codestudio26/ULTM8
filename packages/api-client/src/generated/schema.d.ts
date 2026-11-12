@@ -4100,6 +4100,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/grading-board/ready": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GradingController_getReadyToGrade"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/grading-board": {
         parameters: {
             query?: never;
@@ -5196,6 +5212,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["StaffAttendanceController_stats"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/attendance/today": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StaffAttendanceController_today"];
         put?: never;
         post?: never;
         delete?: never;
@@ -12510,6 +12542,28 @@ export interface components {
         PendingVerificationListResponseDto: {
             items: components["schemas"]["PendingVerificationDto"][];
         };
+        ReadyToGradeItemDto: {
+            studentId: string;
+            firstName: string;
+            surname: string;
+            /** @description As the Grading Board card: null when none is set or a child has no active camera consent. */
+            photoUrl: string | null;
+            /** @description The style they are ready in. */
+            disciplineId: string;
+            disciplineName: string;
+            /** @description The rung they hold (a stripe tier id of the style). */
+            currentStripeId: string | null;
+            /** @description The rung they are working toward. */
+            nextRungId: string;
+            /** @description Progress toward the next rung, as on the Grading Board. */
+            progressPercent: number;
+        };
+        ReadyToGradeResponseDto: {
+            /** @description How many students are in the Ready to Grade column across the styles counted. */
+            total: number;
+            /** @description Every one of them, highest progress first. A student ready in two styles is listed once per style. */
+            items: components["schemas"]["ReadyToGradeItemDto"][];
+        };
         BoardFeeRequestDto: {
             /** @description The fee request (use it to waive or cancel, or to dismiss a "to decide"). */
             id: string;
@@ -13408,6 +13462,18 @@ export interface components {
             studentsPerClass: number;
             /** @description Members' check-ins / students, to one decimal (0 when nobody checked in). */
             classesPerStudent: number;
+        };
+        CheckInsTodayResponseDto: {
+            /** @description Today (YYYY-MM-DD, the School's time zone). */
+            date: string;
+            /** @description The School's time zone the day is in (UTC when the School has none). */
+            timeZone: string;
+            /** @description The Branches counted; null means the whole School. */
+            branchIds: string[] | null;
+            /** @description Check-ins to today's classes, counted as the attendance statistics count them: members checked in (or logged), plus guests checked in on a Friend Pass. */
+            checkIns: number;
+            /** @description Today's classes with at least one check-in. */
+            classes: number;
         };
         LogClassItemDto: {
             id: string;
@@ -22733,6 +22799,27 @@ export interface operations {
             };
         };
     };
+    GradingController_getReadyToGrade: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReadyToGradeResponseDto"];
+                };
+            };
+        };
+    };
     GradingController_getGradingBoard: {
         parameters: {
             query: {
@@ -24546,6 +24633,30 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AttendanceStatsResponseDto"];
+                };
+            };
+        };
+    };
+    StaffAttendanceController_today: {
+        parameters: {
+            query?: {
+                /** @description Only the classes held at this Branch. Staff may only name one of their own Branches. */
+                branchId?: string;
+            };
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckInsTodayResponseDto"];
                 };
             };
         };

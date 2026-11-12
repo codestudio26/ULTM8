@@ -2538,6 +2538,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     branchLabel: "支部",
     branchAll: "すべての支部",
     statActiveStudents: "アクティブな生徒",
+    statCheckInsToday: "今日のチェックイン",
+    checkInsAcrossClasses: {
+      other: "これまでに {count} クラス",
+    },
+    checkInsLoadFailed: "チェックインを読み込めませんでした。",
+    readySeeAll: "{count} 人すべて見る →",
+    readyLoadFailed: "昇級準備完了の一覧を読み込めませんでした。",
     wholeSchool: "スクール全体",
     birthdays: {
       title: "今週の誕生日",

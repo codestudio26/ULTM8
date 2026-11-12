@@ -12394,6 +12394,41 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/grading-board/ready": {
+      "get": {
+        "operationId": "GradingController_getReadyToGrade",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadyToGradeResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/grading-board": {
       "get": {
         "operationId": "GradingController_getGradingBoard",
@@ -15709,6 +15744,50 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AttendanceStatsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "attendance"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/attendance/today": {
+      "get": {
+        "operationId": "StaffAttendanceController_today",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "required": false,
+            "in": "query",
+            "description": "Only the classes held at this Branch. Staff may only name one of their own Branches.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckInsTodayResponseDto"
                 }
               }
             }
@@ -38761,6 +38840,76 @@
           "items"
         ]
       },
+      "ReadyToGradeItemDto": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "photoUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "As the Grading Board card: null when none is set or a child has no active camera consent."
+          },
+          "disciplineId": {
+            "type": "string",
+            "description": "The style they are ready in."
+          },
+          "disciplineName": {
+            "type": "string"
+          },
+          "currentStripeId": {
+            "type": "string",
+            "nullable": true,
+            "description": "The rung they hold (a stripe tier id of the style)."
+          },
+          "nextRungId": {
+            "type": "string",
+            "description": "The rung they are working toward."
+          },
+          "progressPercent": {
+            "type": "number",
+            "description": "Progress toward the next rung, as on the Grading Board."
+          }
+        },
+        "required": [
+          "studentId",
+          "firstName",
+          "surname",
+          "photoUrl",
+          "disciplineId",
+          "disciplineName",
+          "currentStripeId",
+          "nextRungId",
+          "progressPercent"
+        ]
+      },
+      "ReadyToGradeResponseDto": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "number",
+            "description": "How many students are in the Ready to Grade column across the styles counted."
+          },
+          "items": {
+            "description": "Every one of them, highest progress first. A student ready in two styles is listed once per style.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReadyToGradeItemDto"
+            }
+          }
+        },
+        "required": [
+          "total",
+          "items"
+        ]
+      },
       "BoardFeeRequestDto": {
         "type": "object",
         "properties": {
@@ -41577,6 +41726,42 @@
           "students",
           "studentsPerClass",
           "classesPerStudent"
+        ]
+      },
+      "CheckInsTodayResponseDto": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "description": "Today (YYYY-MM-DD, the School's time zone)."
+          },
+          "timeZone": {
+            "type": "string",
+            "description": "The School's time zone the day is in (UTC when the School has none)."
+          },
+          "branchIds": {
+            "nullable": true,
+            "description": "The Branches counted; null means the whole School.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "checkIns": {
+            "type": "number",
+            "description": "Check-ins to today's classes, counted as the attendance statistics count them: members checked in (or logged), plus guests checked in on a Friend Pass."
+          },
+          "classes": {
+            "type": "number",
+            "description": "Today's classes with at least one check-in."
+          }
+        },
+        "required": [
+          "date",
+          "timeZone",
+          "branchIds",
+          "checkIns",
+          "classes"
         ]
       },
       "LogClassItemDto": {
