@@ -1,0 +1,21 @@
+/* "What's new" in the new look (Decision 460 item 17): a white card per post
+ * (billingLook.css `.u8b-card`). Look only. */
+
+[data-look='redesign'] .u8wn-post__title {
+  margin: 0 0 4px;
+  overflow-wrap: anywhere;
+}
+[data-look='redesign'] .u8wn-post__date {
+  margin: 0 0 12px;
+}
+[data-look='redesign'] .u8wn-post__body {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  line-height: 1.55;
+}
+[data-look='redesign'] .u8wn-more {
+  display: flex;
+  justify-content: center;
+}

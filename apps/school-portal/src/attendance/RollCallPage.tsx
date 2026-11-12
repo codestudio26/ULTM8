@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Badge, Button, Card, EmptyState, ErrorBanner, Field, PageHeader, SelectField, Spinner } from '@ultm8/ui';
+import { Button, EmptyState, ErrorBanner, Spinner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useClass } from '../classes/classQueries';
 import { useClassBookings, type BookingResponse } from '../bookings/bookingQueries';
@@ -11,6 +11,11 @@ import { formatLocale } from '../i18n/format';
 import { useClassZone } from '../classes/useClassZone';
 import { formatInZone } from '../lib/datetime';
 import { useRosterStudents, useRosters } from '../students/rosterQueries';
+import { NewLookPage, NewLookPageHeader } from '../layout/NewLookPage';
+import { NewLookSelect } from '../layout/NewLookSelect';
+import '../schedule/schedule.css';
+import '../classes/classDetail.css';
+import './attendanceLook.css';
 
 /** Instructor roll-call (Decision 71's named concept; mechanics shipped Phase
  * 51/Decision 107 as `POST /classes/{id}/attendance-scan`) — the client half
@@ -70,42 +75,54 @@ export function RollCallPage() {
     instructorScan.mutate({ studentId, studentToken }, { onError: (err) => setRowError({ studentId, message: errorMessage(err, t) }) });
   }
 
+  // New look (Decision 460 item 17): the shell's header, the class page's
+  // white cards and tags, and our own drop-down for the roster. The rows, their
+  // order and both check-in buttons are as before.
   return (
     <>
-      <PageHeader
+      <NewLookPageHeader
         title={cls ? t('attendance.rollCall.titleWithClass', { title: cls.title }) : t('attendance.rollCall.title')}
         subtitle={cls ? `${formatInZone(cls.startDate, zone, formatLocale())} – ${formatInZone(cls.endDate, zone, formatLocale())}` : undefined}
       />
-      {rosterItems.length > 0 ? (
-        <Card>
-          <div style={{ maxWidth: 280 }}>
-            <Field label={t('attendance.rollCall.rosterLabel')} htmlFor="roll-call-roster" hint={t('attendance.rollCall.rosterHint')}>
-              <SelectField
+      <NewLookPage>
+        {rosterItems.length > 0 ? (
+          <section className="u8s-card u8cd-card u8at-filter">
+            <div className="u8n-dd-field">
+              <NewLookSelect
                 id="roll-call-roster"
+                label={t('attendance.rollCall.rosterLabel')}
                 value={rosterFilter}
-                onChange={(e) => setRosterFilter(e.target.value)}
+                onChange={setRosterFilter}
+                aria-describedby="roll-call-roster-hint"
                 options={[{ value: '', label: t('attendance.rollCall.rosterAll') }, ...rosterItems.map((r) => ({ value: r.id, label: r.name }))]}
               />
-            </Field>
-          </div>
-        </Card>
-      ) : null}
-      <Card>
-        {bookings.length === 0 ? (
-          <EmptyState title={t('attendance.rollCall.emptyTitle')} description={t('attendance.rollCall.emptyDescription')} />
-        ) : (
-          bookings.map((booking) => (
-            <RollCallRow
-              key={booking.id}
-              booking={booking}
-              pending={instructorScan.isPending && instructorScan.variables?.studentId === booking.studentId}
-              error={rowError?.studentId === booking.studentId ? rowError.message : null}
-              onScan={() => setScanningStudentId(booking.studentId)}
-              onManualConfirm={() => handleManualConfirm(booking.studentId)}
-            />
-          ))
-        )}
-      </Card>
+              <span id="roll-call-roster-hint" className="u8n-dd-field__hint">
+                {t('attendance.rollCall.rosterHint')}
+              </span>
+            </div>
+          </section>
+        ) : null}
+        <section className="u8s-card u8cd-card">
+          {bookings.length === 0 ? (
+            <div className="u8cd-card__note">
+              <EmptyState title={t('attendance.rollCall.emptyTitle')} description={t('attendance.rollCall.emptyDescription')} />
+            </div>
+          ) : (
+            <ul className="u8at-rows" data-testid="roll-call">
+              {bookings.map((booking) => (
+                <RollCallRow
+                  key={booking.id}
+                  booking={booking}
+                  pending={instructorScan.isPending && instructorScan.variables?.studentId === booking.studentId}
+                  error={rowError?.studentId === booking.studentId ? rowError.message : null}
+                  onScan={() => setScanningStudentId(booking.studentId)}
+                  onManualConfirm={() => handleManualConfirm(booking.studentId)}
+                />
+              ))}
+            </ul>
+          )}
+        </section>
+      </NewLookPage>
 
       {scanningStudentId ? (
         <QrScanModal
@@ -167,20 +184,20 @@ function RollCallRow({
   const statusLabel = statusKey ? t(statusKey) : booking.status;
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: '1px solid var(--color-border)' }}>
-      <div>
-        <div>{name || booking.studentId}</div>
+    <li className="u8at-row">
+      <div className="u8at-row__who">
+        <div className="u8at-row__name">{name || booking.studentId}</div>
         {isCompleted && booking.checkInMethod ? (
-          <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>{CHECK_IN_METHOD_LABEL[booking.checkInMethod] ? t(CHECK_IN_METHOD_LABEL[booking.checkInMethod]!) : booking.checkInMethod}</div>
+          <div className="u8at-row__sub">{CHECK_IN_METHOD_LABEL[booking.checkInMethod] ? t(CHECK_IN_METHOD_LABEL[booking.checkInMethod]!) : booking.checkInMethod}</div>
         ) : !isUpcoming ? (
-          <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>{statusLabel}</div>
+          <div className="u8at-row__sub">{statusLabel}</div>
         ) : null}
-        {error ? <p style={{ color: 'var(--color-danger)', fontSize: 13, margin: '4px 0 0' }}>{error}</p> : null}
+        {error ? <p className="u8at-row__error">{error}</p> : null}
       </div>
       {isCompleted ? (
-        <Badge variant="success">{t('attendance.rollCall.present')}</Badge>
+        <span className="u8s-tag u8s-tag--mint">{t('attendance.rollCall.present')}</span>
       ) : isUpcoming ? (
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="u8at-row__buttons">
           <Button variant="secondary" onClick={onScan} disabled={pending}>
             {t('attendance.rollCall.scan')}
           </Button>
@@ -189,8 +206,8 @@ function RollCallRow({
           </Button>
         </div>
       ) : (
-        <Badge variant="default">{statusLabel}</Badge>
+        <span className="u8s-tag">{statusLabel}</span>
       )}
-    </div>
+    </li>
   );
 }

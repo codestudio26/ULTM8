@@ -168,7 +168,7 @@ test.describe('in São Paulo', () => {
     await signIn(page, s.ownerToken);
     await page.goto('/bookings-drilldown');
     const expected = new Date(classStartMs).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', timeZone: 'UTC' });
-    const card = page.locator('.ultm8-card', { has: page.getByRole('link', { name: 'Dashboard Spec Judo' }) });
+    const card = page.getByTestId('bookings-day').filter({ has: page.getByRole('link', { name: 'Dashboard Spec Judo' }) });
     await expect(card.getByRole('heading', { level: 2 })).toHaveText(expected);
   });
 });
@@ -242,7 +242,9 @@ test('Decision 367 (Q5): with two Branches the Owner can narrow the Dashboard to
     // Dashboard, whose own Branch picker (a button, not a field) has the same
     // name; wait for the Bookings page before reading its field.
     await expect(page.getByRole('heading', { level: 1, name: 'Bookings' })).toBeVisible();
-    await expect(page.getByLabel('Branch')).toHaveValue(branches[0].id);
+    // Our own drop-down here too (Decision 460 item 17), showing the Branch.
+    const field = page.getByRole('combobox', { name: 'Branch', exact: true });
+    await expect(field.locator('[data-shown="true"]')).toHaveText('Dashboard North');
   } finally {
     await db.branch.deleteMany({ where: { id: { in: branches.map((b) => b.id) } } });
   }
