@@ -1,0 +1,35 @@
+/* The Organisation forms in the new look (Decision 460): the Branch, Franchise
+ * and School forms and dialogs. Their fields, drop-downs (NewLookSelect in
+ * `.u8n-dd-field`), dialog frame and button band (ModalActions) are the shared
+ * new-look parts; this file only adds what those don't cover. Scoped to
+ * [data-look='redesign'], with the shell's --u8n-* colours, so dark mode
+ * follows them. */
+
+/* A column of short pieces (a status tag, its hint, a button), left-aligned. */
+[data-look='redesign'] .u8o-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+/* Edit franchise → "Apply the new rate": the two choices side by side
+ * (wrapping on a phone), with a line of explanation above and below. */
+[data-look='redesign'] .u8o-choice {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+[data-look='redesign'] .u8o-choice > .ultm8-field__hint {
+  margin: 0;
+}
+[data-look='redesign'] .u8o-choice__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+@media (max-width: 767px) {
+  [data-look='redesign'] .u8o-choice__buttons > .ultm8-btn {
+    flex: 1 1 140px;
+  }
+}
