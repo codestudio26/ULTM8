@@ -9,8 +9,8 @@ import { pickOption } from './team-helpers';
  * your School (/onboarding). The dialogs keep the shared frame with their
  * buttons in the band at the foot (Cancel first); every browser `<select>` is
  * the new look's own drop-down (a pick counts as an edit, as a browser
- * select's change did), except the shared address Country/Region pickers,
- * which another change takes; Branch settings has the new page header. Look
+ * select's change did; the shared address Country/Region pickers are their
+ * own change's, checked there); Branch settings has the new page header. Look
  * only: the same fields, checks and API calls, which the branch, franchise,
  * school, charges and cancellation specs still cover.
  */
