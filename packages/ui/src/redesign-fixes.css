@@ -344,8 +344,12 @@
     align-items: flex-start;
     overflow-y: auto;
   }
+  /* At least the full screen, and as tall as its content: a stretched flex
+     item stops at the screen's height, and a long dialog (the belt editor)
+     then spilled past its white card onto the dimmed page. */
   [data-look='redesign'] .ultm8-modal,
   [data-look='redesign'] .ultm8-modal--wide {
+    align-self: flex-start;
     max-width: none;
     max-height: none;
     min-height: 100%;

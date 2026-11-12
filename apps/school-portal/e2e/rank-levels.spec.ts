@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
+import { pickOption } from './team-helpers';
 
 /**
  * Ranks without a belt: Levels (backlog 3.19, Decision 290; DESIGN.md →
@@ -68,7 +69,7 @@ test('Add discipline can create a Levels style', async ({ page }) => {
   await page.getByRole('button', { name: 'Add discipline' }).click();
   const dialog = page.getByRole('dialog', { name: 'Add discipline' });
   await dialog.getByLabel('Discipline name').fill('No-Gi');
-  await dialog.getByLabel('Ranks shown as').selectOption('LEVELS');
+  await pickOption(dialog, 'Ranks shown as', 'Levels (no belt)');
   await dialog.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(dialog).toBeHidden();
   await expect.poll(async () => (await db.discipline.findFirst({ where: { schoolId: s.schoolId, name: 'No-Gi' } }))?.rankDisplay).toBe('LEVELS');

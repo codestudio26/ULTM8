@@ -10,6 +10,51 @@ Compare any two versions with `git diff <old> <new>`, e.g. `git diff v1.0.0 mast
 
 Post-v1.4.0 work on `master`.
 
+- **New look: Students forms and every dialog** (#563). The Students forms (Add
+  student, Edit, Invite) are in form pattern "F" with numbered chapters, and Add
+  student has a live preview and "Ready to save". Every dialog has the new
+  frame, with its buttons in a band at the foot (full screen on a phone). Log
+  attendance, Merge, Re-enrol and Export use the new look's drop-downs.
+- **Coach dashboard says "Today"** (#565). When the coach's next class is today
+  (in the School's time zone), the right panel now heads it "Today" instead of
+  "Next class".
+- **New look: student-page billing dialogs** (#566). New look for the student
+  page's billing dialogs: create charge, recurring charge, record payment,
+  refund, add credit, cancel charge, waive late fee, stop recurring charge, mark
+  as paid, sell a plan, give a Friend Pass and freeze. They now have the new
+  look's drop-downs, a button band with Cancel first, and a grey price preview
+  card. Amounts and rules are unchanged.
+- **New look: round ✕ and button bands in dialogs** (#567). Every dialog has the
+  design's round ✕ in its header (it closes the dialog as Cancel does), and the
+  Curriculum, Waivers, Notifications, Organisation, Staff, Skill and
+  Verify-belts dialogs have their buttons in the grey band at the foot, Cancel
+  first.
+- **New look: Students section pages** (#568). New look for the Students
+  section's Sign-ups (with its Approve and Reject dialogs), Attendance, Growth,
+  Import and Rosters pages: the new header and tabs, white cards, new-look
+  drop-downs, pills and tick boxes, stat rows, and tables that become cards on
+  narrow screens.
+- **New look: grading dialogs** (#570). Grading dialogs (the Ranks tab's Grade,
+  Move down, Correct date, Verify, Log a class, Void, Edit note and Note
+  changes, and the board's Move, Board columns, Promote these students and
+  "Promote {name}?") are in the new look. Buttons sit in the dialog's band with
+  Cancel first, drop-downs are the new look's own, and notes are calm amber and
+  blue boxes. Look only.
+- **New look: Transactions dialogs and Membership plan form** (#569). New look
+  for the Transactions dialogs (Mark as paid, Record a payment, Cancel payment,
+  Refund desk sale) and the Membership plan form: new header, step pills,
+  chapters on a white sheet, new-look drop-downs and pills, and buttons in the
+  dialog band. Amounts and rules are unchanged.
+- **New look: Classes and Schedule forms** (#571). The Classes and Schedule
+  forms (class and timetable-slot forms, Book a student, Booked classes,
+  Closures, Open mat, Scan a QR code) use the new look's drop-downs and button
+  band, and the class page has the new-look header, cards and tags, with its
+  lists as cards on a phone.
+- **New look: Team forms** (#572). New look for the Team forms: the Instructors
+  and Staff dialogs, Give a role and Invite coaches use the new drop-downs and
+  the button band (Cancel first). Correct a belt shows belt pictures, Staff
+  access presets are pills, and "My coach profile" is in numbered chapters with
+  the new page header.
 - **New look: the staff Check-in tab** (Decision 453; visual only). The new
   page header with Front-desk mode (and the Students tabs for the owner),
   today's classes in the grey column, the check-in card, and Recent check-ins
