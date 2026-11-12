@@ -415,3 +415,18 @@
 [data-look='redesign'] .ultm8-checklist__item--done::before {
   background-color: var(--u8-check-done);
 }
+
+/* 8. Address fields' Region drop-down (Decision 460): the new look's drop-down
+ *    (NewLookSelect in .u8n-dd-field) fills its column, as the City and Postal
+ *    code fields beside it do; its error sits under it like theirs. */
+[data-look='redesign'] .ultm8-address__region .u8n-select {
+  align-items: stretch;
+}
+[data-look='redesign'] .ultm8-address__region .u8n-select__field {
+  width: 100%;
+  justify-content: space-between;
+}
+[data-look='redesign'] .ultm8-address__region .ultm8-field__error {
+  display: block;
+  margin-top: 6px;
+}

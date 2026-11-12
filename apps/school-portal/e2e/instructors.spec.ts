@@ -141,7 +141,11 @@ test("an Instructor completes their own profile's deferred fields", async ({ pag
   await db.instructor.create({ data: { id: randomUUID(), userId: coach.id, schoolId: s.schoolId } });
   await signIn(page, coach.token);
   await page.goto('/complete-instructor-profile');
-  await page.getByLabel('Country', { exact: true }).selectOption('GB');
+  // Decision 460: Country is a searchable picker (type, then pick the match).
+  const country = page.getByRole('combobox', { name: 'Country', exact: true });
+  await country.click();
+  await country.fill('United Kingdom');
+  await page.getByRole('listbox').getByRole('option', { name: 'United Kingdom', exact: true }).click();
   await page.getByLabel('Address line 1').fill('123 Mat Street');
   // A UK address needs a postcode: the form says so before anything is sent.
   await page.getByLabel('Town/City').fill('Leeds');

@@ -1,6 +1,7 @@
 export * from './components';
 export * from './postalAddress';
 export * from './AddressFields';
+export * from './NewLookSelect';
 import '@fontsource-variable/figtree';
 import './tokens.css';
 import './components.css';

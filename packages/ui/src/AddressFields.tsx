@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { COUNTRY_NAMES, Field, SelectField, TextField, useUiLocale } from './components';
+import { COUNTRY_NAMES, Field, SearchableSelectField, TextField, useUiLocale, useUiStrings } from './components';
+import { NewLookSelect } from './NewLookSelect';
 import {
   EMPTY_POSTAL_ADDRESS,
   POSTAL_ADDRESS_MAX_LENGTH,
@@ -199,6 +200,7 @@ export function AddressFields({ value, onChange, errors = {}, idPrefix, legacy, 
   const contextLookup = React.useContext(AddressLookupContext);
   const autocomplete = autocompleteProp ?? contextLookup ?? undefined;
   const text = textProp ?? contextText;
+  const { strings: uiStrings } = useUiStrings();
   const countryNames = useLocalCountryNames(useUiLocale());
   const format = getAddressFormat(value.country);
   const fields = visibleAddressFields(format);
@@ -235,11 +237,13 @@ export function AddressFields({ value, onChange, errors = {}, idPrefix, legacy, 
     return fill(text.errors.regionInvalid, { field: name.toLowerCase() });
   }
 
-  const countryOptions = [{ value: '', label: text.chooseCountry }, ...countryNames.map(([code, name]) => ({ value: code, label: name }))];
+  const countryOptions: CountryOption[] = [{ value: '', label: text.chooseCountry }, ...countryNames.map(([code, name]) => ({ value: code, label: name }))];
   // A stored country the list doesn't know (shouldn't happen) still shows rather than silently blanking.
   if (value.country && !countryNames.some(([code]) => code === value.country)) {
     countryOptions.push({ value: value.country, label: value.country });
   }
+  const regionErrorId = `${idPrefix}-region-error`;
+  const regionError = errorFor('region');
 
   return (
     <fieldset className="ultm8-address">
@@ -249,12 +253,19 @@ export function AddressFields({ value, onChange, errors = {}, idPrefix, legacy, 
           {legacy ? text.legacyNotice : hint}
         </p>
       ) : null}
+      {/* Searchable, like Currency (Decision 460): about 250 countries. */}
       <Field label={text.country} htmlFor={`${idPrefix}-country`} error={errorFor('country')}>
-        <SelectField
+        <SearchableSelectField
+          fallbackId={`${idPrefix}-country`}
           options={countryOptions}
+          getValue={(o) => o.value}
+          getLabel={(o) => o.label}
+          matches={countryMatches}
+          noMatchesText={uiStrings.noMatches}
+          announcePick
+          placeholder={text.chooseCountry}
           value={value.country}
-          onChange={(e) => set('country', e.target.value)}
-          autoComplete="country"
+          onChange={(next) => set('country', next)}
           disabled={disabled}
         />
       </Field>
@@ -294,16 +305,27 @@ export function AddressFields({ value, onChange, errors = {}, idPrefix, legacy, 
           </Field>
         ) : null}
         {fields.includes('region') ? (
-          <Field label={withOptional('region')} htmlFor={`${idPrefix}-region`} error={errorFor('region')}>
-            {format.regions ? (
-              <SelectField
+          format.regions ? (
+            // A fixed list: the new look's drop-down (Decision 460), its label its own.
+            <div className="u8n-dd-field ultm8-address__region">
+              <NewLookSelect
+                id={`${idPrefix}-region`}
+                label={withOptional('region')}
                 options={[{ value: '', label: text.chooseRegion }, ...format.regions.map(([v, label]) => ({ value: v, label }))]}
                 value={format.regions.some(([v]) => v === value.region) ? value.region : ''}
-                onChange={(e) => set('region', e.target.value)}
-                autoComplete="address-level1"
+                onChange={(next) => set('region', next)}
                 disabled={disabled}
+                aria-invalid={regionError ? 'true' : undefined}
+                aria-describedby={regionError ? regionErrorId : undefined}
               />
-            ) : (
+              {regionError ? (
+                <span className="ultm8-field__error" id={regionErrorId} role="alert">
+                  {regionError}
+                </span>
+              ) : null}
+            </div>
+          ) : (
+            <Field label={withOptional('region')} htmlFor={`${idPrefix}-region`} error={regionError}>
               <TextField
                 value={value.region}
                 onChange={(e) => set('region', e.target.value)}
@@ -311,8 +333,8 @@ export function AddressFields({ value, onChange, errors = {}, idPrefix, legacy, 
                 maxLength={POSTAL_ADDRESS_MAX_LENGTH.region}
                 disabled={disabled}
               />
-            )}
-          </Field>
+            </Field>
+          )
         ) : null}
         {fields.includes('postalCode') ? (
           <Field label={withOptional('postalCode')} htmlFor={`${idPrefix}-postal`} error={errorFor('postalCode')}>
@@ -329,6 +351,21 @@ export function AddressFields({ value, onChange, errors = {}, idPrefix, legacy, 
       </div>
     </fieldset>
   );
+}
+
+interface CountryOption {
+  value: string;
+  label: string;
+}
+
+const ENGLISH_COUNTRY_NAMES = new Map<string, string>(COUNTRY_NAMES.map(([code, name]) => [code, name.toLowerCase()]));
+
+/** A search finds a country by its name in the reader's language or in
+ * English, or by its two-letter code (as the phone field's country search
+ * does). "Select a country" is only listed while nothing is typed. */
+function countryMatches(option: CountryOption, query: string): boolean {
+  if (!option.value) return false;
+  return option.label.toLowerCase().includes(query) || !!ENGLISH_COUNTRY_NAMES.get(option.value)?.includes(query) || option.value.toLowerCase() === query;
 }
 
 /** The country list in the reader's language, sorted in it, when a locale is
