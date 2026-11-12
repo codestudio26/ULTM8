@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { expect, test } from '@playwright/test';
 import { cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
+import { pickOption } from './team-helpers';
 
 /**
  * Decision 316 item 3 / Decision 435: joining fees. The owner switches them
@@ -45,7 +46,7 @@ test('the owner switches joining fees on and sets a refundable fee on a plan', a
   await page.goto('/membership-plans');
   await page.getByRole('button', { name: 'Add plan' }).click();
   await page.getByLabel('Title').fill('Ten classes');
-  await page.getByLabel('Type').selectOption('CLASS_PACK');
+  await pickOption(page, 'Type', 'Class Pack');
   await page.getByRole('button', { name: '2. Pricing & Access' }).click();
   await page.getByLabel('Price').fill('60');
   await page.getByLabel('Classes included').fill('10');

@@ -65,7 +65,7 @@ test('a plan and a charge take a category; one in use has no Delete button', asy
   await page.getByRole('button', { name: '2. Pricing & Access' }).click();
   await page.getByLabel('Price').fill('40');
   await page.getByRole('button', { name: '3. Policies' }).click();
-  await page.getByLabel('Income category').selectOption({ label: 'Kids programme' });
+  await pickOption(page, 'Income category', 'Kids programme');
   await page.getByRole('button', { name: '5. Visibility' }).click();
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByRole('cell', { name: 'Kids monthly', exact: true })).toBeVisible();

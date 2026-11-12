@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
+import { pickOption } from './team-helpers';
 
 /**
  * Lesson access in the portal (Decisions 190, 195), against the real API: a
@@ -31,7 +32,7 @@ test('a priced plan includes lessons by default, a free one doesn\'t; both tick 
   // directly, so Policies (step 3) doesn't need visiting here.
   await page.getByRole('button', { name: 'Add plan' }).click();
   await expect(page.getByRole('heading', { name: 'Add membership plan' })).toBeVisible();
-  await page.getByLabel('Type').selectOption({ label: 'Class Pack' });
+  await pickOption(page, 'Type', 'Class Pack');
   await page.getByLabel('Title').fill('Ten classes');
   await page.getByRole('button', { name: 'Next' }).click();
   await page.getByLabel('Price').fill('90');
@@ -45,7 +46,7 @@ test('a priced plan includes lessons by default, a free one doesn\'t; both tick 
 
   await page.getByRole('button', { name: 'Add plan' }).click();
   await expect(page.getByRole('heading', { name: 'Add membership plan' })).toBeVisible();
-  await page.getByLabel('Type').selectOption({ label: 'Friend Pass' });
+  await pickOption(page, 'Type', 'Friend Pass');
   await page.getByLabel('Title').fill('Bring a friend');
   await page.getByRole('button', { name: 'Next' }).click();
   // Classes included is forced to 1 and disabled for Friend Pass already.

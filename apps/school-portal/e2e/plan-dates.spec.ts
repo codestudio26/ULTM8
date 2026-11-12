@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { expect, test } from '@playwright/test';
 import { cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
+import { pickOption } from './team-helpers';
 
 /**
  * Decision 316 item 4 / Decision 435 items 7-9 on the plan form: a pass that
@@ -32,7 +33,7 @@ async function startPlan(page: import('@playwright/test').Page, title: string, t
   await page.goto('/membership-plans');
   await page.getByRole('button', { name: 'Add plan' }).click();
   await page.getByLabel('Title').fill(title);
-  await page.getByLabel('Type').selectOption(type);
+  await pickOption(page, 'Type', type);
   await page.getByRole('button', { name: '2. Pricing & Access' }).click();
 }
 
@@ -44,14 +45,14 @@ test('a camp on fixed dates that switches to a Class Pack when it ends', async (
   const next = await db.membershipPlan.create({
     data: { id: randomUUID(), schoolId: s.schoolId, type: 'CLASS_PACK', title: 'Ten classes', price: 6000, currency: 'GBP', classesIncluded: 10 },
   });
-  await startPlan(page, 'Summer camp', 'WEEKLY_PASS');
+  await startPlan(page, 'Summer camp', 'Weekly Pass');
   await page.getByLabel('Price').fill('120');
   await page.getByLabel('First day').fill('2027-07-01');
   await page.getByLabel('Last day').fill('2027-08-11');
   // Fixed dates take the place of the number of days, and of "first check-in".
   await expect(page.getByLabel("Starts on the member's first check-in")).toHaveCount(0);
   await page.getByRole('button', { name: '3. Policies' }).click();
-  await page.getByLabel('When it ends, switch to').selectOption({ label: 'Ten classes' });
+  await pickOption(page, 'When it ends, switch to', 'Ten classes');
   // Decision 438 item 2 / Decision 436 item 8: the owner is told a full next plan ends it too.
   await expect(page.getByText('Without a saved card, or if this plan is full, theirs simply ends and nothing is charged.', { exact: false })).toBeVisible();
   await page.getByRole('button', { name: '5. Visibility' }).click();
@@ -72,7 +73,7 @@ test('a School that takes no cards has no "switch to" on the plan form (Decision
   const older = await db.membershipPlan.create({
     data: { id: randomUUID(), schoolId: s.schoolId, type: 'WEEKLY_PASS', title: 'Intro week', price: 2000, currency: 'GBP', expiryDurationDays: 7, switchToPlanId: next.id },
   });
-  await startPlan(page, 'Summer camp', 'WEEKLY_PASS');
+  await startPlan(page, 'Summer camp', 'Weekly Pass');
   await page.getByLabel('Price').fill('120');
   await page.getByLabel('Expiry duration (days)').fill('7');
   await page.getByRole('button', { name: '3. Policies' }).click();
@@ -90,7 +91,7 @@ test('a School that takes no cards has no "switch to" on the plan form (Decision
 });
 
 test("a pass that starts on the first check-in, shown on the Student's page until then", async ({ page }) => {
-  await startPlan(page, 'Intro week', 'WEEKLY_PASS');
+  await startPlan(page, 'Intro week', 'Weekly Pass');
   await page.getByLabel('Price').fill('20');
   await page.getByLabel('Expiry duration (days)').fill('7');
   await page.getByLabel("Starts on the member's first check-in").check();
