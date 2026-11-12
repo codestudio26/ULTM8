@@ -144,6 +144,63 @@
   line-height: 1.5;
 }
 
+/* What's new: a post's text keeps its line breaks. */
+[data-look='redesign'] .u8a .ultm8-card .u8a-post__body {
+  margin: 0 0 10px;
+  white-space: pre-wrap;
+  font-size: 15px;
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .u8a-form-heading {
+  margin: 20px 0 4px;
+  font-size: 16px;
+  font-weight: 500;
+}
+/* A section that opens (each translation): a soft row with a chevron. */
+[data-look='redesign'] .u8a-details {
+  border: 1px solid var(--u8n-line);
+  border-radius: 10px;
+  margin-bottom: 8px;
+}
+[data-look='redesign'] .u8a-details > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+  padding: 0 14px;
+  font-size: 14px;
+  cursor: pointer;
+  list-style: none;
+}
+[data-look='redesign'] .u8a-details > summary::-webkit-details-marker {
+  display: none;
+}
+[data-look='redesign'] .u8a-details > summary::after {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-inline-end: 2px solid var(--u8n-quiet);
+  border-bottom: 2px solid var(--u8n-quiet);
+  transform: rotate(45deg) translateY(-2px);
+}
+[data-look='redesign'] .u8a-details[open] > summary::after {
+  transform: rotate(-135deg) translateY(-2px);
+}
+[data-look='redesign'] .u8a-details > summary:hover {
+  background: var(--u8n-hover);
+  border-radius: 10px;
+}
+[data-look='redesign'] .u8a-details > summary:focus-visible {
+  outline: 2px solid var(--fill-accent);
+  outline-offset: 2px;
+}
+[data-look='redesign'] .u8a-details[open] {
+  padding-bottom: 4px;
+}
+[data-look='redesign'] .u8a-details > .ultm8-field {
+  margin-inline: 14px;
+}
+
 /* Label and value pairs: two columns on a computer, stacked on a phone. */
 [data-look='redesign'] .u8a-facts {
   display: grid;
