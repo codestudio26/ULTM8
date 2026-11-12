@@ -43,9 +43,9 @@
 }
 
 /* The other pages outside the shell still drawn by the shared AuthCard
- * (Create your School at /onboarding, Access paused, the legal pages) take
- * the same frame here, portal only: the Platform Admin app, which keeps the
- * shared AuthCard, never sets data-look. Their fields are unchanged. */
+ * (Access paused, the legal pages) take the same frame here, portal only:
+ * the Platform Admin app, which keeps the shared AuthCard, never sets
+ * data-look. Their fields are unchanged. */
 [data-look='redesign'] .ultm8-auth-page {
   min-height: 100vh;
   box-sizing: border-box;

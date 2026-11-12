@@ -408,32 +408,14 @@ test('Guest waiver: the new look, and a guest still signs by the link', async ({
   expect(row).toMatchObject({ guestFullName: 'Ada Guest', signerFullName: 'Ada Guest', signedByGuardian: false, signedWaiverBody: 'Training has risks.' });
 });
 
-test('Create your School (/onboarding): the shared sign-in card takes the same new-look frame', async ({ page }) => {
-  // Its fields are rebuilt in their own PR; this checks the frame around them.
+test('Create your School (/onboarding): the same new-look frame, with the brand mark and the new drop-downs', async ({ page }) => {
   const user = await mkLoginUser();
   await page.goto('/login');
   await logIn(page, user.email);
   await expect(page.getByRole('heading', { name: 'Create your School' })).toBeVisible();
-  const frame = async () =>
-    page.locator('.ultm8-auth-card > .ultm8-card').evaluate((el) => ({
-      radius: getComputedStyle(el).borderTopLeftRadius,
-      background: getComputedStyle(el).backgroundColor,
-      page: getComputedStyle(el.closest('.ultm8-auth-page')!).backgroundColor,
-      title: getComputedStyle(el.querySelector('.ultm8-auth-card__title')!).fontWeight,
-    }));
-  expect(await frame()).toEqual({ radius: '16px', background: 'rgb(255, 255, 255)', page: 'rgb(241, 242, 243)', title: '300' });
-  await page.emulateMedia({ colorScheme: 'dark' });
-  const dark = await frame();
-  expect(dark.background).not.toBe('rgb(255, 255, 255)');
-  expect(dark.background).not.toBe(dark.page);
-  await page.emulateMedia({ colorScheme: 'light' });
-  await page.setViewportSize({ width: 360, height: 740 });
-  const fit = await page.evaluate(() => {
-    const card = document.querySelector('.ultm8-auth-card > .ultm8-card')!.getBoundingClientRect();
-    return { scroll: document.documentElement.scrollWidth, width: document.documentElement.clientWidth, left: card.left, right: card.right };
-  });
-  expect(fit.scroll).toBeLessThanOrEqual(fit.width);
-  expect(fit.left).toBeGreaterThanOrEqual(16);
-  expect(fit.right).toBeLessThanOrEqual(360 - 16);
-  await expect(page.getByRole('button', { name: 'Log out' })).toBeVisible();
+  // The full card check: the sign-in frame, nothing of the old one, no browser
+  // <select> (#579 made its Language and Cancellation policy NewLookSelect),
+  // light, dark and phone.
+  await expectAllLooks(page);
+  await expect(page.locator('.u8si-footer').getByRole('button', { name: 'Log out' })).toBeVisible();
 });

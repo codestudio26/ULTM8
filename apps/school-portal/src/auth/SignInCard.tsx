@@ -5,9 +5,10 @@ import './signIn.css';
 /**
  * The new look's frame for the pages outside the app shell (Decision 453,
  * Decision 460): Log in, Create account, Verify phone, Forgot / Reset
- * passcode, First-login passcode, Accept the Terms, the coach invite link and
- * the guest waiver link. It replaces `AuthCard` on these pages only (the
- * Platform Admin app still uses `AuthCard`).
+ * passcode, First-login passcode, Accept the Terms, the coach invite link,
+ * the guest waiver link and Create your School (/onboarding). It replaces
+ * `AuthCard` on these pages only (the Platform Admin app still uses
+ * `AuthCard`).
  *
  * The approved design draws no sign-in screen, so this is built from the new
  * look's own pieces: the brand mark as the side menu shows it (a small
@@ -54,7 +55,7 @@ export function SignInCard({
   footer?: ReactNode;
   /** A line under the brand name (Log in only). */
   tagline?: string;
-  /** For the longer pages: Create account and the guest waiver. */
+  /** For the longer pages: Create account, the guest waiver and Create your School. */
   wide?: boolean;
   children: ReactNode;
 }) {

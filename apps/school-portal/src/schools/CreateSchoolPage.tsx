@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AddressFields, AuthCard, Button, Checkbox, CurrencyField, ErrorBanner, Field, PhoneField, TextField, TimezoneField, postalAddressFromRecord, preparePostalAddress, type PostalAddressErrors } from '@ultm8/ui';
+import { AddressFields, Button, Checkbox, CurrencyField, ErrorBanner, Field, PhoneField, TextField, TimezoneField, postalAddressFromRecord, preparePostalAddress, type PostalAddressErrors } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useAuth } from '../auth/AuthContext';
 import { guessDefaultCountry } from '../lib/phoneCountry';
@@ -10,6 +10,7 @@ import { useT } from '../i18n/I18nProvider';
 import { LegalAgreeCheckbox } from '../legal/LegalAgreeCheckbox';
 import { languageName } from '../i18n/format';
 import { NewLookSelect } from '../layout/NewLookSelect';
+import { SignInCard } from '../auth/SignInCard';
 import '../organisation/organisationForms.css';
 
 /**
@@ -102,17 +103,18 @@ export function CreateSchoolPage() {
 
   if (created) {
     return (
-      <AuthCard title={t('schools.create.createdTitle')} subtitle={t('schools.create.createdSubtitle')}>
+      <SignInCard wide title={t('schools.create.createdTitle')} subtitle={t('schools.create.createdSubtitle')}>
         <p>{t('schools.create.reloginBody')}</p>
         <Button fullWidth onClick={logout}>
           {t('schools.create.reloginButton')}
         </Button>
-      </AuthCard>
+      </SignInCard>
     );
   }
 
   return (
-    <AuthCard
+    <SignInCard
+      wide
       title={t('schools.create.title')}
       subtitle={t('schools.create.subtitle')}
       // This page has no app shell around it, so it carries its own way out:
@@ -198,6 +200,6 @@ export function CreateSchoolPage() {
           </Button>
         </div>
       </form>
-    </AuthCard>
+    </SignInCard>
   );
 }
