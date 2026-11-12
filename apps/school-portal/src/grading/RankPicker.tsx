@@ -19,6 +19,7 @@ export function RankPicker({
   suffix,
   heading,
   ariaLabel,
+  placeholder,
 }: {
   id: string;
   options: Rung[];
@@ -30,6 +31,8 @@ export function RankPicker({
   heading?: (rung: Rung) => string | null;
   /** A name for the field when no `<Field htmlFor>` labels it, e.g. in a list row. */
   ariaLabel?: string;
+  /** Shown in the closed field while nothing is chosen, e.g. "Choose your belt…". */
+  placeholder?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
@@ -38,7 +41,7 @@ export function RankPicker({
   const chosen = options.find((r) => r.id === value) ?? null;
   const listId = `${id}-list`;
   // Sized from the longest name, so it doesn't jump when the value changes.
-  const longest = options.reduce((n, r) => Math.max(n, r.name.length + (suffix?.(r)?.length ?? 0)), 0);
+  const longest = options.reduce((n, r) => Math.max(n, r.name.length + (suffix?.(r)?.length ?? 0)), placeholder?.length ?? 0);
 
   useEffect(() => {
     if (!open) return;
@@ -107,7 +110,7 @@ export function RankPicker({
         onKeyDown={onKeyDown}
       >
         {chosen ? <BeltChip rung={chosen} /> : null}
-        <span className="ultm8-rank-picker__value">{chosen ? label(chosen) : ''}</span>
+        <span className={'ultm8-rank-picker__value' + (!chosen && placeholder ? ' ultm8-rank-picker__value--placeholder' : '')}>{chosen ? label(chosen) : (placeholder ?? '')}</span>
         <span aria-hidden="true" className="ultm8-rank-picker__chevron">
           ▾
         </span>

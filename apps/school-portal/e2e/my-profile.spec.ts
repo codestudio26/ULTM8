@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { addPerson, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
+import { pickOption } from './team-helpers';
 
 /**
  * The header's account menu (the avatar block as a menu button) and the
@@ -106,7 +107,8 @@ test('My profile: change the first name and save; email and phone are read-only'
 test('saving a language on My profile switches the portal like the header picker', async ({ page }) => {
   await signIn(page, s.ownerToken);
   await page.goto('/profile');
-  await page.locator('#profile-language').selectOption('pt-BR');
+  // The profile's own Language (the header has the portal's picker too).
+  await pickOption(page.getByRole('group', { name: 'Personal details' }), 'Language', 'Portuguese (BR)');
   await page.getByRole('button', { name: 'Save changes' }).click();
 
   await expect(page.getByRole('heading', { name: 'Meu perfil' })).toBeVisible();
