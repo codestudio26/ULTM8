@@ -1,12 +1,16 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
-import { Card, ErrorBanner, PageHeader, Spinner } from '@ultm8/ui';
+import { ErrorBanner, Spinner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useClass } from '../classes/classQueries';
 import { useClassQrToken } from './attendanceQueries';
 import { useT } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
+import { NewLookPage, NewLookPageHeader } from '../layout/NewLookPage';
+import '../schedule/schedule.css';
+import '../classes/classDetail.css';
+import './attendanceLook.css';
 
 /** Phase 52 — the School Portal's own QR-display screen (Decision 107, Phase 51
  * shipped the endpoint this calls). Meant to be left open on a shared,
@@ -43,34 +47,32 @@ export function ClassQrCodePage() {
     );
   }
 
+  // New look (Decision 460 item 17): the shell's header and the class
+  // page's white card; the QR code, its refresh and the typed code are as before.
   return (
     <>
-      <PageHeader
+      <NewLookPageHeader
         title={cls ? t('attendance.qrCode.titleWithClass', { title: cls.title }) : t('attendance.qrCode.title')}
         subtitle={cls ? `${new Date(cls.startDate).toLocaleString(formatLocale())} – ${new Date(cls.endDate).toLocaleString(formatLocale())}` : undefined}
       />
-      <Card>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: '32px 0' }}>
+      <NewLookPage>
+        <section className="u8s-card u8cd-card u8at-qr">
           {qrToken ? (
-            <QRCodeSVG value={qrToken.token} size={320} level="M" style={{ opacity: isRefetching ? 0.6 : 1 }} />
+            <div className="u8at-qr__code">
+              <QRCodeSVG value={qrToken.token} size={320} level="M" style={{ opacity: isRefetching ? 0.6 : 1 }} />
+            </div>
           ) : (
             <Spinner />
           )}
-          <p style={{ color: 'var(--text-muted)', fontSize: 14, textAlign: 'center', maxWidth: 360 }}>
-            {t('attendance.qrCode.explanation')}
-          </p>
+          <p className="u8at-qr__explanation">{t('attendance.qrCode.explanation')}</p>
           {qrToken?.code && (
-            <div style={{ textAlign: 'center', opacity: isRefetching ? 0.6 : 1 }}>
-              <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: '0 0 4px' }}>
-                {t('attendance.qrCode.typeCodeHint')}
-              </p>
-              <p style={{ fontSize: 28, fontWeight: 600, letterSpacing: 4, margin: 0, fontFamily: 'monospace' }}>
-                {qrToken.code}
-              </p>
+            <div className="u8at-qr__typed" style={{ opacity: isRefetching ? 0.6 : 1 }}>
+              <p className="u8at-qr__hint">{t('attendance.qrCode.typeCodeHint')}</p>
+              <p className="u8at-qr__digits">{qrToken.code}</p>
             </div>
           )}
-        </div>
-      </Card>
+        </section>
+      </NewLookPage>
     </>
   );
 }

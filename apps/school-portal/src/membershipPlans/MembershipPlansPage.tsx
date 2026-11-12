@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Badge, Button, Card, Checkbox, EmptyState, ErrorBanner, PageHeader, RowActionsMenu, Spinner, Table } from '@ultm8/ui';
+import { Badge, Button, Checkbox, EmptyState, ErrorBanner, RowActionsMenu, Spinner, Table } from '@ultm8/ui';
 import { BillingCard, BillingPage, BillingStat, BillingStats } from '../billing/BillingLook';
 import { NewLookPageHeader } from '../layout/NewLookPage';
 import { ApiError } from '@ultm8/api-client';
@@ -28,22 +28,9 @@ const TYPE_LABELS: Record<string, TranslationKey> = {
 };
 
 /** Shown instead of the page to anyone who doesn't own a School: the API
- * only lets the owner manage plans. */
+ * only lets the owner manage plans. In the new look (Decision 453; Decision
+ * 460 item 17), on the list, the plan form and a plan's Members page alike. */
 export function OwnerOnly() {
-  const t = useT();
-  return (
-    <>
-      <PageHeader title={t('membershipPlans.list.title')} />
-      <Card>
-        <EmptyState title={t('membershipPlans.list.ownerOnlyTitle')} description={t('membershipPlans.list.ownerOnlyDescription')} />
-      </Card>
-    </>
-  );
-}
-
-/** The same message on the list page, in the new look (Decision 453). The
- * plan form keeps `OwnerOnly` above until its own page is rebuilt. */
-function OwnerOnlyNewLook() {
   const t = useT();
   return (
     <BillingPage>
@@ -72,7 +59,7 @@ export function MembershipPlansPage() {
 
   // Memberships review M10 (Decision 334): Branch Staff and coaches reach
   // this page from the menu too; they used to get a blank page.
-  if (!schoolId) return <OwnerOnlyNewLook />;
+  if (!schoolId) return <OwnerOnly />;
   if (isLoading) return <Spinner />;
   if (error) return <ErrorBanner message={error instanceof ApiError ? error.message : t('membershipPlans.list.loadFailed')} />;
 
