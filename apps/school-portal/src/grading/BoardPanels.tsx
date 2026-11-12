@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Badge, Button, Card, ErrorBanner, Modal, ModalActions, Spinner } from '@ultm8/ui';
+import { Badge, Button, ErrorBanner, Modal, ModalActions, Spinner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { BeltChip } from './BeltChip';
 import type { Rung } from './ladder';
@@ -136,14 +136,12 @@ export function StudentPanel({
   }
 
   return (
-    <Card>
+    <div className="u8b-card u8gb-panel">
       <section aria-label={t('grading.board.panel.aria', { name })}>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
           <Avatar person={item} size={64} />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <h2 className="ultm8-page-header__title" style={{ fontSize: 18, margin: 0 }}>
-              {name}
-            </h2>
+            <h2 className="u8gb-panel__title">{name}</h2>
           </div>
           <button type="button" className="ultm8-round-button" onClick={onClose} aria-label={t('grading.board.panel.close')}>
             ✕
@@ -158,7 +156,7 @@ export function StudentPanel({
               marginTop: 16,
               padding: 12,
               borderRadius: 10,
-              background: item.feeStatus === 'declined' || item.feeStatus === 'blocked' ? 'var(--bg-danger)' : item.feeStatus === 'toDecide' ? '#e5ecf6' : 'var(--bg-warning)',
+              background: item.feeStatus === 'declined' || item.feeStatus === 'blocked' ? 'var(--bg-danger)' : item.feeStatus === 'toDecide' ? 'var(--u8gd-info-bg)' : 'var(--bg-warning)',
             }}
           >
             <FeeTag item={item} />
@@ -301,7 +299,7 @@ export function StudentPanel({
           </Link>
         </div>
       </section>
-    </Card>
+    </div>
   );
 }
 
@@ -334,12 +332,10 @@ export function SelectionPanel({
   const t = useT();
   const rung = (id: string | null | undefined) => ladder.find((r) => r.id === id) ?? null;
   return (
-    <Card>
+    <div className="u8b-card u8gb-panel">
       <section aria-label={t('grading.board.selection.aria')}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <h2 className="ultm8-page-header__title" style={{ fontSize: 18, margin: 0, flex: 1 }}>
-            {t('grading.board.selectedCount', { count: items.length })}
-          </h2>
+          <h2 className="u8gb-panel__title">{t('grading.board.selectedCount', { count: items.length })}</h2>
           <button type="button" className="ultm8-round-button" onClick={onMinimise} aria-label={t('grading.board.selection.minimise')}>
             –
           </button>
@@ -388,7 +384,7 @@ export function SelectionPanel({
           </Button>
         </div>
       </section>
-    </Card>
+    </div>
   );
 }
 

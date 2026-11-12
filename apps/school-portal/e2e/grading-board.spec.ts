@@ -86,7 +86,8 @@ test('students with no home branch are in the owner\'s "No branch" group until g
   await expect(group.getByRole('link', { name: ben.name })).toHaveCount(0);
   await expect(column(page, 'Getting There').getByRole('link', { name: cat.name })).toHaveCount(0);
 
-  await group.getByLabel(`Home branch for ${cat.name}`).selectOption({ label: 'South' });
+  await group.getByRole('combobox', { name: `Home branch for ${cat.name}` }).click();
+  await group.getByRole('option', { name: 'South' }).click();
   await group.getByRole('button', { name: `Assign ${cat.name} to this branch` }).click();
   await expect(group).toBeHidden();
   await expect(column(page, 'Getting There').getByRole('link', { name: cat.name })).toBeVisible();
