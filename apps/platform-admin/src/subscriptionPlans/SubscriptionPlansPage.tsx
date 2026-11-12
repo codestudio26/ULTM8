@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Card, EmptyState, ErrorBanner, Field, Modal, PageHeader, Spinner, Table, TextArea, TextField } from '@ultm8/ui';
+import { Button, Card, EmptyState, ErrorBanner, Field, Modal, Spinner, TextArea, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
+import { AdminTable } from '../layout/AdminTable';
+import { NewLookPageHeader } from '../layout/NewLookPage';
 import {
   useCreateSubscriptionPlan,
   useSubscriptionPlans,
@@ -55,8 +57,8 @@ export function SubscriptionPlansPage() {
   }
 
   return (
-    <>
-      <PageHeader
+    <div className="u8a">
+      <NewLookPageHeader
         title="Subscription Plans"
         subtitle="The platform-level billing tiers Franchises/Schools subscribe to — ULTM8's own revenue, not a School's Membership Plans. Adding and editing are Full Admin-only."
         actions={<Button onClick={() => setCreating(true)}>Add plan</Button>}
@@ -66,13 +68,13 @@ export function SubscriptionPlansPage() {
         <ErrorBanner message={query.error instanceof ApiError ? query.error.message : 'Could not load subscription plans.'} />
       ) : null}
 
-      <Card>
+      <Card className={!query.isLoading && items.length > 0 ? 'ultm8-card--flush' : undefined}>
         {query.isLoading ? (
           <Spinner />
         ) : items.length === 0 ? (
           <EmptyState title="No subscription plans yet" description="Add one to start offering platform billing to Franchises/Schools." />
         ) : (
-          <Table<SubscriptionPlanResponse>
+          <AdminTable<SubscriptionPlanResponse>
             rows={items}
             columns={[
               { key: 'name', header: 'Name', render: (p) => p.name },
@@ -80,7 +82,7 @@ export function SubscriptionPlansPage() {
               {
                 key: 'description',
                 header: 'Description',
-                render: (p) => <span style={{ whiteSpace: 'pre-wrap' }}>{p.description ?? '—'}</span>,
+                render: (p) => <span className="u8a-pre">{p.description ?? '—'}</span>,
               },
               {
                 key: 'featureList',
@@ -90,6 +92,7 @@ export function SubscriptionPlansPage() {
               {
                 key: 'actions',
                 header: '',
+                end: true,
                 render: (p) => (
                   <Button variant="secondary" onClick={() => setEditing(p)}>
                     Edit
@@ -102,9 +105,11 @@ export function SubscriptionPlansPage() {
       </Card>
 
       {query.data?.nextCursor ? (
-        <Button variant="secondary" onClick={() => setCursor(query.data!.nextCursor ?? null)} loading={query.isFetching}>
+        <div className="u8a-more">
+          <Button variant="secondary" onClick={() => setCursor(query.data!.nextCursor ?? null)} loading={query.isFetching}>
           Load more
-        </Button>
+          </Button>
+        </div>
       ) : null}
 
       {creating ? (
@@ -133,7 +138,7 @@ export function SubscriptionPlansPage() {
           onClose={() => setEditing(null)}
         />
       ) : null}
-    </>
+    </div>
   );
 }
 
