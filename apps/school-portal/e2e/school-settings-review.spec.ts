@@ -39,7 +39,10 @@ test('S1: switching School shows that School’s cancellation and footer setting
   await expect(page.getByLabel('About us')).toHaveValue('First about');
   await expect(page.getByLabel('Default cutoff (hours before class)')).toHaveValue('4');
 
-  await page.getByRole('combobox', { name: 'Switch School' }).selectOption(secondId);
+  // The switcher is the new look's drop-down: open it, pick the School by name.
+  await page.getByRole('combobox', { name: 'Switch School' }).click();
+  const secondName = (await db.school.findUniqueOrThrow({ where: { id: secondId } })).name;
+  await page.getByRole('listbox', { name: 'Switch School' }).getByRole('option', { name: secondName, exact: true }).click();
   await expect(page.getByLabel('About us')).toHaveValue('Second about');
   await expect(page.getByLabel('Default cutoff (hours before class)')).toHaveValue('9');
 

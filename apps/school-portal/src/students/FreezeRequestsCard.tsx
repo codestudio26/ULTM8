@@ -1,15 +1,19 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Button, Card, ErrorBanner } from '@ultm8/ui';
+import { Button, ErrorBanner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useT } from '../i18n/I18nProvider';
 import { formatCalendarDay, useFreezeAction, useFreezeRequests } from '../membershipPlans/freezeQueries';
+import { BillingCard } from '../billing/BillingLook';
+import './studentNotices.css';
 
 /**
  * Decision 404: freeze requests from members (or a child's Guardian) waiting
  * for the owner, or for Branch Staff with "Can freeze memberships", who see
  * their branches' students' (Decision 409). Approve or decline here or on
- * the student's page. Shown only while there is one.
+ * the student's page. Shown only while there is one. In the new look
+ * (Decision 453): a white card above the Students list, one line per request
+ * with its two buttons as an equal pair (DESIGN.md → "Button pairs").
  */
 export function FreezeRequestsCard({ schoolId }: { schoolId: string }) {
   const t = useT();
@@ -29,29 +33,30 @@ export function FreezeRequestsCard({ schoolId }: { schoolId: string }) {
   }
 
   return (
-    <Card>
-      <h2 className="ultm8-page-header__title" style={{ fontSize: 15, margin: '0 0 8px' }}>
-        {t('students.freezeRequests.title')}
-      </h2>
-      {error ? <ErrorBanner message={error} /> : null}
-      <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 8 }} data-testid="freeze-requests">
-        {items.map((f) => (
-          <li key={f.id} style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
-            <span>
-              <Link to={`/students/${f.studentId}`}>{`${f.studentFirstName} ${f.studentSurname}`.trim()}</Link>{' '}
-              {t('students.freezeRequests.row', { plan: f.planTitle, start: formatCalendarDay(f.startsAt), end: formatCalendarDay(f.endsAt) })}
-            </span>
-            <span style={{ display: 'inline-flex', gap: 8 }}>
-              <Button variant="secondary" loading={action.isPending} onClick={() => decide(f.id, 'approve')}>
-                {t('students.freezeRequests.approve')}
-              </Button>
-              <Button variant="secondary" loading={action.isPending} onClick={() => decide(f.id, 'decline')}>
-                {t('students.freezeRequests.decline')}
-              </Button>
-            </span>
-          </li>
-        ))}
-      </ul>
-    </Card>
+    <div className="u8n-notice">
+      <BillingCard title={t('students.freezeRequests.title')}>
+        {error ? <ErrorBanner message={error} /> : null}
+        <ul className="u8n-notice__rows" data-testid="freeze-requests">
+          {items.map((f) => (
+            <li key={f.id} className="u8n-notice__row">
+              <span className="u8n-notice__text">
+                <Link to={`/students/${f.studentId}`} className="u8n-notice__name">
+                  {`${f.studentFirstName} ${f.studentSurname}`.trim()}
+                </Link>{' '}
+                {t('students.freezeRequests.row', { plan: f.planTitle, start: formatCalendarDay(f.startsAt), end: formatCalendarDay(f.endsAt) })}
+              </span>
+              <span className="u8n-notice__actions u8n-notice__actions--pair">
+                <Button variant="secondary" className="u8b-pill u8b-pill--row" loading={action.isPending} onClick={() => decide(f.id, 'approve')}>
+                  {t('students.freezeRequests.approve')}
+                </Button>
+                <Button variant="secondary" className="u8b-pill u8b-pill--row" loading={action.isPending} onClick={() => decide(f.id, 'decline')}>
+                  {t('students.freezeRequests.decline')}
+                </Button>
+              </span>
+            </li>
+          ))}
+        </ul>
+      </BillingCard>
+    </div>
   );
 }

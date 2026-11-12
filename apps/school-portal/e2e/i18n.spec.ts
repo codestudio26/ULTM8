@@ -36,7 +36,10 @@ test('picking Portuguese in the header translates the menu and the page', async 
   await page.goto('/notifications');
   await expect(page.getByRole('heading', { name: 'Notifications' })).toBeVisible();
 
-  await page.getByRole('combobox', { name: 'Language' }).selectOption('pt-BR');
+  // The header's language picker is the new look's drop-down: open it and
+  // pick Portuguese (BR), listed in its own language.
+  await page.getByRole('combobox', { name: 'Language' }).click();
+  await page.getByRole('listbox', { name: 'Language' }).getByRole('option', { name: 'Português (Brasil)', exact: true }).click();
 
   await expect(page.getByRole('heading', { name: 'Notificações' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Alunos' })).toBeVisible();

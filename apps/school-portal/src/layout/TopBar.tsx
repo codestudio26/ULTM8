@@ -1,11 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { SelectField } from '@ultm8/ui';
 import { useAuth } from '../auth/AuthContext';
 import { useCurrentUser, useUpdateCurrentUser } from '../auth/currentUserQueries';
 import { useNotificationCounts } from '../notifications/notificationQueries';
 import { useLanguages } from '../settings/settingsQueries';
 import { useI18n, useT } from '../i18n/I18nProvider';
+import { NewLookSelect } from './NewLookSelect';
 
 /** Who reads "What's new" (Decision 318 item 3): owners and staff, not students. */
 const STAFF_ROLES: string[] = ['SCHOOL_OWNER_MANAGER', 'BRANCH_STAFF', 'INSTRUCTOR', 'FRANCHISE_OWNER'];
@@ -96,7 +96,10 @@ export function NotificationsBell() {
 }
 
 /** The language picker: saves the choice to the profile and switches the
- * portal's text (I18nProvider, Decision 273). */
+ * portal's text (I18nProvider, Decision 273). The new look's own drop-down
+ * (`NewLookSelect`, DESIGN.md → "Drop-downs"), never a browser `<select>`;
+ * its name stays on screen readers only, as before (newLookShell.css,
+ * `.u8n-bar__select`). */
 export function LanguagePicker() {
   const { data: me } = useCurrentUser();
   const { data: languages } = useLanguages();
@@ -104,17 +107,18 @@ export function LanguagePicker() {
   const { t, locale, rememberLocale } = useI18n();
   if (!languages?.length) return null;
   return (
-    <SelectField
-      aria-label={t('layout.languageAria')}
-      value={me?.language ?? locale}
-      onChange={(e) => {
-        const value = e.target.value;
-        if (!value) return;
-        rememberLocale(value);
-        updateCurrentUser.mutate({ language: value });
-      }}
-      options={[{ value: '', label: t('common.none') }, ...languages.map((l) => ({ value: l.code, label: nativeName(l.code, l.name) }))]}
-      style={{ width: 'auto', minHeight: 36, padding: '4px 8px' }}
-    />
+    <div className="u8n-bar__select">
+      <NewLookSelect
+        id="u8n-language"
+        label={t('layout.languageAria')}
+        value={me?.language ?? locale}
+        onChange={(value) => {
+          if (!value) return;
+          rememberLocale(value);
+          updateCurrentUser.mutate({ language: value });
+        }}
+        options={[{ value: '', label: t('common.none') }, ...languages.map((l) => ({ value: l.code, label: nativeName(l.code, l.name) }))]}
+      />
+    </div>
   );
 }
