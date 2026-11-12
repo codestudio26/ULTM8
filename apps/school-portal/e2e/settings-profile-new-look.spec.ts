@@ -26,12 +26,9 @@ async function expectNewHeader(page: Page, title: string) {
   await expect(page.locator('.u8n-page .ultm8-card')).toHaveCount(0);
 }
 
-/** No browser drop-down is left on the page. The shared address fields are
- * left out: their Country/Region pickers move to the new look in their own
- * change (group 8). */
+/** No browser drop-down is left on the page, the address fields' included. */
 async function expectNoBrowserSelect(page: Page) {
-  const left = await page.evaluate(() => Array.from(document.querySelectorAll('.u8n-page select')).filter((el) => !el.closest('.ultm8-address')).length);
-  expect(left).toBe(0);
+  await expect(page.locator('.u8n-page select')).toHaveCount(0);
 }
 
 /** Records the `input` events that reach `scope`, as a browser <select>'s change did. */
