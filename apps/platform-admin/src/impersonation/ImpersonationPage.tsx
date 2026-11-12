@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { Button, Card, ErrorBanner, Field, PageHeader, SuccessBanner, TextField } from '@ultm8/ui';
+import { Button, Card, ErrorBanner, Field, SuccessBanner, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
+import { NewLookPageHeader } from '../layout/NewLookPage';
+import '../layout/adminLook.css';
 import { useStartImpersonationSession, type ImpersonationSessionResponse } from './impersonationQueries';
 
 /** Slice 4 (Phase 48) — the UI for PlatformAdminModule's Support-tier
@@ -46,8 +48,8 @@ export function ImpersonationPage() {
   }
 
   return (
-    <>
-      <PageHeader
+    <div className="u8a">
+      <NewLookPageHeader
         title="Impersonation"
         subtitle="Start a read-only, time-boxed session as a tenant User, scoped to one School (Decision 39). Support or Full Admin only. Every session start is audit-logged."
       />
@@ -68,20 +70,20 @@ export function ImpersonationPage() {
 
       {session ? (
         <Card>
-          <h3 style={{ marginTop: 0 }}>Session started</h3>
+          <h2 className="u8a-card__title">Session started</h2>
           <SuccessBanner message="Use this access token exactly like a tenant app would: Authorization: Bearer <token>. Any non-read request is rejected server-side (Decision 102)." />
-          <dl style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', gap: '4px 16px', marginTop: 16 }}>
+          <dl className="u8a-facts u8a-facts--spaced">
             <dt>Impersonated User</dt>
             <dd>{session.impersonatedUserId}</dd>
             <dt>Expires</dt>
             <dd>{new Date(session.expiresAt).toLocaleString()}</dd>
             <dt>Access token</dt>
             <dd>
-              <code style={{ wordBreak: 'break-all' }}>{session.accessToken}</code>
+              <code className="u8a-code">{session.accessToken}</code>
             </dd>
           </dl>
         </Card>
       ) : null}
-    </>
+    </div>
   );
 }

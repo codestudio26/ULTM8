@@ -166,6 +166,19 @@
   overflow-wrap: anywhere;
   color: var(--u8n-text);
 }
+[data-look='redesign'] .u8a-facts--spaced {
+  margin-top: 16px;
+}
+/* A long value to copy (a token): a calm grey code box. */
+[data-look='redesign'] .u8a-code {
+  display: block;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--u8n-tile);
+  color: var(--u8n-text);
+  font-size: 13px;
+  word-break: break-all;
+}
 [data-look='redesign'] .u8a-tags {
   display: flex;
   flex-wrap: wrap;
