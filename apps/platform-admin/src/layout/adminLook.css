@@ -233,6 +233,19 @@
   flex: 1 1 0;
   min-width: 0;
 }
+/* Buttons at a table row's end: the pair sits flush, no space above. */
+[data-look='redesign'] .u8a-buttons--row {
+  margin-top: 0;
+  justify-content: flex-end;
+}
+[data-look='redesign'] .u8a-pre {
+  white-space: pre-wrap;
+}
+/* "Load more" under a list. */
+[data-look='redesign'] .u8a-more {
+  display: flex;
+  justify-content: center;
+}
 [data-look='redesign'] .u8a-buttons--start > .ultm8-btn {
   flex: 0 1 auto;
 }
@@ -249,8 +262,11 @@
   [data-look='redesign'] .u8a-row__end > .ultm8-btn {
     width: 100%;
   }
-  [data-look='redesign'] .u8a-buttons {
+  [data-look='redesign'] .u8a-buttons:not(.u8a-buttons--row) {
     flex-direction: column;
+  }
+  [data-look='redesign'] .u8a-buttons--row {
+    width: 100%;
   }
 }
 
