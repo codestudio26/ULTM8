@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Card, EmptyState, ErrorBanner, Field, Modal, PageHeader, Spinner, Table, TextArea, TextField } from '@ultm8/ui';
+import { Button, Card, EmptyState, ErrorBanner, Field, Modal, Spinner, TextArea, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
+import { AdminTable } from '../layout/AdminTable';
+import { NewLookPageHeader } from '../layout/NewLookPage';
 import {
   useCreateTranslation,
   useDeleteTranslation,
@@ -77,15 +79,15 @@ export function TranslationsPage() {
   }
 
   return (
-    <>
-      <PageHeader
+    <div className="u8a">
+      <NewLookPageHeader
         title="Translations"
         subtitle="Screen · label key · locale · content — the i18n copy behind every translated screen. Adding, editing, and removing are all Full Admin-only."
         actions={<Button onClick={() => setCreating(true)}>Add translation</Button>}
       />
 
       <Card>
-        <form onSubmit={applyFilters} style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+        <form onSubmit={applyFilters} className="u8a-lookup">
           <Field label="Screen" htmlFor="filter-screen">
             <TextField
               placeholder="e.g. login"
@@ -111,13 +113,13 @@ export function TranslationsPage() {
         <ErrorBanner message={query.error instanceof ApiError ? query.error.message : 'Could not load translations.'} />
       ) : null}
 
-      <Card>
+      <Card className={!query.isLoading && items.length > 0 ? 'ultm8-card--flush' : undefined}>
         {query.isLoading ? (
           <Spinner />
         ) : items.length === 0 ? (
           <EmptyState title="No translations found" description="Add one, or adjust the screen/locale filters above." />
         ) : (
-          <Table<TranslationResponse>
+          <AdminTable<TranslationResponse>
             rows={items}
             columns={[
               { key: 'screen', header: 'Screen', render: (t) => t.screen },
@@ -126,13 +128,14 @@ export function TranslationsPage() {
               {
                 key: 'content',
                 header: 'Content',
-                render: (t) => <span style={{ whiteSpace: 'pre-wrap' }}>{t.content}</span>,
+                render: (t) => <span className="u8a-pre">{t.content}</span>,
               },
               {
                 key: 'actions',
                 header: '',
+                end: true,
                 render: (t) => (
-                  <div style={{ display: 'flex', gap: 8 }}>
+                  <div className="u8a-buttons u8a-buttons--row">
                     <Button variant="secondary" onClick={() => setEditing(t)} disabled={deletingId !== null}>
                       Edit
                     </Button>
@@ -148,9 +151,11 @@ export function TranslationsPage() {
       </Card>
 
       {query.data?.nextCursor ? (
-        <Button variant="secondary" onClick={() => setCursor(query.data!.nextCursor ?? null)} loading={query.isFetching}>
+        <div className="u8a-more">
+          <Button variant="secondary" onClick={() => setCursor(query.data!.nextCursor ?? null)} loading={query.isFetching}>
           Load more
-        </Button>
+          </Button>
+        </div>
       ) : null}
 
       {creating ? (
@@ -179,7 +184,7 @@ export function TranslationsPage() {
           onClose={() => setEditing(null)}
         />
       ) : null}
-    </>
+    </div>
   );
 }
 
