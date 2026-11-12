@@ -244,7 +244,11 @@ test('the owner edits a student\'s profile on their behalf, on the dedicated Upd
 
   await page.getByLabel('Surname').fill('Park-Smith');
   // Decision 276 — country first; the UK form asks for a post town and postcode.
-  await page.getByLabel('Country').selectOption('GB');
+  // Decision 460: Country is a searchable picker (type, then pick the match).
+  const country = page.getByRole('combobox', { name: 'Country', exact: true });
+  await country.click();
+  await country.fill('United Kingdom');
+  await page.getByRole('listbox').getByRole('option', { name: 'United Kingdom', exact: true }).click();
   await page.getByLabel('Address line 1').fill('221B Dojo Lane');
   await page.getByLabel('Town/City').fill('London');
   await page.getByLabel('Postcode').fill('nw1 6xe');
