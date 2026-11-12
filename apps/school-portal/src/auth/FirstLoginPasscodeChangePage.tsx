@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { AuthCard, Button, ErrorBanner, Field, PasscodeField } from '@ultm8/ui';
+import { Button, ErrorBanner, Field, PasscodeField } from '@ultm8/ui';
 import { ApiError, unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
 import { useAuth } from './AuthContext';
 import { takeReturnTo } from './returnTo';
 import { useT } from '../i18n/I18nProvider';
+import { SignInCard } from './SignInCard';
 
 /**
  * Decision 1/230 — a server-generated temp passcode (Instructor "Add
@@ -67,7 +68,7 @@ export function FirstLoginPasscodeChangePage() {
   }
 
   return (
-    <AuthCard title={t('auth.firstLogin.title')} subtitle={t('auth.firstLogin.subtitle')}>
+    <SignInCard title={t('auth.firstLogin.title')} subtitle={t('auth.firstLogin.subtitle')}>
       <form onSubmit={handleSubmit}>
         {error ? <ErrorBanner message={error} /> : null}
         <Field label={t('auth.newPasscodeLabel')} htmlFor="first-login-newPasscode" hint={t('auth.passcodeHint')}>
@@ -90,10 +91,12 @@ export function FirstLoginPasscodeChangePage() {
             onChange={(e) => setConfirmPasscode(e.target.value)}
           />
         </Field>
-        <Button type="submit" fullWidth loading={submitting}>
-          {t('auth.firstLogin.submit')}
-        </Button>
+        <div className="u8si-actions">
+          <Button type="submit" fullWidth loading={submitting}>
+            {t('auth.firstLogin.submit')}
+          </Button>
+        </div>
       </form>
-    </AuthCard>
+    </SignInCard>
   );
 }

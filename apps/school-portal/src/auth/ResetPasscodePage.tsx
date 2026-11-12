@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { AuthCard, AuthSuccessCard, Button, ErrorBanner, Field, PasscodeField, PhoneField, SegmentedCodeInput } from '@ultm8/ui';
+import { Button, ErrorBanner, Field, PasscodeField, PhoneField, SegmentedCodeInput } from '@ultm8/ui';
 import { ApiError, unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useT } from '../i18n/I18nProvider';
+import { SignInCard, SignInSuccessCard } from './SignInCard';
 
 export function ResetPasscodePage() {
   const t = useT();
@@ -40,7 +41,7 @@ export function ResetPasscodePage() {
 
   if (changed) {
     return (
-      <AuthSuccessCard
+      <SignInSuccessCard
         title={t('auth.reset.successTitle')}
         subtitle={t('auth.reset.successSubtitle')}
         onContinue={() => navigate('/login')}
@@ -49,7 +50,7 @@ export function ResetPasscodePage() {
   }
 
   return (
-    <AuthCard title={t('auth.reset.title')} subtitle={t('auth.reset.subtitle')}>
+    <SignInCard title={t('auth.reset.title')} subtitle={t('auth.reset.subtitle')}>
       <form onSubmit={handleSubmit}>
         {error ? <ErrorBanner message={error} /> : null}
         <Field label={t('auth.phoneLabel')} htmlFor="reset-phone">
@@ -78,10 +79,12 @@ export function ResetPasscodePage() {
             onChange={(e) => setConfirmPasscode(e.target.value)}
           />
         </Field>
-        <Button type="submit" fullWidth loading={submitting}>
-          {t('auth.reset.submit')}
-        </Button>
+        <div className="u8si-actions">
+          <Button type="submit" fullWidth loading={submitting}>
+            {t('auth.reset.submit')}
+          </Button>
+        </div>
       </form>
-    </AuthCard>
+    </SignInCard>
   );
 }
