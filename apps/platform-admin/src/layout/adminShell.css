@@ -1,0 +1,625 @@
+/* Platform Admin's app shell in the new look (Shell.tsx), the same visual
+ * language as the School Portal's (apps/school-portal/src/layout/
+ * newLookShell.css): Decision 453 makes the new look the only look, and
+ * index.html sets `data-look="redesign"` on <html>. DESIGN.md → "Side menu
+ * text", "Side menu stays in view", "Phone layout", "One accent: mint",
+ * "Never the same colour twice". Menu colours come from the --nav-* tokens
+ * (packages/ui/src/tokens.css): white in light mode, Pine in dark mode.
+ */
+
+[data-look='redesign'] {
+  --u8n-page-bg: #f1f2f3;
+  --u8n-surface: #ffffff;
+  --u8n-text: #383d42;
+  --u8n-quiet: #6c767f;
+  --u8n-subtle: #969ea6;
+  --u8n-line: #e1e3e5;
+  --u8n-field-line: #c2c7cb;
+  --u8n-hover: #f4f5f6;
+  --u8n-tile: #edf0f2;
+  --u8n-tile-icon: #3e4b56;
+  --u8n-tile-on: #9fd3b2;
+  --u8n-tile-on-icon: #20262c;
+  --u8n-row-on: #def2e2;
+  --u8n-row-on-text: #20262c;
+  --u8n-tab-line: #3e4b56;
+  --u8n-shadow: 0 1px 2px rgba(21, 23, 25, 0.06);
+  --u8n-inspector-shadow: -8px 0 24px rgba(21, 23, 25, 0.06);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-look='redesign']:not([data-theme='light']) {
+    --u8n-page-bg: var(--surface-0);
+    --u8n-surface: var(--surface-1);
+    --u8n-text: var(--text-primary);
+    --u8n-quiet: var(--text-secondary);
+    --u8n-subtle: var(--text-secondary);
+    --u8n-line: var(--border);
+    --u8n-field-line: var(--border-strong);
+    --u8n-hover: rgba(255, 255, 255, 0.06);
+    --u8n-tile: rgba(255, 255, 255, 0.08);
+    --u8n-tile-icon: var(--nav-text);
+    --u8n-row-on: var(--nav-active-bg);
+    --u8n-row-on-text: var(--nav-active-text);
+    --u8n-tab-line: #9fd3b2;
+    --u8n-shadow: none;
+    --u8n-inspector-shadow: none;
+  }
+}
+:root[data-look='redesign'][data-theme='dark'] {
+  --u8n-page-bg: var(--surface-0);
+  --u8n-surface: var(--surface-1);
+  --u8n-text: var(--text-primary);
+  --u8n-quiet: var(--text-secondary);
+  --u8n-subtle: var(--text-secondary);
+  --u8n-line: var(--border);
+  --u8n-field-line: var(--border-strong);
+  --u8n-hover: rgba(255, 255, 255, 0.06);
+  --u8n-tile: rgba(255, 255, 255, 0.08);
+  --u8n-tile-icon: var(--nav-text);
+  --u8n-row-on: var(--nav-active-bg);
+  --u8n-row-on-text: var(--nav-active-text);
+  --u8n-tab-line: #9fd3b2;
+  --u8n-shadow: none;
+  --u8n-inspector-shadow: none;
+}
+
+[data-look='redesign'] body {
+  background: var(--u8n-page-bg);
+}
+
+/* ------------------------------------------------------------------ Shell */
+
+[data-look='redesign'] .u8n-wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+[data-look='redesign'] .u8n-shell {
+  display: flex;
+  flex: 1 0 auto;
+  background: var(--u8n-page-bg);
+  color: var(--u8n-text);
+}
+
+/* Side menu: 248px, pinned on a computer so its foot is always in view. */
+[data-look='redesign'] .u8n-nav {
+  flex: none;
+  width: var(--nav-width, 248px);
+  box-sizing: border-box;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 0 12px;
+  background: var(--nav-bg);
+  color: var(--nav-text);
+  border-inline-end: 1px solid var(--nav-border);
+  z-index: 30;
+}
+[data-look='redesign'] .u8n-nav__school {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 20px 18px;
+  font-size: 14px;
+  min-width: 0;
+}
+[data-look='redesign'] .u8n-nav__school-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+[data-look='redesign'] .u8n-nav__logo {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--u8n-tile);
+  color: var(--nav-text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 500;
+  object-fit: cover;
+}
+[data-look='redesign'] .u8n-nav__search {
+  padding: 0 20px 12px;
+}
+[data-look='redesign'] .u8n-nav__search input {
+  width: 100% !important;
+  box-sizing: border-box;
+}
+[data-look='redesign'] .u8n-nav__search:empty {
+  display: none;
+}
+[data-look='redesign'] .u8n-nav__items,
+[data-look='redesign'] .u8n-nav__foot {
+  display: flex;
+  flex-direction: column;
+}
+[data-look='redesign'] .u8n-nav__spacer {
+  flex: 1;
+  min-height: 16px;
+}
+[data-look='redesign'] .u8n-nav__foot {
+  border-top: 1px solid var(--nav-border);
+  padding-top: 8px;
+}
+
+/* Menu rows: 14px regular text, a 34px soft icon tile, 44px rows (touch
+ * target). The page you are on: pale-green row, mint tile; no bold, no bar. */
+[data-look='redesign'] .u8n-nav__link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 44px;
+  padding: 0 18px;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--nav-text);
+  text-decoration: none;
+}
+[data-look='redesign'] .u8n-nav__link:hover {
+  background: var(--u8n-hover);
+}
+[data-look='redesign'] .u8n-nav__link:active {
+  background: var(--u8n-tile);
+}
+[data-look='redesign'] .u8n-nav__link:focus-visible,
+[data-look='redesign'] .u8n-tab:focus-visible,
+[data-look='redesign'] .u8n-page-header__parent:focus-visible {
+  outline: 2px solid var(--fill-accent);
+  outline-offset: -2px;
+}
+[data-look='redesign'] .u8n-nav__link--active,
+[data-look='redesign'] .u8n-nav__link--active:hover {
+  background: var(--u8n-row-on);
+  color: var(--u8n-row-on-text);
+}
+/* Log out is a button styled as a menu row. :where() keeps this reset below
+ * the row's hover, pressed and focus styles above. */
+[data-look='redesign'] :where(.u8n-nav__button) {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  text-align: start;
+  cursor: pointer;
+}
+[data-look='redesign'] .u8n-nav__tile {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--u8n-tile);
+  color: var(--u8n-tile-icon);
+}
+[data-look='redesign'] .u8n-nav__link--active .u8n-nav__tile {
+  background: var(--u8n-tile-on);
+  color: var(--u8n-tile-on-icon);
+}
+[data-look='redesign'] .u8n-nav__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+[data-look='redesign'] .u8n-nav__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-danger);
+  margin-inline-start: auto;
+}
+[data-look='redesign'] .u8n-nav__account {
+  padding: 8px 14px 0;
+}
+[data-look='redesign'] .u8n-nav__account > div > button {
+  width: 100%;
+  min-height: 44px;
+  color: var(--nav-text) !important;
+}
+
+/* ------------------------------------------------------------ Main column */
+
+[data-look='redesign'] .u8n-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* The white band at the top: the group's tabs and the header tools. */
+[data-look='redesign'] .u8n-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 8px 24px 0;
+  background: var(--u8n-surface);
+  border-bottom: 1px solid var(--u8n-line);
+}
+[data-look='redesign'] .u8n-bar__spacer {
+  flex: 1;
+}
+[data-look='redesign'] .u8n-bar__tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  min-height: 52px;
+  padding-bottom: 4px;
+  margin-inline-start: auto;
+}
+[data-look='redesign'] .u8n-bar__tools a,
+[data-look='redesign'] .u8n-bar__tools > a {
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+}
+[data-look='redesign'] .u8n-phone-only {
+  display: none;
+}
+
+/* Tabs: 15px, a 3px underline on the selected one. */
+[data-look='redesign'] .u8n-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 24px;
+  min-width: 0;
+}
+[data-look='redesign'] .u8n-tab {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 4px;
+  font-size: 15px;
+  color: var(--u8n-text);
+  text-decoration: none;
+  border-bottom: 3px solid transparent;
+}
+[data-look='redesign'] .u8n-tab:hover {
+  border-bottom-color: var(--u8n-line);
+}
+[data-look='redesign'] .u8n-tab--active,
+[data-look='redesign'] .u8n-tab--active:hover {
+  border-bottom-color: var(--u8n-tab-line);
+  font-weight: 500;
+}
+
+[data-look='redesign'] .u8n-content {
+  flex: 1 0 auto;
+  width: 100%;
+  max-width: 1240px;
+  box-sizing: border-box;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+/* ------------------------------------------- Page pieces (NewLookPage.tsx) */
+
+[data-look='redesign'] .u8n-page-header {
+  margin: -24px -24px 24px;
+  padding: 24px 24px 0;
+  background: var(--u8n-surface);
+  border-bottom: 1px solid var(--u8n-line);
+}
+[data-look='redesign'] .u8n-page-header__parent {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  font-size: 14px;
+  color: var(--u8n-quiet);
+  text-decoration: none;
+}
+[data-look='redesign'] .u8n-page-header__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 14px;
+}
+[data-look='redesign'] .u8n-page-header__title {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 300;
+  letter-spacing: 0.02em;
+}
+[data-look='redesign'] .u8n-page-header__subtitle {
+  margin: 4px 0 0;
+  font-size: 15px;
+  color: var(--u8n-subtle);
+}
+[data-look='redesign'] .u8n-page-header__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+[data-look='redesign'] .u8n-page--with-inspector {
+  display: flex;
+  align-items: stretch;
+  margin: -24px -24px -24px 0;
+  min-height: calc(100% + 48px);
+}
+[data-look='redesign'] .u8n-page__body {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 24px 24px 24px 0;
+}
+[data-look='redesign'] .u8n-inspector {
+  flex: none;
+  width: var(--inspector-width, 340px);
+  box-sizing: border-box;
+  padding: 22px 20px;
+  background: var(--u8n-surface);
+  border-inline-start: 1px solid var(--u8n-line);
+  box-shadow: var(--u8n-inspector-shadow);
+}
+[data-look='redesign'] .u8n-inspector__label {
+  margin: 0 0 12px;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--u8n-subtle);
+}
+
+/* Under 1024px there is no room for the menu, the page and a 340px panel
+ * side by side, so the panel moves below the page. */
+@media (max-width: 1023px) {
+  [data-look='redesign'] .u8n-page--with-inspector {
+    flex-direction: column;
+    margin: 0;
+    min-height: 0;
+  }
+  [data-look='redesign'] .u8n-page__body {
+    padding: 0 0 24px;
+  }
+  [data-look='redesign'] .u8n-inspector {
+    width: auto;
+    margin: 0 -24px -24px;
+    border-inline-start: 0;
+    border-top: 1px solid var(--u8n-line);
+    box-shadow: none;
+  }
+}
+
+/* ----------------------------------------------------- Phone: under 768px */
+
+@media (max-width: 767px) {
+  [data-look='redesign'] .u8n-shell {
+    flex-direction: column;
+  }
+  /* The menu becomes a sticky top bar: the School logo, then the sections
+   * as a row of rounded buttons you swipe sideways (Settings in the row).
+   * The search and the account move into the tools row below. */
+  [data-look='redesign'] .u8n-nav {
+    width: 100%;
+    height: auto;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 12px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    border-inline-end: 0;
+    border-bottom: 1px solid var(--nav-border);
+    scrollbar-width: none;
+  }
+  [data-look='redesign'] .u8n-nav__school {
+    flex: none;
+    padding: 0 6px 0 0;
+  }
+  [data-look='redesign'] .u8n-nav__school-name,
+  [data-look='redesign'] .u8n-nav__search,
+  [data-look='redesign'] .u8n-nav__spacer,
+  [data-look='redesign'] .u8n-nav__account {
+    display: none;
+  }
+  [data-look='redesign'] .u8n-nav__items,
+  [data-look='redesign'] .u8n-nav__foot {
+    flex: none;
+    flex-direction: row;
+    gap: 6px;
+    border-top: 0;
+    padding-top: 0;
+  }
+  [data-look='redesign'] .u8n-nav__link {
+    flex: none;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 14px 0 8px;
+    border-radius: 999px;
+  }
+  [data-look='redesign'] .u8n-nav__label {
+    overflow: visible;
+  }
+  [data-look='redesign'] .u8n-nav__button {
+    width: auto;
+  }
+  [data-look='redesign'] .u8n-nav__tile {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+  }
+  [data-look='redesign'] .u8n-phone-only {
+    display: block;
+  }
+  [data-look='redesign'] .u8n-bar {
+    padding: 4px 16px 0;
+  }
+  [data-look='redesign'] .u8n-bar__tools {
+    width: 100%;
+    gap: 8px 12px;
+    margin-inline-start: 0;
+  }
+  [data-look='redesign'] .u8n-bar__search {
+    flex: 1 1 100%;
+  }
+  [data-look='redesign'] .u8n-bar__search input {
+    width: 100% !important;
+    box-sizing: border-box;
+  }
+  [data-look='redesign'] .u8n-bar__search:empty {
+    display: none;
+  }
+  [data-look='redesign'] .u8n-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    max-width: 100%;
+  }
+  [data-look='redesign'] .u8n-tab {
+    flex: none;
+  }
+  [data-look='redesign'] .u8n-content {
+    padding: 16px;
+  }
+  [data-look='redesign'] .u8n-page-header {
+    margin: -16px -16px 16px;
+    padding: 16px 16px 0;
+  }
+  [data-look='redesign'] .u8n-inspector {
+    margin: 0 -16px -16px;
+  }
+}
+
+/* ------------------------------------- Drop-down (NewLookSelect.tsx) */
+/* DESIGN.md → "Drop-downs": our own, never a browser <select>. A soft grey
+ * field as wide as its longest option; the list opens under it and pushes
+ * the content down; the chosen option is pale green with a ✓. */
+
+[data-look='redesign'] {
+  --u8n-select-bg: #edf0f2;
+  --u8n-select-text: #383d42;
+  --u8n-select-ring: #5d7081;
+  --u8n-select-on: #def2e2;
+  --u8n-select-tick: #3a7556;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-look='redesign']:not([data-theme='light']) {
+    --u8n-select-bg: var(--surface-2);
+    --u8n-select-text: var(--text-primary);
+    --u8n-select-ring: #9fd3b2;
+    --u8n-select-on: var(--nav-active-bg);
+    --u8n-select-tick: #9fd3b2;
+  }
+}
+:root[data-look='redesign'][data-theme='dark'] {
+  --u8n-select-bg: var(--surface-2);
+  --u8n-select-text: var(--text-primary);
+  --u8n-select-ring: #9fd3b2;
+  --u8n-select-on: var(--nav-active-bg);
+  --u8n-select-tick: #9fd3b2;
+}
+
+[data-look='redesign'] .u8n-select {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  max-width: 100%;
+}
+[data-look='redesign'] .u8n-select__label {
+  font-size: 13px;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8n-select__field {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 100%;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--u8n-select-bg);
+  color: var(--u8n-select-text);
+  font: inherit;
+  font-size: 14px;
+  text-align: start;
+  cursor: pointer;
+}
+[data-look='redesign'] .u8n-select__field[aria-expanded='true'] {
+  box-shadow: 0 0 0 2px var(--u8n-select-ring);
+}
+[data-look='redesign'] .u8n-select__field:focus-visible {
+  outline: 2px solid var(--fill-accent);
+  outline-offset: 2px;
+}
+[data-look='redesign'] .u8n-select__values {
+  display: inline-grid;
+  min-width: 0;
+}
+[data-look='redesign'] .u8n-select__value {
+  grid-area: 1 / 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+[data-look='redesign'] .u8n-select__value[data-shown='false'] {
+  visibility: hidden;
+}
+[data-look='redesign'] .u8n-select__chevron {
+  flex: none;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8n-select__list {
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  min-width: 100%;
+  max-width: 100%;
+  max-height: 264px;
+  overflow-y: auto;
+  box-sizing: border-box;
+  background: var(--u8n-surface);
+  border: 1px solid var(--u8n-line);
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(21, 23, 25, 0.08);
+}
+[data-look='redesign'] .u8n-select__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 40px;
+  padding: 0 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--u8n-select-text);
+  cursor: pointer;
+}
+[data-look='redesign'] .u8n-select__option--active {
+  background: var(--u8n-hover);
+}
+[data-look='redesign'] .u8n-select__option[aria-selected='true'] {
+  background: var(--u8n-select-on);
+}
+[data-look='redesign'] .u8n-select__option[aria-selected='true'] svg {
+  color: var(--u8n-select-tick);
+}
+@media (max-width: 767px) {
+  [data-look='redesign'] .u8n-select__field,
+  [data-look='redesign'] .u8n-select__option {
+    font-size: 16px;
+  }
+  [data-look='redesign'] .u8n-select__option {
+    min-height: 48px;
+  }
+}
