@@ -1,0 +1,250 @@
+/* The Classes / Schedule dialogs in the new look (Decisions 453, 460): the
+ * class form, the timetable slot form, Book a student, Booked classes,
+ * Closures, Open mat and Scan a QR code. The frame and the button band are
+ * the shared dialog's (packages/ui Modal / ModalActions), drop-downs are the
+ * new look's own (NewLookSelect in `.u8n-dd-field`). This file only adds the
+ * pieces these dialogs have of their own. Look only. Scoped to
+ * [data-look='redesign'], which the portal always sets. */
+
+/* The style rows of the style picker: a style, its class type and Remove
+ * side by side, wrapping on a narrow dialog. */
+.u8cf-styles__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 12px;
+  align-items: flex-end;
+}
+[data-look='redesign'] .u8cf-styles__row > .ultm8-btn {
+  margin-bottom: var(--space-4);
+}
+
+/* Who can book: the audience drop-down, then the two ages side by side. */
+.u8cf-who {
+  border: 0;
+  padding: 0;
+  margin: 12px 0 0;
+  min-width: 0;
+}
+.u8cf-who__ages {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 12px;
+}
+
+/* A short notice inside a dialog (a closed day, a confirm step): the calm
+ * grey note (DESIGN.md → "One accent: mint, with calm grey"). */
+.u8cf-note {
+  margin: 4px 0 16px;
+}
+.u8cf-note p {
+  margin: 0 0 10px;
+}
+.u8cf-note p:last-child {
+  margin-bottom: 0;
+}
+[data-look='redesign'] .u8cf-note {
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--form-preview-bg);
+  color: var(--form-preview-text);
+}
+
+/* The class's banner is its avatar: a circle (DESIGN.md → "Avatars"). */
+[data-look='redesign'] .u8cf-form .ultm8-photo-upload__preview {
+  border-radius: 50%;
+}
+
+/* Book a student: the class's details, read-only, in the calm grey card. */
+.u8cf-facts {
+  margin: 0 0 16px;
+  display: grid;
+  gap: 10px;
+}
+.u8cf-facts__row {
+  display: grid;
+  grid-template-columns: minmax(0, 9em) minmax(0, 1fr);
+  gap: 12px;
+}
+.u8cf-facts dt {
+  color: var(--text-secondary);
+}
+.u8cf-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.u8cf-facts__sub {
+  display: block;
+  color: var(--text-secondary);
+}
+[data-look='redesign'] .u8cf-facts {
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--form-preview-bg);
+  color: var(--form-preview-text);
+  font-size: 14px;
+}
+[data-look='redesign'] .u8cf-facts dt,
+[data-look='redesign'] .u8cf-facts__sub {
+  color: var(--form-preview-muted);
+}
+@media (max-width: 479px) {
+  .u8cf-facts__row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+}
+
+/* Booked classes: the choices as option cards. Each is still a radio for the
+ * keyboard; the chosen card is white with a mint ring, the others grey. */
+.u8cf-choices {
+  border: 0;
+  padding: 0;
+  margin: 0 0 16px;
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+}
+.u8cf-choices > legend {
+  margin-bottom: 8px;
+  padding: 0;
+}
+.u8cf-choice {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  cursor: pointer;
+}
+.u8cf-choice__text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.u8cf-choice__desc {
+  color: var(--text-secondary);
+}
+[data-look='redesign'] .u8cf-choice {
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--u8n-tile);
+  box-shadow: inset 0 0 0 1px transparent;
+  font-size: 14px;
+}
+[data-look='redesign'] .u8cf-choice strong {
+  font-weight: 500;
+}
+[data-look='redesign'] .u8cf-choice:has(input:checked) {
+  background: var(--u8n-surface);
+  box-shadow: inset 0 0 0 2px var(--u8-tick);
+}
+[data-look='redesign'] .u8cf-choice__desc {
+  color: var(--u8n-quiet);
+}
+/* The radio itself: a round tick box, ringed in green when chosen. */
+[data-look='redesign'] .u8cf-choice > input {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 1px 0 0;
+  border-radius: 50%;
+  border: 1.5px solid var(--u8-btn-line);
+  background: var(--u8-tick-box);
+  cursor: pointer;
+}
+[data-look='redesign'] .u8cf-choice > input:checked {
+  border: 6px solid var(--u8-tick);
+}
+[data-look='redesign'] .u8cf-choice > input:focus-visible {
+  outline: 2px solid var(--fill-accent);
+  outline-offset: 2px;
+}
+
+/* Closures: the list of closures (and of classes to recreate) as rows with
+ * a line between them; each row's own buttons on its right, under it on a
+ * phone. */
+.u8cf-intro {
+  margin-top: 0;
+}
+.u8cf-subhead {
+  margin: 20px 0 10px;
+  font-size: 15px;
+  font-weight: 500;
+}
+.u8cf-list {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+}
+.u8cf-list__item {
+  display: grid;
+  gap: 10px;
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+}
+.u8cf-list__item:first-child {
+  border-top: 0;
+  padding-top: 4px;
+}
+[data-look='redesign'] .u8cf-list__item {
+  border-top-color: var(--u8-dlg-line);
+}
+.u8cf-list__line {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px 12px;
+}
+.u8cf-list__text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.u8cf-list__sub {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+[data-look='redesign'] .u8cf-list__text strong {
+  font-weight: 500;
+}
+[data-look='redesign'] .u8cf-list__sub {
+  color: var(--u8n-quiet);
+}
+.u8cf-row-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+/* The From / To / Where fields side by side, one column on a phone. */
+.u8cf-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0 12px;
+  align-items: start;
+}
+@media (max-width: 479px) {
+  .u8cf-row-buttons {
+    width: 100%;
+  }
+  .u8cf-row-buttons > .ultm8-btn {
+    flex: 1 1 0;
+  }
+}
+
+/* Scan a QR code: the camera fills the dialog's width. */
+.u8cf-scan {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+}
+.u8cf-scan__video {
+  display: block;
+  width: 100%;
+  border-radius: 12px;
+}
+.u8cf-scan__hint {
+  margin: 12px 0 0;
+}

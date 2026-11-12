@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { expect, test } from '@playwright/test';
 import { addBranch, addPerson, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
+import { pickOption } from './team-helpers';
 
 /**
  * Check-in and front-desk mode (DESIGN.md → "Check-in and front-desk mode";
@@ -321,8 +322,8 @@ test('the owner starts an open mat from the Check-in page; it is a one-off class
   await page.goto('/check-in');
   await page.getByRole('button', { name: '+ Open mat session' }).click();
   const dialog = page.getByRole('dialog', { name: 'Start an open mat' });
-  await expect(dialog.getByLabel('Style')).toHaveValue(s.disciplineId);
-  await dialog.getByLabel('Length').selectOption('90');
+  await expect(dialog.getByRole('combobox', { name: 'Style', exact: true }).locator('[data-shown="true"]')).toHaveText('BJJ');
+  await pickOption(dialog, 'Length', '90 min');
   await dialog.getByRole('button', { name: 'Start open mat' }).click();
   await expect(page.getByText('Open mat started. Students told in the app: 1.')).toBeVisible();
   await expect(page.getByTestId('fd-class').filter({ hasText: 'Open mat' })).toHaveCount(1);

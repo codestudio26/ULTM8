@@ -1,0 +1,193 @@
+/* The class page (/classes/:id) in the new look (Decision 453; Decision 460:
+ * old-header pages join their forms group). The header is the shell's
+ * NewLookPageHeader, the cards and tags are the Schedule pages' own
+ * (schedule.css `.u8s-card`, `.u8s-tag`), and the Bookings and Waitlist lists
+ * are tables while they fit their card and a card per row when they don't
+ * (RosterTable; DESIGN.md → "Phone layout"). Look only. */
+
+[data-look='redesign'] {
+  --u8cd-info-bg: #e5ecf6;
+  --u8cd-info-text: #2b4f80;
+  --u8cd-info-line: #c3d3ea;
+  --u8cd-warn-bg: #fdf1dc;
+  --u8cd-warn-text: #7a4f12;
+  --u8cd-warn-line: #ecd3a6;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-look='redesign']:not([data-theme='light']) {
+    --u8cd-info-bg: rgba(168, 197, 234, 0.16);
+    --u8cd-info-text: #c4d6ef;
+    --u8cd-info-line: rgba(168, 197, 234, 0.4);
+    --u8cd-warn-bg: rgba(241, 207, 174, 0.16);
+    --u8cd-warn-text: #f1cfae;
+    --u8cd-warn-line: rgba(241, 207, 174, 0.4);
+  }
+}
+:root[data-look='redesign'][data-theme='dark'] {
+  --u8cd-info-bg: rgba(168, 197, 234, 0.16);
+  --u8cd-info-text: #c4d6ef;
+  --u8cd-info-line: rgba(168, 197, 234, 0.4);
+  --u8cd-warn-bg: rgba(241, 207, 174, 0.16);
+  --u8cd-warn-text: #f1cfae;
+  --u8cd-warn-line: rgba(241, 207, 174, 0.4);
+}
+
+[data-look='redesign'] .u8cd-tag--info {
+  background: var(--u8cd-info-bg);
+  color: var(--u8cd-info-text);
+  border-color: var(--u8cd-info-line);
+}
+[data-look='redesign'] .u8cd-tag--warn {
+  background: var(--u8cd-warn-bg);
+  color: var(--u8cd-warn-text);
+  border-color: var(--u8cd-warn-line);
+}
+
+/* "Cancelled" and its reason, above the cards. */
+.u8cd-cancelled {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 16px;
+}
+
+/* ------------------------------------------------------------ The cards */
+
+[data-look='redesign'] .u8cd-card {
+  min-width: 0;
+  overflow: hidden;
+}
+.u8cd-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  padding: 16px 20px;
+}
+.u8cd-card__title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 500;
+}
+.u8cd-card__note {
+  margin: 0;
+  padding: 16px 20px;
+}
+.u8cd-card__banner {
+  margin: 0 20px 12px;
+}
+.u8cd-card__empty {
+  padding: 0 20px 16px;
+}
+
+/* ------------------------------------------- Bookings / Waitlist lists */
+
+.u8cd-list {
+  min-width: 0;
+}
+.u8cd-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.u8cd-table th {
+  padding: 12px 14px;
+  border-top: 1px solid var(--u8n-line, var(--border));
+  border-bottom: 1px solid var(--u8n-line, var(--border));
+  background: var(--u8s-head-bg);
+  color: var(--u8n-quiet, var(--text-secondary));
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: start;
+  white-space: nowrap;
+}
+.u8cd-table td {
+  padding: 14px;
+  border-bottom: 1px solid var(--u8n-line, var(--border));
+  vertical-align: middle;
+}
+.u8cd-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.u8cd-table th:first-child,
+.u8cd-table td:first-child {
+  padding-inline-start: 20px;
+}
+.u8cd-table th:last-child,
+.u8cd-table td:last-child {
+  padding-inline-end: 20px;
+}
+.u8cd-table .u8cd-col-student {
+  font-weight: 500;
+}
+.u8cd-cell-label {
+  display: none;
+}
+.u8cd-guests {
+  display: grid;
+  gap: 6px;
+}
+.u8cd-guests__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+/* A card per row once the table doesn't fit: the student first, then each
+ * column's name and value on its own line, the button full width last. */
+.u8cd-list[data-layout='cards'] table,
+.u8cd-list[data-layout='cards'] tbody,
+.u8cd-list[data-layout='cards'] td {
+  display: block;
+}
+.u8cd-list[data-layout='cards'] thead {
+  display: none;
+}
+.u8cd-list[data-layout='cards'] tr {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--u8n-line, var(--border));
+}
+.u8cd-list[data-layout='cards'] td,
+.u8cd-list[data-layout='cards'] td:first-child,
+.u8cd-list[data-layout='cards'] td:last-child {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  padding: 0;
+  border: 0;
+  overflow-wrap: anywhere;
+}
+.u8cd-list[data-layout='cards'] .u8cd-cell-label {
+  display: block;
+  flex: 0 0 8.5em;
+  color: var(--u8n-quiet, var(--text-secondary));
+  font-size: 13px;
+}
+.u8cd-list[data-layout='cards'] .u8cd-cell-value {
+  min-width: 0;
+}
+.u8cd-list[data-layout='cards'] .u8cd-col-student {
+  font-size: 15px;
+}
+.u8cd-list[data-layout='cards'] .u8cd-col-student .u8cd-cell-label,
+.u8cd-list[data-layout='cards'] .u8cd-col-actions .u8cd-cell-label {
+  display: none;
+}
+.u8cd-list[data-layout='cards'] .u8cd-col-actions {
+  padding-top: 6px;
+}
+.u8cd-list[data-layout='cards'] .u8cd-col-actions .u8cd-cell-value,
+.u8cd-list[data-layout='cards'] .u8cd-col-actions .ultm8-btn {
+  width: 100%;
+}
+.u8cd-list[data-layout='cards'] td:has(> .u8cd-cell-value:empty) {
+  display: none;
+}
