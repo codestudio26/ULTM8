@@ -10,6 +10,49 @@ Compare any two versions with `git diff <old> <new>`, e.g. `git diff v1.0.0 mast
 
 Post-v1.4.0 work on `master`.
 
+- **New look: belts, styles and skills** (#573). Styles & Belts, a style's page
+  and Grading → Skills have the new header, cards and tables. Their dialogs (add
+  / edit style, start from template, duplicate, belt editor, reorder) have the
+  new drop-downs, option cards and the button band with Cancel first. A long
+  dialog on a phone no longer spills past its card.
+- **New look: Grading Board page** (#575). The Grading Board page has the new
+  header with the Grading tabs, white cards, our own drop-downs for the style
+  and a student's home branch (no browser drop-downs left), and the new look's
+  switches, pills, tick boxes and tags. Its look changed; how it works didn't.
+- **New look: searchable address picker** (#576). Every address form: Country is
+  now a searchable picker, like Currency, and a State/Province/Emirate from a
+  fixed list is the new look's drop-down. No browser drop-downs are left in the
+  address fields (Decision 460).
+- **New look: My profile, Check-in rules, My belts** (#577). My profile,
+  Check-in rules and My belts take the new look: the new page header, My
+  profile's fields in numbered chapters, check-in rules in grouped cards with
+  the new drop-downs, and the coach's belt picked from a drop-down with belt
+  pictures (Decision 460 item 17; look only).
+- **New look: Grading Settings and Permissions** (#578). Grading → Settings and
+  Grading → Permissions have the new page header with the Grading tabs, new-look
+  cards, drop-downs and switches (permissions are switches per style, one list
+  on a phone); same settings, permissions and saving.
+- **New look: Organisation forms** (#579). The Organisation forms. Add branch,
+  Add/Edit franchise, Branch settings, the School page's setting cards and
+  Create your School use the new look's own drop-downs and dialog button band.
+  Branch settings has the new page header. On a phone, a long dialog's sheet now
+  grows with the form.
+- **New look: the last old-header pages** (#580). The last pages on the old page
+  header: a class's Show QR and Roll call, the Dashboard's Bookings drill-down,
+  a membership plan's Members page, the Membership Plans "owner only" message,
+  and What's new. They get the new header, white cards and tags, our own
+  drop-downs, and they fit a phone. Look only.
+- **New look: sign-in pages** (#581). Log in, Create account, Verify phone,
+  Forgot/Reset passcode, First-login passcode, Accept the Terms, the coach
+  invite and the guest waiver link now use the new look's white card with the
+  ULTM8 mark, soft fields and pill buttons, light and dark, phone first; Create
+  account's Gender is pills and Language the new drop-down. Create your School
+  moves onto the same frame; Access paused and the legal pages take the same
+  card. Look only.
+- **New look: the last old cards and drop-downs** (#582). The Students list's
+  Freeze requests and Waiting for a Guardian cards, the student page's App
+  access passcode, and the header's School switcher and language picker now use
+  the new look's cards, buttons and drop-downs (look only).
 - **New look: Students forms and every dialog** (#563). The Students forms (Add
   student, Edit, Invite) are in form pattern "F" with numbered chapters, and Add
   student has a live preview and "Ready to save". Every dialog has the new
