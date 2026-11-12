@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Button, Card, ErrorBanner, Field, SuccessBanner, TextField } from '@ultm8/ui';
+import { Button, ErrorBanner, Field, SuccessBanner, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useGradingSchoolId } from '../auth/AuthContext';
 import { useT } from '../i18n/I18nProvider';
+import { Chapter } from '../students/StudentFormParts';
 import { calendarFeedUrl, useCreateMyCalendarFeed, useDeleteMyCalendarFeed, useMyCalendarFeed } from '../schools/scheduleSharingQueries';
 
 /**
@@ -10,7 +11,8 @@ import { calendarFeedUrl, useCreateMyCalendarFeed, useDeleteMyCalendarFeed, useM
  * A private link to the classes they teach at the School they're working
  * in, which they add in Google Calendar ("Other calendars", "From URL").
  * Shown only to staff (owner, Branch Staff, coach); the School switches it
- * on. A new link turns the old one off; "Stop" removes it.
+ * on. A new link turns the old one off; "Stop" removes it. On My profile it
+ * is a sheet of its own in the new look (Decision 460 item 17).
  */
 export function MyCalendarFeedCard() {
   const t = useT();
@@ -34,20 +36,24 @@ export function MyCalendarFeedCard() {
 
   const link = feed.data.feed ? calendarFeedUrl(feed.data.feed.token) : null;
   return (
-    <Card>
-      <section aria-label={t('schools.scheduleSharing.myTitle')}>
-        <h2 style={{ fontSize: 18, margin: '0 0 4px' }}>{t('schools.scheduleSharing.myTitle')}</h2>
-        <p style={{ color: 'var(--text-muted)', margin: '0 0 16px' }}>{t('schools.scheduleSharing.mySubtitle')}</p>
-        {error ? <ErrorBanner message={error} /> : null}
+    <section className="u8f-sheet" aria-label={t('schools.scheduleSharing.myTitle')}>
+      {error ? <ErrorBanner message={error} /> : null}
+      <Chapter title={t('schools.scheduleSharing.myTitle')} description={t('schools.scheduleSharing.mySubtitle')}>
         {!feed.data.enabled ? (
-          <p>{t('schools.scheduleSharing.myOff')}</p>
+          <p className="u8f-wide u8me-text">{t('schools.scheduleSharing.myOff')}</p>
         ) : link ? (
           <>
-            <Field label={t('schools.scheduleSharing.myLinkLabel')} htmlFor="my-calendar-link" hint={t('schools.scheduleSharing.myLinkHint')}>
-              <TextField id="my-calendar-link" readOnly value={link} onFocus={(e) => e.currentTarget.select()} />
-            </Field>
-            {copied ? <SuccessBanner message={t('schools.scheduleSharing.copied')} /> : null}
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <div className="u8f-wide">
+              <Field label={t('schools.scheduleSharing.myLinkLabel')} htmlFor="my-calendar-link" hint={t('schools.scheduleSharing.myLinkHint')}>
+                <TextField id="my-calendar-link" readOnly value={link} onFocus={(e) => e.currentTarget.select()} />
+              </Field>
+            </div>
+            {copied ? (
+              <div className="u8f-wide">
+                <SuccessBanner message={t('schools.scheduleSharing.copied')} />
+              </div>
+            ) : null}
+            <div className="u8f-wide u8me-buttons">
               <Button
                 onClick={async () => {
                   await navigator.clipboard.writeText(link);
@@ -63,14 +69,16 @@ export function MyCalendarFeedCard() {
                 {t('schools.scheduleSharing.myStop')}
               </Button>
             </div>
-            <p className="ultm8-field__hint">{t('schools.scheduleSharing.myPrivate')}</p>
+            <p className="ultm8-field__hint u8f-wide u8me-text">{t('schools.scheduleSharing.myPrivate')}</p>
           </>
         ) : (
-          <Button loading={create.isPending} onClick={() => run(() => create.mutateAsync())}>
-            {t('schools.scheduleSharing.myCreate')}
-          </Button>
+          <div className="u8f-wide u8me-buttons">
+            <Button loading={create.isPending} onClick={() => run(() => create.mutateAsync())}>
+              {t('schools.scheduleSharing.myCreate')}
+            </Button>
+          </div>
         )}
-      </section>
-    </Card>
+      </Chapter>
+    </section>
   );
 }

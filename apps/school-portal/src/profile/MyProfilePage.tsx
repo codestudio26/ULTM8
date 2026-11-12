@@ -2,14 +2,11 @@ import React, { useState } from 'react';
 import {
   AddressFields,
   Button,
-  Card,
   CurrencyField,
   ErrorBanner,
   Field,
-  PageHeader,
   PasscodeField,
   PhotoUploadField,
-  SelectField,
   Spinner,
   SuccessBanner,
   TextField,
@@ -28,8 +25,13 @@ import { useRequestPublicPhotoUploadUrl } from '../uploads/uploadQueries';
 import { useI18n } from '../i18n/I18nProvider';
 import { languageName } from '../i18n/format';
 import { guessDefaultCountry } from '../lib/phoneCountry';
+import { NewLookPage, NewLookPageHeader } from '../layout/NewLookPage';
+import { NewLookSelect } from '../layout/NewLookSelect';
+import { Chapter } from '../students/StudentFormParts';
 import { MyCalendarFeedCard } from './MyCalendarFeedCard';
 import { MyRolesCard } from './MyRolesCard';
+import '../students/studentForms.css';
+import './settingsForms.css';
 
 /**
  * The signed-in user's own profile (`/profile`, reached from the header's
@@ -53,6 +55,11 @@ import { MyRolesCard } from './MyRolesCard';
  *
  * Saving a new language switches the portal's text the same way the header's
  * picker does (`rememberLocale`, plus the saved profile language itself).
+ *
+ * In the new look (Decision 460 item 17): form pattern "F" (DESIGN.md), as
+ * the Students forms — the same fields in numbered chapters on a white
+ * sheet, Language as the new look's drop-down; the passcode, calendar link
+ * and roles each on a sheet of their own below.
  */
 export function MyProfilePage() {
   const { t, rememberLocale } = useI18n();
@@ -129,88 +136,120 @@ export function MyProfilePage() {
     }
   }
 
-  if (loadError) return <ErrorBanner message={loadError instanceof ApiError ? loadError.message : t('profile.loadFailed')} />;
-  if (isLoading || !me || !form) return <Spinner />;
+  const header = <NewLookPageHeader title={t('profile.title')} subtitle={me ? `${me.firstName} ${me.surname}`.trim() : undefined} />;
+  if (loadError) {
+    return (
+      <>
+        {header}
+        <NewLookPage>
+          <ErrorBanner message={loadError instanceof ApiError ? loadError.message : t('profile.loadFailed')} />
+        </NewLookPage>
+      </>
+    );
+  }
+  if (isLoading || !me || !form) {
+    return (
+      <>
+        {header}
+        <NewLookPage>
+          <Spinner />
+        </NewLookPage>
+      </>
+    );
+  }
 
   return (
     <>
-      <PageHeader title={t('profile.title')} subtitle={`${me.firstName} ${me.surname}`.trim()} />
-      <Card>
-        <form onSubmit={handleSubmit}>
-          {saveError ? <ErrorBanner message={saveError} /> : null}
-          {saved ? <SuccessBanner message={t('schools.profile.saved')} /> : null}
-          <Field label={t('students.update.photo')} htmlFor="profile-photo">
-            <PhotoUploadField
-              value={form.profilePhotoUrl}
-              onChange={(profilePhotoUrl) => set('profilePhotoUrl', profilePhotoUrl)}
-              requestUpload={(file) =>
-                requestPhotoUpload.mutateAsync({
-                  entityType: 'USER',
-                  contentType: file.type as 'image/png' | 'image/jpeg' | 'image/webp',
-                })
-              }
-            />
-            {form.profilePhotoUrl ? (
-              <div style={{ marginTop: 8 }}>
-                <Button type="button" variant="secondary" onClick={() => set('profilePhotoUrl', '')}>
-                  {t('profile.removePhoto')}
-                </Button>
+      {header}
+      <NewLookPage>
+        <div className="u8me-stack">
+          <form className="u8f-sheet" onSubmit={handleSubmit}>
+            {saveError ? <ErrorBanner message={saveError} /> : null}
+            {saved ? <SuccessBanner message={t('schools.profile.saved')} /> : null}
+            <Chapter number={1} title={t('students.form.personal')}>
+              <div className="u8f-wide">
+                <Field label={t('students.update.photo')} htmlFor="profile-photo">
+                  {/* A person's photo is a circle (DESIGN.md → "Avatars"). */}
+                  <div className="u8me-photo">
+                    <PhotoUploadField
+                      value={form.profilePhotoUrl}
+                      onChange={(profilePhotoUrl) => set('profilePhotoUrl', profilePhotoUrl)}
+                      requestUpload={(file) =>
+                        requestPhotoUpload.mutateAsync({
+                          entityType: 'USER',
+                          contentType: file.type as 'image/png' | 'image/jpeg' | 'image/webp',
+                        })
+                      }
+                    />
+                    {form.profilePhotoUrl ? (
+                      <Button type="button" variant="secondary" onClick={() => set('profilePhotoUrl', '')}>
+                        {t('profile.removePhoto')}
+                      </Button>
+                    ) : null}
+                  </div>
+                </Field>
               </div>
-            ) : null}
-          </Field>
-          <Field label={t('students.update.firstName')} htmlFor="profile-firstName">
-            <TextField required maxLength={100} value={form.firstName} onChange={(e) => set('firstName', e.target.value)} />
-          </Field>
-          <Field label={t('students.update.surname')} htmlFor="profile-surname">
-            <TextField required maxLength={100} value={form.surname} onChange={(e) => set('surname', e.target.value)} />
-          </Field>
-          <Field label={t('students.update.username')} htmlFor="profile-username">
-            <TextField maxLength={50} value={form.username} onChange={(e) => set('username', e.target.value)} />
-          </Field>
-          <Field label={t('students.update.dateOfBirth')} htmlFor="profile-dob">
-            <TextField type="date" value={form.dateOfBirth} onChange={(e) => set('dateOfBirth', e.target.value)} />
-          </Field>
-          <Field label={t('students.update.language')} htmlFor="profile-language">
-            <SelectField
-              value={form.language}
-              onChange={(e) => set('language', e.target.value)}
-              options={[{ value: '', label: t('schools.form.notSet') }, ...(languages ?? []).map((l) => ({ value: l.code, label: languageName(l.code, l.name) }))]}
-            />
-          </Field>
-          <Field label={t('students.update.currency')} htmlFor="profile-currency">
-            <CurrencyField
-              id="profile-currency"
-              value={form.currency}
-              onChange={(code) => set('currency', code)}
-              options={[{ code: '', name: t('schools.form.notSet') }, ...(currencies ?? [])]}
-              placeholder={t('schools.form.notSet')}
-            />
-          </Field>
-          <AddressFields
-            idPrefix="profile-address"
-            value={form.address}
-            onChange={(address) => set('address', address)}
-            errors={addressErrors}
-            legacy={hasLegacyAddressOnly(me) && !form.address.country}
-          />
-          <Field label={t('auth.emailLabel')} htmlFor="profile-email">
-            <TextField readOnly value={me.email} />
-          </Field>
-          <Field label={t('auth.phoneLabel')} htmlFor="profile-phone" hint={t('profile.signInNote')}>
-            <TextField readOnly value={me.phone ?? ''} />
-          </Field>
-          <div style={{ marginTop: 16 }}>
-            <Button type="submit" loading={updateMe.isPending}>
-              {t('schools.profile.saveChanges')}
-            </Button>
-          </div>
-        </form>
-      </Card>
-      <ChangePasscodeCard />
-      {/* Decision 319 item 4: staff see their classes in Google Calendar. */}
-      <MyCalendarFeedCard />
-      {/* Decision 433 item 6: give up your own staff role. */}
-      <MyRolesCard />
+              <Field label={t('students.update.firstName')} htmlFor="profile-firstName">
+                <TextField required maxLength={100} value={form.firstName} onChange={(e) => set('firstName', e.target.value)} />
+              </Field>
+              <Field label={t('students.update.surname')} htmlFor="profile-surname">
+                <TextField required maxLength={100} value={form.surname} onChange={(e) => set('surname', e.target.value)} />
+              </Field>
+              <Field label={t('students.update.username')} htmlFor="profile-username">
+                <TextField maxLength={50} value={form.username} onChange={(e) => set('username', e.target.value)} />
+              </Field>
+              <Field label={t('students.update.dateOfBirth')} htmlFor="profile-dob">
+                <TextField type="date" value={form.dateOfBirth} onChange={(e) => set('dateOfBirth', e.target.value)} />
+              </Field>
+              <div className="u8n-dd-field">
+                <NewLookSelect
+                  id="profile-language"
+                  label={t('students.update.language')}
+                  value={form.language}
+                  onChange={(language) => set('language', language)}
+                  options={[{ value: '', label: t('schools.form.notSet') }, ...(languages ?? []).map((l) => ({ value: l.code, label: languageName(l.code, l.name) }))]}
+                />
+              </div>
+              <Field label={t('students.update.currency')} htmlFor="profile-currency">
+                <CurrencyField
+                  id="profile-currency"
+                  value={form.currency}
+                  onChange={(code) => set('currency', code)}
+                  options={[{ code: '', name: t('schools.form.notSet') }, ...(currencies ?? [])]}
+                  placeholder={t('schools.form.notSet')}
+                />
+              </Field>
+              <Field label={t('auth.emailLabel')} htmlFor="profile-email">
+                <TextField readOnly value={me.email} />
+              </Field>
+              <Field label={t('auth.phoneLabel')} htmlFor="profile-phone" hint={t('profile.signInNote')}>
+                <TextField readOnly value={me.phone ?? ''} />
+              </Field>
+            </Chapter>
+            <Chapter number={2} title={t('students.update.address')}>
+              <div className="u8f-wide u8f-address">
+                <AddressFields
+                  idPrefix="profile-address"
+                  value={form.address}
+                  onChange={(address) => set('address', address)}
+                  errors={addressErrors}
+                  legacy={hasLegacyAddressOnly(me) && !form.address.country}
+                />
+              </div>
+            </Chapter>
+            <div className="u8f-actions">
+              <Button type="submit" loading={updateMe.isPending}>
+                {t('schools.profile.saveChanges')}
+              </Button>
+            </div>
+          </form>
+          <ChangePasscodeCard />
+          {/* Decision 319 item 4: staff see their classes in Google Calendar. */}
+          <MyCalendarFeedCard />
+          {/* Decision 433 item 6: give up your own staff role. */}
+          <MyRolesCard />
+        </div>
+      </NewLookPage>
     </>
   );
 }
@@ -252,11 +291,10 @@ function ChangePasscodeCard() {
   }
 
   return (
-    <Card>
-      <h2 style={{ marginTop: 0 }}>{t('profile.changePasscode.title')}</h2>
-      <form onSubmit={handleSubmit}>
-        {error ? <ErrorBanner message={error} /> : null}
-        {changed ? <SuccessBanner message={t('profile.changePasscode.changed')} /> : null}
+    <form className="u8f-sheet" onSubmit={handleSubmit}>
+      {error ? <ErrorBanner message={error} /> : null}
+      {changed ? <SuccessBanner message={t('profile.changePasscode.changed')} /> : null}
+      <Chapter title={t('profile.changePasscode.title')}>
         <Field label={t('profile.changePasscode.current')} htmlFor="profile-current-passcode">
           <PasscodeField
             inputMode="numeric"
@@ -290,12 +328,12 @@ function ChangePasscodeCard() {
             onChange={(e) => setConfirmPasscode(e.target.value)}
           />
         </Field>
-        <div style={{ marginTop: 16 }}>
-          <Button type="submit" loading={submitting}>
-            {t('profile.changePasscode.submit')}
-          </Button>
-        </div>
-      </form>
-    </Card>
+      </Chapter>
+      <div className="u8f-actions">
+        <Button type="submit" loading={submitting}>
+          {t('profile.changePasscode.submit')}
+        </Button>
+      </div>
+    </form>
   );
 }

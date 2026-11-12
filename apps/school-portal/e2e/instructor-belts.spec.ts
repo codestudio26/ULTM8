@@ -22,7 +22,9 @@ test('an instructor chooses their belt; it shows "Not verified"', async ({ page 
   await signIn(page, coach.token);
   await page.goto('/coach');
   await page.getByRole('link', { name: 'My belts' }).click();
-  await page.getByLabel('Your belt in BJJ').selectOption({ label: 'White 1' });
+  // The belt drop-down shows belt pictures (DESIGN.md → "Drop-downs").
+  await page.getByRole('combobox', { name: 'Your belt in BJJ' }).click();
+  await page.getByRole('option', { name: 'White 1', exact: true }).click();
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByText('Saved. The School owner will verify it.')).toBeVisible();
   await expect(page.getByText('Not verified')).toBeVisible();

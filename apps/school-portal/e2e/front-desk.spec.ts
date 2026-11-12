@@ -503,7 +503,7 @@ test('the owner sets the check-in rules from Check-in; one class at a time untic
   const several = page.getByRole('switch', { name: 'Check in to several classes at once' });
   await expect(several).toHaveAttribute('aria-checked', 'true');
   await several.click();
-  await page.getByLabel('Check-in closes').selectOption('after');
+  await pickOption(page, 'Check-in closes', 'A set time after the start');
   await page.getByLabel('Minutes after the start (0 = at the start)').fill('20');
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByText('Check-in rules saved.')).toBeVisible();
