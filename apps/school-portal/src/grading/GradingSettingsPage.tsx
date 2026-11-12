@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Badge, Button, Card, Checkbox, EmptyState, ErrorBanner, PageHeader, SelectField, Spinner, SuccessBanner, Switch, TextField } from '@ultm8/ui';
+import { Button, Checkbox, EmptyState, ErrorBanner, Spinner, SuccessBanner, Switch, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useGradingSchoolId } from '../auth/AuthContext';
 import { useDisciplines, type DisciplineResponse } from '../disciplines/disciplineQueries';
@@ -16,8 +16,13 @@ import {
   useSetReadyForAdultAge,
   useUpdatePromotionFeeSettings,
 } from './gradingQueries';
-import { GradingTabs } from './GradingTabs';
+import { useGradingHeaderTabs } from './GradingTabs';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
+import { BillingCard, BillingPage } from '../billing/BillingLook';
+import { NewLookPageHeader } from '../layout/NewLookPage';
+import { NewLookSelect } from '../layout/NewLookSelect';
+import '../disciplines/stylesLook.css';
+import './gradingSettingsLook.css';
 
 type About = 'display' | 'requirements' | 'promotion' | 'columns' | 'fee' | 'gradeBeforePaid' | 'openMat' | 'who';
 
@@ -45,6 +50,12 @@ const ABOUT: Record<About, { title: TranslationKey; body: TranslationKey }> = {
  * the same right too. "What counts toward the next rank" per style
  * (Decision 321): the requirement tick boxes, automatic promotion and
  * "Auto-assign first belt", the owner only.
+ *
+ * New look (Decision 460 item 17): the new page header with the Grading
+ * tabs, white cards with soft rows, the new look's drop-downs (a pick is an
+ * edit like any other: the Discard / Save changes bar shows), and the About
+ * panel beside the settings (under them on a phone). The same settings,
+ * rights, checks, working copy and saving as before.
  */
 
 /** Decision 321 item 1: the six tick boxes, in Gymdesk's order. */
@@ -101,6 +112,7 @@ export function GradingSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const headerTabs = useGradingHeaderTabs();
 
   const reset = () => {
     setColumns(Object.fromEntries(styles.map((d) => [d.id, { g: String(d.boardGettingThere), r: String(d.boardReadyToGrade) }])));
@@ -176,92 +188,94 @@ export function GradingSettingsPage() {
   }
 
   const aboutButton = (key: About) => (
-    <Button variant="secondary" className="ultm8-about-button" onClick={() => setAbout(key)} aria-label={t('grading.settings.aboutAria', { setting: t(ABOUT[key].title) })}>
+    <Button variant="secondary" className="ultm8-about-button u8gst-info" onClick={() => setAbout(key)} aria-label={t('grading.settings.aboutAria', { setting: t(ABOUT[key].title) })}>
       ⓘ
     </Button>
   );
+  /** A card's heading: the title, an "Owner only" tag, and its ⓘ. */
+  const cardHead = (title: TranslationKey, key: About | null, ownerOnly = false) => (
+    <div className="u8gst-head">
+      <h2 className="u8b-card__title">
+        {t(title)} {ownerOnly ? <span className="u8gs-tag">{t('grading.settings.ownerOnly')}</span> : null}
+      </h2>
+      {key ? aboutButton(key) : null}
+    </div>
+  );
 
   return (
-    <>
-      <PageHeader title={t('grading.settings.title')} subtitle={t('grading.settings.subtitle')} />
-      <GradingTabs />
+    <BillingPage>
+      <NewLookPageHeader title={t('grading.settings.title')} subtitle={t('grading.settings.subtitle')} {...headerTabs} />
       {error ? <ErrorBanner message={error} /> : null}
       {saved && !dirty ? <SuccessBanner message={t('grading.settings.saved')} /> : null}
-      <div className="ultm8-settings-layout">
-        <div style={{ display: 'grid', gap: 16, minWidth: 0 }}>
+      <div className="u8gst-layout">
+        <div className="u8gst-main">
           {styles.length ? (
-            <Card>
+            <BillingCard>
               <section aria-label={t('grading.settings.displayTitle')}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <h2 className="ultm8-page-header__title" style={{ fontSize: 17, margin: 0, flex: 1 }}>
-                    {t('grading.settings.displayTitle')}
-                  </h2>
-                  {aboutButton('display')}
-                </div>
-                <div style={{ display: 'grid', gap: 12, marginTop: 8 }}>
+                {cardHead('grading.settings.displayTitle', 'display')}
+                <div className="u8gst-rows">
                   {styles.map((d) => {
                     const editable = canColumns(d);
                     return (
-                      <div key={d.id} className="ultm8-settings-row">
-                        <label className="ultm8-settings-inline">
-                          <strong>{d.name}</strong>
-                          <SelectField
+                      <div key={d.id} className="u8gst-row">
+                        <div className="u8n-dd-field u8gst-dd">
+                          <NewLookSelect
+                            id={`rank-display-${d.id}`}
+                            label={d.name}
+                            ariaLabel={t('grading.settings.displayAria', { style: d.name })}
                             value={displays[d.id] ?? d.rankDisplay}
                             disabled={!editable}
-                            aria-label={t('grading.settings.displayAria', { style: d.name })}
-                            onChange={(e) => setDisplays((x) => ({ ...x, [d.id]: e.target.value as DisciplineResponse['rankDisplay'] }))}
+                            onChange={(v) => setDisplays((x) => ({ ...x, [d.id]: v as DisciplineResponse['rankDisplay'] }))}
                             options={[
                               { value: 'BELTS', label: t('disciplines.form.rankDisplayBelts') },
                               { value: 'LEVELS', label: t('disciplines.form.rankDisplayLevels') },
                             ]}
                           />
-                        </label>
-                        {editable ? null : <span className="ultm8-field__hint">{t('grading.settings.columns.noRight')}</span>}
+                        </div>
+                        {editable ? null : <p className="u8gs-note u8gst-full">{t('grading.settings.columns.noRight')}</p>}
                       </div>
                     );
                   })}
                 </div>
               </section>
-            </Card>
+            </BillingCard>
           ) : null}
           {styles.length ? (
-            <Card>
+            <BillingCard>
               <section aria-label={t('grading.settings.requirements.title')}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <h2 className="ultm8-page-header__title" style={{ fontSize: 17, margin: 0, flex: 1 }}>
-                    {t('grading.settings.requirements.title')} <Badge>{t('grading.settings.ownerOnly')}</Badge>
-                  </h2>
-                  {aboutButton('requirements')}
-                </div>
-                <p className="ultm8-field__hint">{t('grading.settings.requirements.intro')}</p>
-                <div style={{ display: 'grid', gap: 16, marginTop: 8 }}>
+                {cardHead('grading.settings.requirements.title', 'requirements', true)}
+                <p className="u8gs-note u8gst-intro">{t('grading.settings.requirements.intro')}</p>
+                <div className="u8gst-rows">
                   {styles.map((d) => {
                     const r = requirements[d.id] ?? requirementsOf(d);
                     const set = (patch: Partial<GradingRequirements>) => setRequirementsDraft((x) => ({ ...x, [d.id]: { ...r, ...patch } }));
                     return (
-                      <div key={d.id} className="ultm8-settings-row" data-testid={`requirements-${d.id}`}>
-                        <strong style={{ flexBasis: '100%' }}>{d.name}</strong>
-                        {TICKS.map(({ field, label }) => (
-                          <Checkbox
-                            key={field}
-                            label={t(label)}
-                            aria-label={t('grading.settings.requirements.tickAria', { style: d.name, requirement: t(label) })}
-                            checked={r[field] as boolean}
-                            disabled={!my.isOwner}
-                            onChange={(e) => {
-                              set({ [field]: e.target.checked });
-                              setAbout('requirements');
-                            }}
-                          />
-                        ))}
-                        <label className="ultm8-settings-inline" style={{ flexBasis: '100%' }}>
-                          {t('grading.settings.requirements.promotion')}
-                          <SelectField
+                      <div key={d.id} className="u8gst-row" data-testid={`requirements-${d.id}`}>
+                        <strong className="u8gst-full">{d.name}</strong>
+                        <div className="u8gst-ticks u8gst-full">
+                          {TICKS.map(({ field, label }) => (
+                            <Checkbox
+                              key={field}
+                              label={t(label)}
+                              aria-label={t('grading.settings.requirements.tickAria', { style: d.name, requirement: t(label) })}
+                              checked={r[field] as boolean}
+                              disabled={!my.isOwner}
+                              onChange={(e) => {
+                                set({ [field]: e.target.checked });
+                                setAbout('requirements');
+                              }}
+                            />
+                          ))}
+                        </div>
+                        <div className="u8n-dd-field u8gst-dd u8gst-full">
+                          <NewLookSelect
+                            id={`promotion-${d.id}`}
+                            label={t('grading.settings.requirements.promotion')}
+                            ariaLabel={t('grading.settings.requirements.promotionAria', { style: d.name })}
                             value={r.promotionMode}
                             disabled={!my.isOwner}
-                            aria-label={t('grading.settings.requirements.promotionAria', { style: d.name })}
-                            onChange={(e) => {
-                              set({ promotionMode: e.target.value as GradingRequirements['promotionMode'] });
+                            onChange={(v) => {
+                              set({ promotionMode: v as GradingRequirements['promotionMode'] });
                               setAbout('promotion');
                             }}
                             options={[
@@ -270,8 +284,8 @@ export function GradingSettingsPage() {
                               { value: 'AUTO_ALL', label: t('grading.settings.requirements.autoAll') },
                             ]}
                           />
-                        </label>
-                        <div style={{ flexBasis: '100%' }}>
+                        </div>
+                        <div className="u8gst-full">
                           <Switch
                             id={`first-belt-${d.id}`}
                             label={t('grading.settings.requirements.firstBelt')}
@@ -289,29 +303,24 @@ export function GradingSettingsPage() {
                   })}
                 </div>
               </section>
-            </Card>
+            </BillingCard>
           ) : null}
-          <Card>
+          <BillingCard>
             <section aria-label={t('grading.settings.columns.title')}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <h2 className="ultm8-page-header__title" style={{ fontSize: 17, margin: 0, flex: 1 }}>
-                  {t('grading.settings.columns.title')}
-                </h2>
-                {aboutButton('columns')}
-              </div>
-              <p className="ultm8-field__hint">{t('grading.settings.columns.intro')}</p>
+              {cardHead('grading.settings.columns.title', 'columns')}
+              <p className="u8gs-note u8gst-intro">{t('grading.settings.columns.intro')}</p>
               {styles.length === 0 ? (
                 <EmptyState title={t('grading.noStylesTitle')} description={t('grading.board.noStylesDescription')} />
               ) : (
-                <div style={{ display: 'grid', gap: 12 }}>
+                <div className="u8gst-rows">
                   {styles.map((d) => {
                     const c = columns[d.id] ?? { g: String(d.boardGettingThere), r: String(d.boardReadyToGrade) };
                     const editable = canColumns(d);
                     const problem = editable ? columnProblem(c) : null;
                     return (
-                      <div key={d.id} className="ultm8-settings-row">
-                        <strong style={{ flexBasis: "100%" }}>{d.name}</strong>
-                        <label className="ultm8-settings-inline">
+                      <div key={d.id} className="u8gst-row">
+                        <strong className="u8gst-full">{d.name}</strong>
+                        <label className="u8gst-num">
                           {t('grading.settings.columns.gettingThere')}
                           <TextField
                             type="number"
@@ -323,7 +332,7 @@ export function GradingSettingsPage() {
                             onChange={(e) => setColumns((x) => ({ ...x, [d.id]: { ...c, g: e.target.value } }))}
                           />
                         </label>
-                        <label className="ultm8-settings-inline">
+                        <label className="u8gst-num">
                           {t('grading.settings.columns.readyToGrade')}
                           <TextField
                             type="number"
@@ -336,7 +345,7 @@ export function GradingSettingsPage() {
                           />
                         </label>
                         {d.adultDisciplineId ? (
-                          <label className="ultm8-settings-inline">
+                          <label className="u8gst-num">
                             {t('grading.settings.columns.adultAge')}
                             <TextField
                               type="number"
@@ -350,13 +359,13 @@ export function GradingSettingsPage() {
                           </label>
                         ) : null}
                         {d.adultDisciplineId && editable && adultAges[d.id] !== undefined && ageProblem(adultAges[d.id]) ? (
-                          <p role="alert" className="ultm8-field__error" style={{ flexBasis: '100%', margin: 0 }}>
+                          <p role="alert" className="ultm8-field__error u8gst-full u8gst-error">
                             {ageProblem(adultAges[d.id])}
                           </p>
                         ) : null}
-                        {editable ? null : <span className="ultm8-field__hint">{t('grading.settings.columns.noRight')}</span>}
+                        {editable ? null : <p className="u8gs-note u8gst-full">{t('grading.settings.columns.noRight')}</p>}
                         {problem ? (
-                          <p role="alert" className="ultm8-field__error" style={{ flexBasis: '100%', margin: 0 }}>
+                          <p role="alert" className="ultm8-field__error u8gst-full u8gst-error">
                             {problem}
                           </p>
                         ) : null}
@@ -366,45 +375,48 @@ export function GradingSettingsPage() {
                 </div>
               )}
             </section>
-          </Card>
+          </BillingCard>
 
-          <Card>
+          <BillingCard>
             <section aria-label={t('grading.settings.fee.title')}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <h2 className="ultm8-page-header__title" style={{ fontSize: 17, margin: 0, flex: 1 }}>
-                  {t('grading.settings.fee.title')} <Badge>{t('grading.settings.ownerOnly')}</Badge>
-                </h2>
-                {aboutButton('fee')}
-              </div>
-              {my.isOwner ? null : <p className="ultm8-field__hint">{t('grading.settings.fee.coachNote')}</p>}
-              <div style={{ display: 'grid', gap: 16, marginTop: 12 }}>
-                <Switch
-                  id="fee-enabled"
-                  label={t('grading.settings.fee.enabled')}
-                  description={feeOn ? t('grading.settings.fee.enabledOn') : t('grading.settings.fee.enabledOff')}
-                  checked={feeOn}
-                  disabled={!my.isOwner}
-                  onChange={(v) => {
-                    setFeeOn(v);
-                    setAbout('fee');
-                  }}
-                />
-                {feeOn ? (
-                  <>
-                    {/* Decision 420 item 3: works only while the promotion fee is on; off by default. */}
+              {cardHead('grading.settings.fee.title', 'fee', true)}
+              {my.isOwner ? null : <p className="u8gs-note u8gst-intro">{t('grading.settings.fee.coachNote')}</p>}
+              <div className="u8gst-rows">
+                <div className="u8gst-row">
+                  <div className="u8gst-full">
                     <Switch
-                      id="fee-kids-to-adult"
-                      label={t('grading.settings.fee.kidsToAdult')}
-                      description={kidsToAdult ? t('grading.settings.fee.kidsToAdultOn') : t('grading.settings.fee.kidsToAdultOff')}
-                      checked={kidsToAdult}
+                      id="fee-enabled"
+                      label={t('grading.settings.fee.enabled')}
+                      description={feeOn ? t('grading.settings.fee.enabledOn') : t('grading.settings.fee.enabledOff')}
+                      checked={feeOn}
                       disabled={!my.isOwner}
                       onChange={(v) => {
-                        setKidsToAdult(v);
+                        setFeeOn(v);
                         setAbout('fee');
                       }}
                     />
-                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                      <div style={{ flex: 1 }}>
+                  </div>
+                </div>
+                {feeOn ? (
+                  <>
+                    {/* Decision 420 item 3: works only while the promotion fee is on; off by default. */}
+                    <div className="u8gst-row">
+                      <div className="u8gst-full">
+                        <Switch
+                          id="fee-kids-to-adult"
+                          label={t('grading.settings.fee.kidsToAdult')}
+                          description={kidsToAdult ? t('grading.settings.fee.kidsToAdultOn') : t('grading.settings.fee.kidsToAdultOff')}
+                          checked={kidsToAdult}
+                          disabled={!my.isOwner}
+                          onChange={(v) => {
+                            setKidsToAdult(v);
+                            setAbout('fee');
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <div className="u8gst-row u8gst-row--with-info">
+                      <div className="u8gst-grow">
                         <Switch
                           id="fee-before-paid"
                           label={t('grading.settings.fee.gradeBeforePaid')}
@@ -419,32 +431,28 @@ export function GradingSettingsPage() {
                       </div>
                       {aboutButton('gradeBeforePaid')}
                     </div>
-                    <div className="ultm8-settings-row">
-                      <span style={{ flex: 1 }}>
-                        <strong>{t('grading.settings.fee.prices')}</strong>
-                      </span>
-                      <Link to="/disciplines">{t('grading.settings.fee.pricesLink')}</Link>
+                    <div className="u8gst-row u8gst-row--line">
+                      <strong className="u8gst-grow">{t('grading.settings.fee.prices')}</strong>
+                      <Link to="/disciplines" className="u8gst-link">
+                        {t('grading.settings.fee.pricesLink')}
+                      </Link>
                     </div>
-                    <div className="ultm8-settings-row">
-                      <span style={{ flex: 1 }}>
-                        <strong>{t('grading.settings.fee.accepts')}</strong>
-                      </span>
-                      <Badge>{t('grading.settings.fee.alwaysOn')}</Badge>
+                    <div className="u8gst-row u8gst-row--line">
+                      <strong className="u8gst-grow">{t('grading.settings.fee.accepts')}</strong>
+                      <span className="u8gs-tag">{t('grading.settings.fee.alwaysOn')}</span>
                     </div>
                   </>
                 ) : null}
               </div>
             </section>
-          </Card>
+          </BillingCard>
 
-          <Card>
+          <BillingCard>
             <section aria-label={t('grading.settings.wholeSchool')}>
-              <h2 className="ultm8-page-header__title" style={{ fontSize: 17, margin: 0 }}>
-                {t('grading.settings.wholeSchool')}
-              </h2>
-              <div style={{ display: 'grid', gap: 16, marginTop: 12 }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                  <div style={{ flex: 1 }}>
+              {cardHead('grading.settings.wholeSchool', null)}
+              <div className="u8gst-rows">
+                <div className="u8gst-row u8gst-row--with-info">
+                  <div className="u8gst-grow">
                     <Switch
                       id="open-mat-hours"
                       label={t('grading.settings.openMat.label')}
@@ -459,44 +467,49 @@ export function GradingSettingsPage() {
                   </div>
                   {aboutButton('openMat')}
                 </div>
-                <div className="ultm8-settings-row">
-                  <span style={{ flex: 1 }}>
+                <div className="u8gst-row u8gst-row--line">
+                  <span className="u8gst-grow">
                     <strong>{t('grading.settings.who.title')}</strong>
-                    <div className="ultm8-field__hint">{t('grading.settings.who.hint')}</div>
+                    <span className="u8gs-note u8gst-sub">{t('grading.settings.who.hint')}</span>
                   </span>
-                  {my.isOwner ? <Link to="/grading/permissions">{t('grading.settings.who.link')}</Link> : null}
+                  {my.isOwner ? (
+                    <Link to="/grading/permissions" className="u8gst-link">
+                      {t('grading.settings.who.link')}
+                    </Link>
+                  ) : null}
                 </div>
               </div>
             </section>
-          </Card>
+          </BillingCard>
         </div>
 
-        <aside className="ultm8-board-panel">
-          <Card>
+        <aside className="u8gst-about">
+          <BillingCard>
             <section aria-label={t('grading.settings.aboutTitle')}>
-              <div className="label ultm8-field__hint" style={{ textTransform: 'uppercase', letterSpacing: '0.06em', fontSize: 11 }}>
-                {t('grading.settings.aboutTitle')}
-              </div>
-              <h3 style={{ fontSize: 16, margin: '4px 0 8px' }}>{t(ABOUT[about].title)}</h3>
-              <p style={{ margin: 0 }}>{t(ABOUT[about].body)}</p>
+              <div className="u8gst-about__label">{t('grading.settings.aboutTitle')}</div>
+              <h3 className="u8gst-about__title">{t(ABOUT[about].title)}</h3>
+              <p className="u8gst-about__text">{t(ABOUT[about].body)}</p>
             </section>
-          </Card>
+          </BillingCard>
         </aside>
       </div>
 
       {dirty ? (
-        <div className="ultm8-save-bar" role="region" aria-label={t('grading.settings.unsaved')}>
-          <span className="ultm8-field__hint" style={{ flex: 1 }}>
+        <div className="u8gst-save" role="region" aria-label={t('grading.settings.unsaved')}>
+          <span className="u8gst-save__text">
+            <span className="u8gst-save__dot" aria-hidden="true" />
             {t('grading.settings.unsaved')}
           </span>
-          <Button variant="secondary" onClick={reset} disabled={saving}>
-            {t('grading.settings.discard')}
-          </Button>
-          <Button onClick={save} loading={saving} disabled={invalid}>
-            {t('grading.settings.save')}
-          </Button>
+          <div className="u8gst-save__pair">
+            <Button variant="secondary" onClick={reset} disabled={saving}>
+              {t('grading.settings.discard')}
+            </Button>
+            <Button onClick={save} loading={saving} disabled={invalid}>
+              {t('grading.settings.save')}
+            </Button>
+          </div>
         </div>
       ) : null}
-    </>
+    </BillingPage>
   );
 }

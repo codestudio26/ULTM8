@@ -1,5 +1,4 @@
-import React from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { useIsCoachOnly } from '../auth/AuthContext';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
 
@@ -19,8 +18,9 @@ function useTabList(): Array<{ to: string; label: TranslationKey; end?: boolean 
   ];
 }
 
-/** The same tabs for the new look's page header (`NewLookPageHeader`'s
- * `tabs` and `tabsLabel`), the current one marked as NavLink marks it. */
+/** The tabs for the new look's page header (`NewLookPageHeader`'s `tabs`
+ * and `tabsLabel`), the current one marked. Every Grading page uses these;
+ * the old `GradingTabs` bar is gone (Decision 460 item 17). */
 export function useGradingHeaderTabs(): { tabs: Array<{ to: string; label: string; current: boolean }>; tabsLabel: string } {
   const t = useT();
   const { pathname } = useLocation();
@@ -30,23 +30,4 @@ export function useGradingHeaderTabs(): { tabs: Array<{ to: string; label: strin
     current: pathname === tab.to || (!tab.end && pathname.startsWith(`${tab.to}/`)),
   }));
   return { tabs, tabsLabel: t('grading.tabs.aria') };
-}
-
-export function GradingTabs() {
-  const t = useT();
-  const tabs = useTabList();
-  return (
-    <nav className="ultm8-tabs" aria-label={t('grading.tabs.aria')}>
-      {tabs.map((tab) => (
-        <NavLink
-          key={tab.to}
-          to={tab.to}
-          end={tab.end}
-          className={({ isActive }) => `ultm8-tabs__tab${isActive ? ' ultm8-tabs__tab--active' : ''}`}
-        >
-          {t(tab.label)}
-        </NavLink>
-      ))}
-    </nav>
-  );
 }
