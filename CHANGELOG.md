@@ -10,6 +10,12 @@ Compare any two versions with `git diff <old> <new>`, e.g. `git diff v1.0.0 mast
 
 Post-v1.4.0 work on `master`.
 
+- **Member app: push notifications through Firebase** (Decision 462). The member
+  app is linked to the Firebase project `ultm8-production` and registers its
+  Firebase (FCM) token on iOS and Android, and again whenever Firebase changes it.
+  Before, iOS registered an Apple token the server couldn't send to. Pushes need a
+  new app build (not Expo Go), and on iOS the Apple push key in Firebase too. The
+  web app no longer asks for notification permission it can't use.
 - **Dashboard: Ready to grade and Check-ins today** (#584). The owner Dashboard
   shows Ready to grade (the Grading Board's Ready to Grade column across every
   style, with "See all N →") and Check-ins today (today's check-ins on the

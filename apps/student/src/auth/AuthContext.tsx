@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { unwrap } from '@ultm8/api-client';
 import { apiClient, authClient } from '../api';
 import { claimQueryCache, forgetQueryCache, removeOldWebQueryCache } from '../lib/queryCacheOwner';
-import { registerForPushNotificationsAsync } from '../notifications/pushRegistration';
+import { registerForPushNotificationsAsync, stopPushTokenRefresh } from '../notifications/pushRegistration';
 import { decodeJwtPayload } from './decodeJwt';
 import { secureTokenStore } from './secureTokenStore';
 import { setUnauthorizedHandler } from './sessionRefresh';
@@ -259,6 +259,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (refreshToken) {
       await unwrap(authClient.POST('/v1/auth/logout', { body: { refreshToken } })).catch(() => {});
     }
+    // A logged-out device stops registering refreshed push tokens (Decision 462).
+    stopPushTokenRefresh();
     await secureTokenStore.clear();
     setCachedAccessToken(null);
     setAccessTokenState(null);

@@ -8446,3 +8446,28 @@ The owner approved building the two Dashboard items and the Platform Admin new l
 ### Recorded by
 
 User (Code), 12 Nov 2026: "Go ahead" (the two Dashboard items and the Platform Admin new look); answers to the four Dashboard questions on #584; "Keep as they are" on #585.
+
+## Decision 462 — Member app push: get the FCM token from Firebase on both platforms
+
+**Date:** 12 Nov 2026 · **Status:** Product-owner request, built · **Builds on:** Decisions 223, 250, 264 · **Takes up:** Decision 267 item 1 (push), now that the owner has provisioned the Firebase project
+
+### Decision
+
+The owner created the Firebase project `ultm8-production`, registered the Android and iOS apps (`app.ultm8.student`) and put the service-account values into Render (`FCM_PROJECT_ID`, `FCM_CLIENT_EMAIL`, `FCM_PRIVATE_KEY`). The member app (`apps/student`) is wired to it:
+
+1. **Firebase app config files committed.** `apps/student/google-services.json` and `apps/student/GoogleService-Info.plist` (client config, not secrets) are referenced from `app.json` (`android.googleServicesFile`, `ios.googleServicesFile`).
+2. **The device token comes from Firebase, not from `expo-notifications`.** `getDevicePushTokenAsync()` returns the raw APNs token on iOS, and `PushNotificationService` sends only through FCM HTTP v1 (Decision 250), which needs an FCM registration token, so iOS pushes could never have arrived. `pushRegistration.ts` now gets the token with `@react-native-firebase/messaging` (`getToken`) on iOS and Android. This keeps Decision 250's single FCM integration point; the backend is unchanged. `expo-notifications` still asks for the OS permission and shows notifications.
+3. **Token refresh.** After a successful registration the app listens for FCM token rotation (`onTokenRefresh`) and registers the new token with the same `POST /notifications/device-tokens`. Logout stops the listener.
+4. **The web app does nothing for push.** A web stand-in (`fcmToken.ts`) keeps the Firebase SDK out of the web bundle, and registration returns at once on web (before, it showed a browser permission prompt that could never lead to a push).
+5. **Versions.** `@react-native-firebase/app` and `/messaging` 27.1.x with their Expo config plugins, and `expo-build-properties` (SDK 57) with `ios.useFrameworks: "dynamic"`. React Native Firebase 27 gets the Firebase Apple SDK 13 only through Swift Package Manager and fails `pod install` with static frameworks (its own `rnfirebase_fail_if_spm_static_linkage!`), so the often-quoted `"static"` setting would not build.
+
+Unchanged: the 409 when a second person signs in on the same device (still flagged, not built), and no change to the API, data model, tenancy/RLS or permissions.
+
+### Still needed before pushes arrive on a phone
+
+- **iOS:** an Apple Developer Program membership, then the APNs authentication key (`.p8`) uploaded to the Firebase project (Project settings → Cloud Messaging). Until then iOS gets no FCM token and registration logs a warning.
+- **Both platforms:** a new native build (development or preview build through EAS). Expo Go has no Firebase native module, so it can't receive these pushes. `apps/student` has no `eas.json` and no EAS project id yet.
+
+### Recorded by
+
+User (Code), 12 Nov 2026: asked to wire real Firebase Cloud Messaging into the member app with the given Firebase config files, fix the iOS token, and handle token refresh.
