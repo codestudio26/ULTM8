@@ -170,7 +170,9 @@ function rangeText(data: BookingsSummaryResponse): string {
   return formatRange(data.from, data.to);
 }
 
-function StatCard({ label, value, notes = [], link, testId }: { label: string; value: number | string; notes?: (string | null)[]; link?: React.ReactNode; testId: string }) {
+/** One number card (DESIGN.md → "Stat rows"); the coach dashboard's
+ * "Check-ins today" uses it too (Decision 461 item 4). */
+export function StatCard({ label, value, notes = [], link, testId }: { label: string; value: number | string; notes?: (string | null)[]; link?: React.ReactNode; testId: string }) {
   const shown = notes.filter((n): n is string => !!n);
   return (
     <div className="u8n-dash__stat" data-testid={testId}>
