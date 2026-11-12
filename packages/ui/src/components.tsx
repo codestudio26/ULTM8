@@ -55,7 +55,8 @@ export function UiStringsProvider({ strings, locale, children }: { strings: UiSt
   return <UiStringsContext.Provider value={value}>{children}</UiStringsContext.Provider>;
 }
 
-function useUiStrings() {
+/** The strings (and locale) passed to `UiStringsProvider`. */
+export function useUiStrings() {
   return React.useContext(UiStringsContext);
 }
 
@@ -589,34 +590,91 @@ function formatCurrencyOption(opt: CurrencyOption): string {
  * shape the `SelectField` usage it replaces already carried, so no DTO/backend
  * change is needed. Same ARIA 1.2 editable-combobox pattern and popover mechanics
  * as `TimezoneField` — see that component's own header comment for the reasoning,
- * not repeated here. */
-export function CurrencyField({
+ * not repeated here. The combobox itself is `SearchableSelectField` below, which
+ * the address form's Country picker shares (Decision 460). */
+export function CurrencyField({ options, ...props }: CurrencyFieldProps) {
+  const { strings } = useUiStrings();
+  const ordered = useMemo(
+    // Stable sort: the rest keep the server's own (alphabetical) order.
+    () => [...options].sort((a, b) => currencyRank(a.code) - currencyRank(b.code)),
+    [options],
+  );
+  return (
+    <SearchableSelectField
+      {...props}
+      fallbackId="ultm8-currency"
+      options={ordered}
+      getValue={(opt) => opt.code}
+      getLabel={formatCurrencyOption}
+      matches={(opt, q) => opt.code.toLowerCase().includes(q) || opt.name.toLowerCase().includes(q)}
+      maxResults={CURRENCY_MAX_RESULTS}
+      noMatchesText={strings.noMatchingCurrency}
+    />
+  );
+}
+
+export interface SearchableSelectFieldProps<T> {
+  id?: string;
+  /** The base for the list's and options' ids when `id` isn't given. */
+  fallbackId: string;
+  value: string;
+  onChange: (value: string) => void;
+  /** Listed in this order; a search keeps it. */
+  options: T[];
+  getValue: (option: T) => string;
+  getLabel: (option: T) => string;
+  /** Whether an option matches the search, already trimmed and lower-cased. */
+  matches: (option: T, query: string) => boolean;
+  /** At most this many options are listed at once (all of them by default). */
+  maxResults?: number;
+  noMatchesText: string;
+  /** Fire a bubbling `input` event when a pick changes the value, as a browser
+   * `<select>` did, so a dialog's unsaved-changes guard (`Modal`) counts it
+   * as an edit. */
+  announcePick?: boolean;
+  placeholder?: string;
+  disabled?: boolean;
+  required?: boolean;
+  'aria-invalid'?: React.AriaAttributes['aria-invalid'];
+  'aria-describedby'?: string;
+}
+
+/** The searchable picker behind `CurrencyField` and the address form's Country
+ * field: type to filter, arrows to move, Enter to pick, Escape to close (ARIA
+ * 1.2 editable combobox, as `TimezoneField`). Closed, it shows the chosen
+ * option's label; the committed value is the option's plain value. */
+export function SearchableSelectField<T>({
   id,
+  fallbackId,
   value,
   onChange,
   options,
+  getValue,
+  getLabel,
+  matches,
+  maxResults,
+  noMatchesText,
+  announcePick = false,
   placeholder,
   disabled,
   required,
   'aria-invalid': ariaInvalid,
   'aria-describedby': ariaDescribedBy,
-}: CurrencyFieldProps) {
-  const { strings } = useUiStrings();
+}: SearchableSelectFieldProps<T>) {
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const containerRef = useRef<HTMLDivElement>(null);
-  const baseId = id ?? 'ultm8-currency';
+  const baseId = id ?? fallbackId;
   const listboxId = `${baseId}-listbox`;
-  const optionId = (code: string) => `${baseId}-option-${(code || 'none').replace(/[^a-zA-Z0-9]/g, '-')}`;
+  const optionId = (optionValue: string) => `${baseId}-option-${(optionValue || 'none').replace(/[^a-zA-Z0-9]/g, '-')}`;
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const matches = !q ? options : options.filter((opt) => opt.code.toLowerCase().includes(q) || opt.name.toLowerCase().includes(q));
-    // Stable sort: the rest keep the server's own (alphabetical) order.
-    const ordered = [...matches].sort((a, b) => currencyRank(a.code) - currencyRank(b.code));
-    return ordered.slice(0, CURRENCY_MAX_RESULTS);
-  }, [query, options]);
+    const found = !q ? options : options.filter((opt) => matches(opt, q));
+    return maxResults === undefined ? found : found.slice(0, maxResults);
+    // `matches` is a pure test the caller may write inline; the list only changes with the query or options.
+  }, [query, options, maxResults]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -631,6 +689,13 @@ export function CurrencyField({
     return () => document.removeEventListener('mousedown', handleOutside);
   }, [isOpen]);
 
+  // Keeps the option the arrow keys reached in view in a long list.
+  useEffect(() => {
+    if (!isOpen || activeIndex < 0 || !results[activeIndex]) return;
+    const el = document.getElementById(optionId(getValue(results[activeIndex])));
+    el?.scrollIntoView?.({ block: 'nearest' });
+  }, [isOpen, activeIndex, results]);
+
   function openDropdown() {
     setQuery('');
     setIsOpen(true);
@@ -643,9 +708,12 @@ export function CurrencyField({
     setActiveIndex(-1);
   }
 
-  function selectOption(opt: CurrencyOption) {
-    onChange(opt.code);
+  function selectOption(opt: T) {
+    const next = getValue(opt);
+    const changed = next !== value;
+    onChange(next);
     closeDropdown();
+    if (announcePick && changed) containerRef.current?.dispatchEvent(new Event('input', { bubbles: true }));
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -679,8 +747,8 @@ export function CurrencyField({
     }
   }
 
-  const selected = options.find((o) => o.code === value);
-  const displayValue = isOpen ? query : selected ? formatCurrencyOption(selected) : '';
+  const selected = options.find((o) => getValue(o) === value);
+  const displayValue = isOpen ? query : selected ? getLabel(selected) : '';
 
   return (
     <div className="ultm8-combobox" ref={containerRef}>
@@ -693,7 +761,7 @@ export function CurrencyField({
         aria-expanded={isOpen}
         aria-controls={isOpen ? listboxId : undefined}
         aria-autocomplete="list"
-        aria-activedescendant={isOpen && activeIndex >= 0 && results[activeIndex] ? optionId(results[activeIndex].code) : undefined}
+        aria-activedescendant={isOpen && activeIndex >= 0 && results[activeIndex] ? optionId(getValue(results[activeIndex])) : undefined}
         aria-invalid={ariaInvalid}
         aria-describedby={ariaDescribedBy}
         disabled={disabled}
@@ -701,6 +769,10 @@ export function CurrencyField({
         placeholder={placeholder}
         value={displayValue}
         onFocus={openDropdown}
+        // Clicking it again after a pick (it still has focus) opens it again.
+        onClick={() => {
+          if (!isOpen) openDropdown();
+        }}
         onChange={(e) => {
           setQuery(e.target.value);
           setIsOpen(true);
@@ -712,22 +784,25 @@ export function CurrencyField({
       {isOpen ? (
         <ul className="ultm8-combobox__listbox" role="listbox" id={listboxId}>
           {results.length === 0 ? (
-            <li className="ultm8-combobox__empty">{strings.noMatchingCurrency}</li>
+            <li className="ultm8-combobox__empty">{noMatchesText}</li>
           ) : (
-            results.map((opt, i) => (
-              <li
-                key={opt.code || '__none__'}
-                id={optionId(opt.code)}
-                role="option"
-                aria-selected={opt.code === value}
-                className={['ultm8-combobox__option', i === activeIndex ? 'ultm8-combobox__option--active' : ''].join(' ').trim()}
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => selectOption(opt)}
-                onMouseEnter={() => setActiveIndex(i)}
-              >
-                {formatCurrencyOption(opt)}
-              </li>
-            ))
+            results.map((opt, i) => {
+              const optionValue = getValue(opt);
+              return (
+                <li
+                  key={optionValue || '__none__'}
+                  id={optionId(optionValue)}
+                  role="option"
+                  aria-selected={optionValue === value}
+                  className={['ultm8-combobox__option', i === activeIndex ? 'ultm8-combobox__option--active' : ''].join(' ').trim()}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => selectOption(opt)}
+                  onMouseEnter={() => setActiveIndex(i)}
+                >
+                  {getLabel(opt)}
+                </li>
+              );
+            })
           )}
         </ul>
       ) : null}
