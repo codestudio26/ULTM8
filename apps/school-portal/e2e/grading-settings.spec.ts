@@ -50,7 +50,9 @@ test('the owner ticks a style\'s requirements, sets automatic promotion and the 
   await expect(page.getByLabel('BJJ: Hours')).not.toBeChecked();
   await page.getByLabel('BJJ: Hours').check();
   await page.getByLabel('BJJ: Minimum age').check();
-  await page.getByLabel('BJJ: promotion').selectOption('AUTO_STRIPES');
+  // The new look's drop-down (DESIGN.md → "Drop-downs"); a pick is an edit.
+  await page.getByRole('combobox', { name: 'BJJ: promotion' }).click();
+  await page.getByRole('option', { name: 'Automatically award stripes', exact: true }).click();
   await page.locator(`[data-testid="requirements-${s.disciplineId}"]`).getByRole('switch', { name: 'Auto-assign first belt' }).click();
   await expect(page.getByRole('heading', { name: 'Promotion', exact: true })).toBeVisible(); // About this setting follows
 
