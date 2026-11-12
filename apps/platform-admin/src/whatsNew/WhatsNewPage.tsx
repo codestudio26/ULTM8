@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { Button, Card, EmptyState, ErrorBanner, Field, Modal, PageHeader, Spinner, TextArea, TextField } from '@ultm8/ui';
+import { Button, Card, EmptyState, ErrorBanner, Field, Modal, Spinner, TextArea, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
+import { NewLookPageHeader } from '../layout/NewLookPage';
+import '../layout/adminLook.css';
 import { useDeleteWhatsNewPost, useSaveWhatsNewPost, useWhatsNewPosts, type ProductUpdate } from './whatsNewQueries';
 
 /** The School Portal's languages besides English (the API checks the same list). */
@@ -37,16 +39,14 @@ export function WhatsNewPage() {
   const items = data?.items ?? [];
 
   return (
-    <>
-      <PageHeader
+    <div className="u8a">
+      <NewLookPageHeader
         title="What's new"
         subtitle="News for School owners and staff, shown in the School Portal in their language (English when there is no translation). A post shows as soon as it is saved. Full Admins only; every change is recorded in the audit log."
+        actions={<Button onClick={() => setEditing('new')}>New post</Button>}
       />
       {error ? <ErrorBanner message={error instanceof ApiError ? error.message : 'Could not load the posts.'} /> : null}
       {remove.error ? <ErrorBanner message={remove.error instanceof ApiError ? remove.error.message : 'Could not delete the post.'} /> : null}
-      <div style={{ marginBottom: 16 }}>
-        <Button onClick={() => setEditing('new')}>New post</Button>
-      </div>
       {isLoading ? (
         <Spinner />
       ) : items.length === 0 ? (
@@ -57,13 +57,13 @@ export function WhatsNewPage() {
         items.map((post) => (
           <Card key={post.id}>
             <article data-testid="whats-new-post">
-              <h3 style={{ marginTop: 0 }}>{post.title}</h3>
-              <p style={{ whiteSpace: 'pre-wrap' }}>{post.body}</p>
-              <p style={{ fontSize: 13, opacity: 0.75 }}>
+              <h2 className="u8a-card__title">{post.title}</h2>
+              <p className="u8a-post__body">{post.body}</p>
+              <p className="u8a-small">
                 Posted {new Date(post.createdAt).toLocaleString()} ·{' '}
                 {post.translations.length === 0 ? 'English only' : `Also in ${post.translations.map((t) => languageName(t.locale)).join(', ')}`}
               </p>
-              <div style={{ display: 'flex', gap: 8 }}>
+              <div className="u8a-buttons u8a-buttons--start">
                 <Button variant="secondary" onClick={() => setEditing(post)}>
                   Edit
                 </Button>
@@ -80,8 +80,8 @@ export function WhatsNewPage() {
 
       {deleting ? (
         <Modal title={`Delete "${deleting.title}"?`} onClose={() => setDeleting(null)}>
-          <p style={{ marginTop: 0 }}>Owners and staff stop seeing it straight away, in every language.</p>
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+          <p>Owners and staff stop seeing it straight away, in every language.</p>
+          <div className="u8a-buttons">
             <Button variant="secondary" onClick={() => setDeleting(null)}>
               Back
             </Button>
@@ -91,7 +91,7 @@ export function WhatsNewPage() {
           </div>
         </Modal>
       ) : null}
-    </>
+    </div>
   );
 }
 
@@ -136,10 +136,10 @@ function PostForm({ post, onClose }: { post: ProductUpdate | null; onClose: () =
         <Field label="Text (English)" htmlFor="whats-new-body" hint="Plain text. Line breaks are kept.">
           <TextArea id="whats-new-body" required maxLength={5000} rows={6} value={draft.body} onChange={(e) => setDraft({ ...draft, body: e.target.value })} />
         </Field>
-        <h3>Translations</h3>
-        <p style={{ marginTop: 0, fontSize: 13, opacity: 0.75 }}>Optional. A language left empty shows the English.</p>
+        <h3 className="u8a-form-heading">Translations</h3>
+        <p className="u8a-intro">Optional. A language left empty shows the English.</p>
         {LANGUAGES.map((locale) => (
-          <details key={locale} open={!!draft.translations[locale]?.title}>
+          <details key={locale} className="u8a-details" open={!!draft.translations[locale]?.title}>
             <summary>{languageName(locale)}</summary>
             <Field label={`Title (${languageName(locale)})`} htmlFor={`whats-new-title-${locale}`}>
               <TextField
@@ -160,7 +160,7 @@ function PostForm({ post, onClose }: { post: ProductUpdate | null; onClose: () =
             </Field>
           </details>
         ))}
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
+        <div className="u8a-buttons">
           <Button variant="secondary" type="button" onClick={onClose}>
             Cancel
           </Button>
