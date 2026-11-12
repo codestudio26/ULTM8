@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Badge, Button, Card, Checkbox, ErrorBanner, Modal, Spinner } from '@ultm8/ui';
+import { Button, Card, Checkbox, ErrorBanner, Modal, Spinner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useChangeSchoolMainOwner, useSchoolOwners } from './schoolQueries';
 
@@ -28,30 +28,35 @@ export function SchoolOwnersCard({ schoolId }: { schoolId: string }) {
 
   return (
     <Card>
-      <h3 style={{ marginTop: 0 }}>Owners</h3>
+      <h2 className="u8a-card__title">Owners</h2>
       {owners.isLoading ? <Spinner /> : null}
       {owners.error ? <ErrorBanner message={owners.error instanceof ApiError ? owners.error.message : 'Could not load the owners.'} /> : null}
       {owners.data && owners.data.items.length === 0 ? <p>This School has no owners.</p> : null}
       {owners.data && owners.data.items.length > 0 ? (
-        <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+        <ul className="u8a-rows">
           {owners.data.items.map((o) => (
-            <li key={o.userId} style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center', padding: '6px 0' }}>
-              <span>
-                <strong>{name(o)}</strong> · {o.email}
+            <li key={o.userId} className="u8a-row">
+              <span className="u8a-row__who">
+                <span className="u8a-row__name">{name(o)}</span>
+                <span className="u8a-small">{o.email}</span>
               </span>
-              <Badge variant={o.mainOwner ? 'accent' : undefined}>{o.mainOwner ? 'Main owner' : 'Co-owner'}</Badge>
-              <span style={{ opacity: 0.7, fontSize: 13 }}>since {new Date(o.ownerSince).toLocaleDateString()}</span>
+              <span className="u8a-row__meta">
+                <span className={'u8a-tag' + (o.mainOwner ? ' u8a-tag--active' : '')}>{o.mainOwner ? 'Main owner' : 'Co-owner'}</span>
+                <span className="u8a-small">since {new Date(o.ownerSince).toLocaleDateString()}</span>
+              </span>
               {!o.mainOwner ? (
-                <Button variant="secondary" onClick={() => setTarget(o)}>
-                  Make main owner
-                </Button>
+                <span className="u8a-row__end">
+                  <Button variant="secondary" onClick={() => setTarget(o)}>
+                    Make main owner
+                  </Button>
+                </span>
               ) : null}
             </li>
           ))}
         </ul>
       ) : null}
       {owners.data && owners.data.items.length === 1 ? (
-        <p style={{ opacity: 0.7, fontSize: 13 }}>To replace the main owner, the School first needs a co-owner.</p>
+        <p className="u8a-small">To replace the main owner, the School first needs a co-owner.</p>
       ) : null}
 
       {target ? (
@@ -68,7 +73,7 @@ export function SchoolOwnersCard({ schoolId }: { schoolId: string }) {
               onChange={(e) => setRemoveFormer(e.target.checked)}
             />
           ) : null}
-          <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+          <div className="u8a-buttons">
             <Button
               loading={change.isPending}
               onClick={() => change.mutate({ userId: target.userId, removeFormerMainOwner: removeFormer }, { onSuccess: close })}

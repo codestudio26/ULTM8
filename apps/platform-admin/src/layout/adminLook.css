@@ -121,6 +121,139 @@
   font-weight: 500;
 }
 
+/* A card's title (17px), and a small grey line under or beside things. */
+[data-look='redesign'] .u8a .u8a-card__title {
+  margin: 0 0 14px;
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .u8a .u8a-small {
+  font-size: 13px;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8a .ultm8-card > p {
+  margin: 0 0 12px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Label and value pairs: two columns on a computer, stacked on a phone. */
+[data-look='redesign'] .u8a-facts {
+  display: grid;
+  grid-template-columns: minmax(140px, max-content) 1fr;
+  gap: 10px 24px;
+  margin: 0;
+  font-size: 14px;
+}
+[data-look='redesign'] .u8a-facts dt {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--u8n-subtle);
+  padding-top: 2px;
+}
+[data-look='redesign'] .u8a-facts dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .u8a-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* A look-up form: the field grows, the button sits beside it, and on a phone
+ * under it, full width. */
+[data-look='redesign'] .u8a-lookup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+}
+[data-look='redesign'] .u8a-lookup > .ultm8-field {
+  flex: 1 1 280px;
+  min-width: 0;
+  margin: 0;
+}
+[data-look='redesign'] .u8a-lookup > .ultm8-btn {
+  flex: none;
+}
+
+/* A card's list of people: one row each, the action at the end. */
+[data-look='redesign'] .u8a-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+[data-look='redesign'] .u8a-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 12px 0;
+  border-top: 1px solid var(--u8n-line);
+}
+[data-look='redesign'] .u8a-row:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+[data-look='redesign'] .u8a-row__who {
+  flex: 1 1 240px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-wrap: anywhere;
+}
+[data-look='redesign'] .u8a-row__name {
+  font-size: 15px;
+  font-weight: 500;
+}
+[data-look='redesign'] .u8a-row__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+[data-look='redesign'] .u8a-row__end {
+  margin-inline-start: auto;
+}
+
+/* Buttons side by side share the row equally (DESIGN.md → "Button pairs"). */
+[data-look='redesign'] .u8a-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+[data-look='redesign'] .u8a-buttons > .ultm8-btn {
+  flex: 1 1 0;
+  min-width: 0;
+}
+[data-look='redesign'] .u8a-buttons--start > .ultm8-btn {
+  flex: 0 1 auto;
+}
+@media (max-width: 767px) {
+  [data-look='redesign'] .u8a-facts {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+  [data-look='redesign'] .u8a-facts dd {
+    margin-bottom: 10px;
+  }
+  [data-look='redesign'] .u8a-lookup > .ultm8-btn,
+  [data-look='redesign'] .u8a-row__end,
+  [data-look='redesign'] .u8a-row__end > .ultm8-btn {
+    width: 100%;
+  }
+  [data-look='redesign'] .u8a-buttons {
+    flex-direction: column;
+  }
+}
+
 /* -------------------------------------------------------------- Tables */
 /* AdminTable.tsx. When the table doesn't fit its card (phone, tablet, a
  * narrow window), each row becomes a small card with its labels beside the

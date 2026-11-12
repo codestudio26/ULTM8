@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Badge, Button, Card, ErrorBanner, Field, TextField } from '@ultm8/ui';
+import { Button, Card, ErrorBanner, Field, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useSchoolTrial, type SchoolResponse } from './schoolQueries';
 
@@ -24,18 +24,18 @@ export function SchoolTrialCard({ school }: { school: SchoolResponse }) {
 
   return (
     <Card>
-      <h3 style={{ marginTop: 0 }}>Free trial of ULTM8</h3>
+      <h2 className="u8a-card__title">Free trial of ULTM8</h2>
       {subscribed ? (
         <p>This School has a platform subscription ({school.platformSubscriptionStatus}), so it needs no trial.</p>
       ) : !ends ? (
         <p>No trial. Without a trial or a subscription, the School works as today.</p>
       ) : daysLeft !== null && daysLeft > 0 ? (
         <p>
-          <Badge variant="accent">Trial</Badge> Ends {ends.toLocaleString()} · {daysLeft} {daysLeft === 1 ? 'day' : 'days'} left.
+          <span className="u8a-tag u8a-tag--info">Trial</span> Ends {ends.toLocaleString()} · {daysLeft} {daysLeft === 1 ? 'day' : 'days'} left.
         </p>
       ) : (
         <p>
-          <Badge variant="danger">Trial ended</Badge> Ended {ends.toLocaleString()}. The portal is read-only until the School subscribes.
+          <span className="u8a-tag u8a-tag--closed">Trial ended</span> Ended {ends.toLocaleString()}. The portal is read-only until the School subscribes.
         </p>
       )}
       {trial.error ? <ErrorBanner message={trial.error instanceof ApiError ? trial.error.message : 'Could not change the trial.'} /> : null}
@@ -44,7 +44,7 @@ export function SchoolTrialCard({ school }: { school: SchoolResponse }) {
           <Field label={ends ? 'Days to add' : 'Trial length (days)'} htmlFor="trial-days" hint="1 to 365. No card is taken. Recorded in the audit log.">
             <TextField id="trial-days" type="number" min={1} max={365} value={days} onChange={(e) => setDays(e.target.value)} />
           </Field>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <div className="u8a-buttons u8a-buttons--start">
             {ends ? (
               <>
                 <Button loading={trial.isPending} disabled={!valid} onClick={() => send('extend')}>

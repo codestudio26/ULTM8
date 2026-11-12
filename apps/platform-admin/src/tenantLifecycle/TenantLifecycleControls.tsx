@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Badge, Button, Card, ErrorBanner, Field, Modal, TextField } from '@ultm8/ui';
+import { Button, Card, ErrorBanner, Field, Modal, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useCloseTenantAccount, useReactivateTenantAccount } from './tenantLifecycleQueries';
 
@@ -46,12 +46,12 @@ export function TenantLifecycleControls({ kind, id, name, archivedAt, purgeAt, p
 
   return (
     <Card>
-      <h3 style={{ marginTop: 0 }}>Account status</h3>
+      <h2 className="u8a-card__title">Account status</h2>
 
       {archivedAt ? (
         <>
           <p>
-            <Badge variant="danger">Closed</Badge> {new Date(archivedAt).toLocaleString()}
+            <span className="u8a-tag u8a-tag--closed">Closed</span> {new Date(archivedAt).toLocaleString()}
             {purgedAt ? (
               <> — purged {new Date(purgedAt).toLocaleString()}</>
             ) : purgeAt ? (
@@ -80,7 +80,7 @@ export function TenantLifecycleControls({ kind, id, name, archivedAt, purgeAt, p
       ) : (
         <>
           <p>
-            <Badge variant="success">Active</Badge>
+            <span className="u8a-tag u8a-tag--active">Active</span>
           </p>
           <Button variant="danger" onClick={() => setConfirmOpen(true)}>
             Close account
@@ -114,7 +114,7 @@ export function TenantLifecycleControls({ kind, id, name, archivedAt, purgeAt, p
                 }
               />
             ) : null}
-            <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+            <div className="u8a-buttons">
               <Button type="submit" variant="danger" loading={closeAccount.isPending}>
                 Close account
               </Button>
