@@ -1,0 +1,301 @@
+/* Platform Admin's pages in the new look (Decision 453), in the School
+ * Portal's visual language: white cards on the grey page, the list's table
+ * (apps/school-portal/src/students/studentsList.css), status tags, and the
+ * drop-down as a form field (layout/newLookShell.css → .u8n-dd-field).
+ * Built on the shell's --u8n-* colours (adminShell.css), so dark mode follows
+ * them. Buttons, text fields, tick boxes and dialogs are the shared new-look
+ * ones (packages/ui redesign-fixes.css). Look only. */
+
+[data-look='redesign'] {
+  --u8a-head-bg: #f9fafa;
+  --u8a-tag-active-bg: #e3f1ea;
+  --u8a-tag-active-text: #3a7556;
+  --u8a-tag-active-line: #b7dcc6;
+  --u8a-tag-info-bg: #e5ecf6;
+  --u8a-tag-info-text: #2b4f80;
+  --u8a-tag-info-line: #bccbe2;
+  --u8a-tag-warn-bg: #f6ecdc;
+  --u8a-tag-warn-text: #7a4f12;
+  --u8a-tag-warn-line: #e6cfa5;
+  --u8a-tag-closed-bg: #fbeaea;
+  --u8a-tag-closed-text: #a12c2c;
+  --u8a-tag-closed-line: #efc4c4;
+  --u8a-tag-quiet-bg: #edf0f2;
+  --u8a-tag-quiet-text: #50575e;
+  --u8a-tag-quiet-line: #c2c7cb;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-look='redesign']:not([data-theme='light']) {
+    --u8a-head-bg: rgba(255, 255, 255, 0.03);
+    --u8a-tag-active-bg: rgba(159, 211, 178, 0.16);
+    --u8a-tag-active-text: #b9e3c8;
+    --u8a-tag-active-line: rgba(159, 211, 178, 0.35);
+    --u8a-tag-info-bg: rgba(168, 197, 234, 0.16);
+    --u8a-tag-info-text: #c4d6ef;
+    --u8a-tag-info-line: rgba(168, 197, 234, 0.35);
+    --u8a-tag-warn-bg: rgba(230, 207, 165, 0.16);
+    --u8a-tag-warn-text: #ecd6ae;
+    --u8a-tag-warn-line: rgba(230, 207, 165, 0.35);
+    --u8a-tag-closed-bg: rgba(239, 160, 160, 0.16);
+    --u8a-tag-closed-text: #f2bcbc;
+    --u8a-tag-closed-line: rgba(239, 160, 160, 0.35);
+    --u8a-tag-quiet-bg: rgba(255, 255, 255, 0.08);
+    --u8a-tag-quiet-text: #c9ced3;
+    --u8a-tag-quiet-line: rgba(255, 255, 255, 0.18);
+  }
+}
+:root[data-look='redesign'][data-theme='dark'] {
+  --u8a-head-bg: rgba(255, 255, 255, 0.03);
+  --u8a-tag-active-bg: rgba(159, 211, 178, 0.16);
+  --u8a-tag-active-text: #b9e3c8;
+  --u8a-tag-active-line: rgba(159, 211, 178, 0.35);
+  --u8a-tag-info-bg: rgba(168, 197, 234, 0.16);
+  --u8a-tag-info-text: #c4d6ef;
+  --u8a-tag-info-line: rgba(168, 197, 234, 0.35);
+  --u8a-tag-warn-bg: rgba(230, 207, 165, 0.16);
+  --u8a-tag-warn-text: #ecd6ae;
+  --u8a-tag-warn-line: rgba(230, 207, 165, 0.35);
+  --u8a-tag-closed-bg: rgba(239, 160, 160, 0.16);
+  --u8a-tag-closed-text: #f2bcbc;
+  --u8a-tag-closed-line: rgba(239, 160, 160, 0.35);
+  --u8a-tag-quiet-bg: rgba(255, 255, 255, 0.08);
+  --u8a-tag-quiet-text: #c9ced3;
+  --u8a-tag-quiet-line: rgba(255, 255, 255, 0.18);
+}
+
+/* ------------------------------------------------------------ Page stack */
+
+[data-look='redesign'] .u8a {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .u8a > .u8n-page-header {
+  margin-bottom: 4px;
+}
+[data-look='redesign'] .u8a .ultm8-banner {
+  margin: 0;
+  border-radius: 10px;
+}
+[data-look='redesign'] .u8a-quiet {
+  margin: 0;
+  font-size: 14px;
+  color: var(--u8n-quiet);
+}
+
+/* ------------------------------------------------------------------ Cards */
+
+[data-look='redesign'] .u8a .ultm8-card {
+  min-width: 0;
+  margin: 0;
+  padding: 20px;
+  background: var(--u8n-surface);
+  color: var(--u8n-text);
+  border: 0;
+  border-radius: 10px;
+  box-shadow: var(--u8n-shadow);
+}
+[data-look='redesign'] .u8a .ultm8-card--flush {
+  padding: 0;
+  overflow: hidden;
+}
+[data-look='redesign'] .u8a .ultm8-card h2,
+[data-look='redesign'] .u8a .ultm8-card h3 {
+  margin: 0 0 12px;
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .u8a .ultm8-card p {
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8a .ultm8-card .ultm8-state {
+  padding: 32px 20px;
+  text-align: center;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8a .ultm8-state__title {
+  color: var(--u8n-text);
+  font-weight: 500;
+}
+
+/* -------------------------------------------------------------- Tables */
+/* AdminTable.tsx. When the table doesn't fit its card (phone, tablet, a
+ * narrow window), each row becomes a small card with its labels beside the
+ * values, so nothing scrolls the page sideways. */
+
+[data-look='redesign'] .u8a-table {
+  container-type: inline-size;
+  container-name: u8a-table;
+  min-width: 0;
+}
+[data-look='redesign'] .u8a-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+[data-look='redesign'] .u8a-table th {
+  padding: 12px;
+  background: var(--u8a-head-bg);
+  text-align: start;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--u8n-subtle);
+  white-space: nowrap;
+}
+[data-look='redesign'] .u8a-table td {
+  padding: 14px 12px;
+  border-top: 1px solid var(--u8n-line);
+  vertical-align: middle;
+  overflow-wrap: anywhere;
+}
+[data-look='redesign'] .u8a-table th:first-child,
+[data-look='redesign'] .u8a-table td:first-child {
+  padding-inline-start: 20px;
+}
+[data-look='redesign'] .u8a-table th:last-child,
+[data-look='redesign'] .u8a-table td:last-child {
+  padding-inline-end: 20px;
+}
+[data-look='redesign'] .u8a-table tbody tr:hover {
+  background: var(--u8n-hover);
+}
+[data-look='redesign'] .u8a-table td.u8a-table__end {
+  text-align: end;
+  white-space: nowrap;
+}
+
+@container u8a-table (max-width: 720px) {
+  [data-look='redesign'] .u8a-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  [data-look='redesign'] .u8a-table table,
+  [data-look='redesign'] .u8a-table tbody,
+  [data-look='redesign'] .u8a-table tr,
+  [data-look='redesign'] .u8a-table td {
+    display: block;
+  }
+  [data-look='redesign'] .u8a-table tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+  }
+  [data-look='redesign'] .u8a-table tr {
+    padding: 12px 16px;
+    border: 1px solid var(--u8n-line);
+    border-radius: 10px;
+  }
+  [data-look='redesign'] .u8a-table tbody tr:hover {
+    background: none;
+  }
+  [data-look='redesign'] .u8a-table td,
+  [data-look='redesign'] .u8a-table td:first-child,
+  [data-look='redesign'] .u8a-table td:last-child {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 6px 0;
+    border: 0;
+    text-align: end;
+  }
+  [data-look='redesign'] .u8a-table td.u8a-table__end {
+    justify-content: flex-end;
+    padding-top: 10px;
+  }
+  [data-look='redesign'] .u8a-table td[data-label]::before {
+    content: attr(data-label);
+    flex: none;
+    max-width: 45%;
+    text-align: start;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--u8n-subtle);
+  }
+  [data-look='redesign'] .u8a-table td:empty {
+    display: none;
+  }
+}
+
+/* ------------------------------------------------------------------- Tags */
+
+[data-look='redesign'] .u8a-tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.5;
+  border-radius: 4px;
+  padding: 2px 7px;
+  white-space: nowrap;
+  background: var(--u8a-tag-quiet-bg);
+  color: var(--u8a-tag-quiet-text);
+  box-shadow: inset 0 0 0 1px var(--u8a-tag-quiet-line);
+}
+[data-look='redesign'] .u8a-tag--active {
+  background: var(--u8a-tag-active-bg);
+  color: var(--u8a-tag-active-text);
+  box-shadow: inset 0 0 0 1px var(--u8a-tag-active-line);
+}
+[data-look='redesign'] .u8a-tag--info {
+  background: var(--u8a-tag-info-bg);
+  color: var(--u8a-tag-info-text);
+  box-shadow: inset 0 0 0 1px var(--u8a-tag-info-line);
+}
+[data-look='redesign'] .u8a-tag--warn {
+  background: var(--u8a-tag-warn-bg);
+  color: var(--u8a-tag-warn-text);
+  box-shadow: inset 0 0 0 1px var(--u8a-tag-warn-line);
+}
+[data-look='redesign'] .u8a-tag--closed {
+  background: var(--u8a-tag-closed-bg);
+  color: var(--u8a-tag-closed-text);
+  box-shadow: inset 0 0 0 1px var(--u8a-tag-closed-line);
+}
+
+/* ------------------------------------- Drop-down as a form field */
+/* The School Portal's .u8n-dd-field (layout/newLookShell.css): a NewLookSelect
+ * in a dialog or a form, its label and soft field matching the text fields. */
+
+[data-look='redesign'] .u8n-dd-field {
+  margin: 0 0 var(--space-4);
+}
+[data-look='redesign'] .u8n-dd-field .u8n-select__label {
+  font-size: var(--form-label-size);
+  color: var(--form-label-color);
+}
+[data-look='redesign'] .u8n-dd-field .u8n-select__field {
+  min-height: var(--form-field-height);
+  padding: 0 var(--space-4);
+  border-radius: var(--form-field-radius);
+  background: var(--form-field-bg);
+  box-shadow: inset 0 0 0 1px var(--border);
+  font-size: var(--font-size-field);
+}
+[data-look='redesign'] .u8n-dd-field .u8n-select__field[aria-expanded='true'] {
+  box-shadow: 0 0 0 2px var(--form-field-focus-ring);
+}
+[data-look='redesign'] .u8n-dd-field .u8n-select__option {
+  font-size: var(--font-size-field);
+}
+[data-look='redesign'] .u8n-dd-field .u8n-dd-field__hint {
+  display: block;
+  margin-top: 6px;
+}
+@media (max-width: 767px) {
+  [data-look='redesign'] .u8n-dd-field .u8n-select__field,
+  [data-look='redesign'] .u8n-dd-field .u8n-select__option {
+    font-size: 16px;
+  }
+}

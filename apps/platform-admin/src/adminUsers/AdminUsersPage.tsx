@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { Badge, Button, Card, EmptyState, ErrorBanner, Field, Modal, PageHeader, SelectField, Spinner, Table, TextField } from '@ultm8/ui';
+import { Button, Card, EmptyState, ErrorBanner, Field, Modal, NewLookSelect, Spinner, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
+import { AdminTable } from '../layout/AdminTable';
+import { NewLookPageHeader } from '../layout/NewLookPage';
 import { useAdminUsers, useCreateAdminUser, useRevokeAdminUser, type AdminUserResponse, type CreateAdminUserInput } from './adminUserQueries';
 
 const SUB_ROLES = ['SUPPORT', 'BILLING_PAYMENTS_OPS', 'FULL_ADMIN'] as const;
@@ -60,31 +62,32 @@ export function AdminUsersPage() {
   }
 
   return (
-    <>
-      <PageHeader
+    <div className="u8a">
+      <NewLookPageHeader
         title="Admin Users"
         subtitle="Who has Platform Admin access, and at what tier. Inviting and revoking are both Full Admin-only."
         actions={<Button onClick={() => setInviting(true)}>Invite admin</Button>}
       />
       {revokeError ? <ErrorBanner message={revokeError} /> : null}
-      <Card>
+      <Card className={admins.length === 0 ? undefined : 'ultm8-card--flush'}>
         {admins.length === 0 ? (
           <EmptyState title="No admins visible" description="Either none exist yet, or your own account isn't Full Admin — this list is Full Admin-only." />
         ) : (
-          <Table<AdminUserResponse>
+          <AdminTable<AdminUserResponse>
             rows={admins}
             columns={[
               { key: 'name', header: 'Name', render: (a) => a.name },
               { key: 'email', header: 'Email', render: (a) => a.email },
-              { key: 'subRole', header: 'Tier', render: (a) => <Badge variant="accent">{subRoleLabel(a.subRole)}</Badge> },
+              { key: 'subRole', header: 'Tier', render: (a) => <span className="u8a-tag u8a-tag--info">{subRoleLabel(a.subRole)}</span> },
               {
                 key: 'status',
                 header: 'Status',
-                render: (a) => (a.revokedAt ? <Badge variant="danger">Revoked</Badge> : <Badge variant="success">Active</Badge>),
+                render: (a) => (a.revokedAt ? <span className="u8a-tag u8a-tag--closed">Revoked</span> : <span className="u8a-tag u8a-tag--active">Active</span>),
               },
               {
                 key: 'actions',
                 header: '',
+                end: true,
                 render: (a) =>
                   a.revokedAt ? null : (
                     <Button variant="danger" onClick={() => handleRevoke(a)} disabled={revokingId !== null} loading={revokingId === a.id}>
@@ -107,7 +110,7 @@ export function AdminUsersPage() {
           onClose={() => setInviting(false)}
         />
       ) : null}
-    </>
+    </div>
   );
 }
 
@@ -150,14 +153,15 @@ function InviteAdminModal({
         <Field label="Name" htmlFor="invite-name">
           <TextField required value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
         </Field>
-        <Field label="Tier" htmlFor="invite-subrole">
-          <SelectField
+        <div className="u8n-dd-field">
+          <NewLookSelect
             id="invite-subrole"
+            label="Tier"
             options={SUB_ROLES.map((r) => ({ value: r, label: subRoleLabel(r as AdminUserResponse['subRole']) }))}
             value={form.subRole}
-            onChange={(e) => setForm((f) => ({ ...f, subRole: e.target.value as CreateAdminUserInput['subRole'] }))}
+            onChange={(value) => setForm((f) => ({ ...f, subRole: value as CreateAdminUserInput['subRole'] }))}
           />
-        </Field>
+        </div>
         <Field
           label="Cognito sub"
           htmlFor="invite-sso-subject"
