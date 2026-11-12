@@ -29,6 +29,14 @@ export const dashboard = {
   branchLabel: 'Branch',
   branchAll: 'All Branches',
   statActiveStudents: 'Active students',
+  statCheckInsToday: 'Check-ins today',
+  checkInsAcrossClasses: {
+    one: 'Across {count} class so far',
+    other: 'Across {count} classes so far',
+  },
+  checkInsLoadFailed: 'Could not load check-ins.',
+  readySeeAll: 'See all {count} →',
+  readyLoadFailed: 'Could not load who is ready to grade.',
   wholeSchool: 'Whole School',
   birthdays: {
     title: 'Birthdays this week',

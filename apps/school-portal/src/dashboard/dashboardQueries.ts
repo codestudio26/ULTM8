@@ -10,6 +10,7 @@ export type BookingsSummaryClass = components['schemas']['BookingsSummaryClassDt
 export type DashboardOverview = components['schemas']['DashboardOverviewDto'];
 export type SetupStepKey = components['schemas']['SetupStepDto']['key'];
 export type Birthday = components['schemas']['BirthdayDto'];
+export type ReadyToGradeItem = components['schemas']['ReadyToGradeItemDto'];
 
 export interface BookingsSummaryRange {
   from: string;
@@ -73,5 +74,38 @@ export function useBirthdays(schoolId: string | null) {
     queryFn: () => unwrap(apiClient.GET('/v1/schools/{schoolId}/birthdays', { params: { path: { schoolId: schoolId! } } })),
     enabled: !!schoolId,
     staleTime: 60 * 60_000,
+  });
+}
+
+/** GET /schools/:schoolId/attendance/today — Decision 454 item 8: "Check-ins
+ * today", counted as the attendance statistics count them, on the School's
+ * clock. `branchId` narrows it to one Branch's classes, as the Branch filter
+ * does for Bookings (Decision 367, Q5). Refreshes like the Bookings figures
+ * (Decision 367, D7). */
+export function useCheckInsToday(schoolId: string | null, branchId?: string | null) {
+  return useQuery({
+    queryKey: ['check-ins-today', schoolId, branchId ?? null],
+    queryFn: () =>
+      unwrap(
+        apiClient.GET('/v1/schools/{schoolId}/attendance/today', {
+          params: { path: { schoolId: schoolId! }, query: { branchId: branchId || undefined } },
+        }),
+      ),
+    enabled: !!schoolId,
+    refetchOnWindowFocus: true,
+    refetchInterval: 5 * 60_000,
+  });
+}
+
+/** GET /schools/:schoolId/grading-board/ready — Decision 454 item 8: the
+ * Grading Board's Ready to Grade column across the styles. Under the
+ * 'grading-board' key, so a board change (a drag, a promotion) refreshes it. */
+export function useReadyToGrade(schoolId: string | null) {
+  return useQuery({
+    queryKey: ['grading-board', schoolId, 'ready'],
+    queryFn: () => unwrap(apiClient.GET('/v1/schools/{schoolId}/grading-board/ready', { params: { path: { schoolId: schoolId! } } })),
+    enabled: !!schoolId,
+    refetchOnWindowFocus: true,
+    refetchInterval: 5 * 60_000,
   });
 }

@@ -14,6 +14,7 @@ import { localDay } from '../ranks/engine';
 import { AttendanceService } from './attendance.service';
 import {
   AttendanceStatsResponseDto,
+  CheckInsTodayResponseDto,
   LogClassesResponseDto,
   LoggedAttendanceResponseDto,
 } from './dto/staff-attendance.dto';
@@ -77,17 +78,22 @@ export class StaffAttendanceService {
     return safeZone(school.timezone);
   }
 
+  /** Which Branches the caller's statistics cover (null: the whole School):
+   * the owner every Branch, Branch Staff with "See attendance statistics"
+   * their own; `branchId` narrows it to one of those. */
+  private async statsBranches(callerId: string, schoolId: string, branchId: string | undefined): Promise<string[] | null> {
+    const scope = await this.tenantAuth.attendanceStatsScope(callerId, schoolId);
+    if (!branchId) return scope.branchIds;
+    if (scope.branchIds && !scope.branchIds.includes(branchId)) {
+      throw new ForbiddenException({ code: 'OTHER_BRANCH', message: "You can only see your own Branches' attendance." });
+    }
+    await this.tenantAuth.assertBranchBelongsToSchool(callerId, branchId, schoolId);
+    return [branchId];
+  }
+
   /** GET /schools/{schoolId}/attendance/stats */
   async stats(callerId: string, schoolId: string, query: { branchId?: string; excludePasses?: boolean }): Promise<AttendanceStatsResponseDto> {
-    const scope = await this.tenantAuth.attendanceStatsScope(callerId, schoolId);
-    let branchIds = scope.branchIds;
-    if (query.branchId) {
-      if (branchIds && !branchIds.includes(query.branchId)) {
-        throw new ForbiddenException({ code: 'OTHER_BRANCH', message: "You can only see your own Branches' attendance." });
-      }
-      await this.tenantAuth.assertBranchBelongsToSchool(callerId, query.branchId, schoolId);
-      branchIds = [query.branchId];
-    }
+    const branchIds = await this.statsBranches(callerId, schoolId, query.branchId);
     const excludePasses = !!query.excludePasses;
 
     const zone = await this.schoolZone(schoolId);
@@ -95,25 +101,7 @@ export class StaffAttendanceService {
     const to = localDay(now, zone);
     const from = addDays(to, -(ATTENDANCE_STATS_DAYS - 1));
     // Classes that started from the first day up to now: a class counts once it has started.
-    const classWindow = { startDate: { gte: dayStart(from, zone), lte: now } };
-    const branchWhere = branchIds ? { branchId: { in: branchIds } } : {};
-    // Imported past attendance has no Membership (Decision 422 item 6) and is no pass.
-    const passWhere = excludePasses ? { OR: [{ sourceMembershipId: null }, { sourceMembership: { membershipPlan: { type: { notIn: PASS_PLAN_TYPES } } } }] } : {};
-
-    // Read via ultm8_jobs after the access check above, with the School and
-    // Branches named explicitly (Membership rows are never readable by Branch
-    // Staff in their own context).
-    const memberCheckIns = await this.prismaJobs.booking.findMany({
-      where: { schoolId, status: 'COMPLETED', ...branchWhere, class: classWindow, ...passWhere },
-      select: { studentId: true, classId: true, checkInMethod: true },
-    });
-    // Guests are checked in on a Friend Pass (Decision 377): left out with the filter.
-    const guestCheckIns = excludePasses
-      ? []
-      : await this.prismaJobs.bookingAttendee.findMany({
-          where: { schoolId, checkedInAt: { not: null }, booking: { status: 'COMPLETED', ...branchWhere, class: classWindow } },
-          select: { booking: { select: { classId: true } } },
-        });
+    const { memberCheckIns, guestCheckIns } = await this.checkInsOf(schoolId, branchIds, { gte: dayStart(from, zone), lte: now }, excludePasses);
 
     const checkIns = memberCheckIns.length + guestCheckIns.length;
     const classes = new Set([...memberCheckIns.map((b) => b.classId), ...guestCheckIns.map((g) => g.booking.classId)]).size;
@@ -131,6 +119,58 @@ export class StaffAttendanceService {
       students,
       studentsPerClass: classes ? roundOne(checkIns / classes) : 0,
       classesPerStudent: students ? roundOne(memberCheckIns.length / students) : 0,
+    };
+  }
+
+  /**
+   * The check-ins of the classes that start in `classStart`, as the statistics
+   * count them (Decision 317 item 3): members' bookings checked in (or logged
+   * afterwards), and guests checked in on a Friend Pass (Decision 377). Trial,
+   * Visitor and Friend Pass check-ins count unless `excludePasses`.
+   *
+   * Read via ultm8_jobs, only after the caller's access check, with the School
+   * and Branches named explicitly (Membership rows are never readable by
+   * Branch Staff in their own context).
+   */
+  private async checkInsOf(schoolId: string, branchIds: string[] | null, classStart: { gte: Date; lte?: Date; lt?: Date }, excludePasses: boolean) {
+    const classWindow = { startDate: classStart };
+    const branchWhere = branchIds ? { branchId: { in: branchIds } } : {};
+    // Imported past attendance has no Membership (Decision 422 item 6) and is no pass.
+    const passWhere = excludePasses ? { OR: [{ sourceMembershipId: null }, { sourceMembership: { membershipPlan: { type: { notIn: PASS_PLAN_TYPES } } } }] } : {};
+    const memberCheckIns = await this.prismaJobs.booking.findMany({
+      where: { schoolId, status: 'COMPLETED', ...branchWhere, class: classWindow, ...passWhere },
+      select: { studentId: true, classId: true, checkInMethod: true },
+    });
+    // Guests are checked in on a Friend Pass (Decision 377): left out with the filter.
+    const guestCheckIns = excludePasses
+      ? []
+      : await this.prismaJobs.bookingAttendee.findMany({
+          where: { schoolId, checkedInAt: { not: null }, booking: { status: 'COMPLETED', ...branchWhere, class: classWindow } },
+          select: { booking: { select: { classId: true } } },
+        });
+    return { memberCheckIns, guestCheckIns };
+  }
+
+  /**
+   * GET /schools/{schoolId}/attendance/today: the Dashboard's "Check-ins
+   * today" (Decision 454 item 8). The statistics' own count and scope
+   * (Decision 317 item 3), for the classes that start today in the School's
+   * time zone (UTC when it has none): the owner sees the whole School, Branch
+   * Staff with "See attendance statistics" their own Branches. A `branchId`
+   * narrows it to the classes held at that Branch, as the Dashboard's Branch
+   * filter does for Bookings (Decision 367 item 5).
+   */
+  async today(callerId: string, schoolId: string, query: { branchId?: string }): Promise<CheckInsTodayResponseDto> {
+    const branchIds = await this.statsBranches(callerId, schoolId, query.branchId);
+    const zone = await this.schoolZone(schoolId);
+    const date = localDay(new Date(), zone);
+    const { memberCheckIns, guestCheckIns } = await this.checkInsOf(schoolId, branchIds, { gte: dayStart(date, zone), lt: dayStart(addDays(date, 1), zone) }, false);
+    return {
+      date,
+      timeZone: zone,
+      branchIds,
+      checkIns: memberCheckIns.length + guestCheckIns.length,
+      classes: new Set([...memberCheckIns.map((b) => b.classId), ...guestCheckIns.map((g) => g.booking.classId)]).size,
     };
   }
 
