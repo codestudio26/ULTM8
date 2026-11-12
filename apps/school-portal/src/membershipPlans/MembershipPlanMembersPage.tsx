@@ -1,11 +1,15 @@
 import React from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Badge, Card, EmptyState, ErrorBanner, PageHeader, Spinner, Table } from '@ultm8/ui';
+import { Badge, EmptyState, ErrorBanner, Spinner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { formatLocale } from '../i18n/format';
 import { useT } from '../i18n/I18nProvider';
 import { OwnerOnly } from './MembershipPlansPage';
+import { NewLookPageHeader } from '../layout/NewLookPage';
+import { BillingCard, BillingPage } from '../billing/BillingLook';
+import { FitTable } from '../students/StudentsSectionLook';
+import './planMembers.css';
 import { useMembershipPlan, usePlanMembers, usePlanWaitlist, type PlanMemberResponse } from './membershipPlanQueries';
 
 function formatDay(iso: string): string {
@@ -14,7 +18,12 @@ function formatDay(iso: string): string {
 
 /** Who is on a plan now, with their dates (Decision 348). Owner only, like
  * the rest of Membership Plans. The same people the Active members tile
- * counts: live memberships of current Students. */
+ * counts: live memberships of current Students.
+ *
+ * New look (Decision 460 item 17): the shell's header (its "‹ Membership
+ * Plans" link replaces the old "Back to Membership Plans" line), white cards,
+ * tags, and a table that becomes a card per member when it doesn't fit
+ * (FitTable). The same people, dates and waiting list as before. */
 export function MembershipPlanMembersPage() {
   const { id } = useParams<{ id: string }>();
   const schoolId = useOwnedSchoolId();
@@ -31,24 +40,24 @@ export function MembershipPlanMembersPage() {
 
   const rows = (members.data?.items ?? []).map((m) => ({ ...m, id: m.membershipId }));
   return (
-    <>
-      <p style={{ margin: '0 0 8px' }}>
-        <Link to="/membership-plans">{t('membershipPlans.members.back')}</Link>
-      </p>
-      <PageHeader
+    <BillingPage>
+      <NewLookPageHeader
+        parent={{ to: '/membership-plans', label: t('membershipPlans.list.title') }}
         title={t('membershipPlans.members.title', { plan: plan.data?.title ?? '' })}
         subtitle={t('membershipPlans.members.subtitle', { count: rows.length })}
       />
-      <Card>
+      <BillingCard flush={rows.length > 0}>
         {rows.length === 0 ? (
           <EmptyState title={t('membershipPlans.members.emptyTitle')} description={t('membershipPlans.members.emptyDescription')} />
         ) : (
-          <Table<PlanMemberResponse & { id: string }>
+          <FitTable<PlanMemberResponse & { id: string }>
+            testId="plan-members"
             rows={rows}
             columns={[
               {
                 key: 'name',
                 header: t('membershipPlans.members.columnName'),
+                main: true,
                 render: (m) => <Link to={`/students/${m.studentId}`}>{`${m.firstName} ${m.surname}`.trim()}</Link>,
               },
               { key: 'started', header: t('membershipPlans.members.columnStarted'), render: (m) => formatDay(m.startDate) },
@@ -73,17 +82,16 @@ export function MembershipPlanMembersPage() {
             ]}
           />
         )}
-      </Card>
+      </BillingCard>
       {plan.data?.memberLimit != null && waitlist.data ? (
-        <Card>
-          <h2 style={{ fontSize: 18, margin: '0 0 4px' }}>{t('membershipPlans.members.waitlistTitle')}</h2>
-          <p style={{ color: 'var(--text-muted)', margin: '0 0 12px' }} data-testid="plan-places">
+        <BillingCard title={t('membershipPlans.members.waitlistTitle')}>
+          <p className="u8b-note" data-testid="plan-places">
             {t('membershipPlans.members.limitLine', { taken: waitlist.data.placesTaken, limit: plan.data.memberLimit })}
           </p>
           {waitlist.data.items.length === 0 ? (
-            <p style={{ margin: 0 }}>{t('membershipPlans.members.waitlistEmpty')}</p>
+            <p className="u8pm-plain">{t('membershipPlans.members.waitlistEmpty')}</p>
           ) : (
-            <ol data-testid="plan-waitlist" style={{ margin: 0, paddingInlineStart: 20 }}>
+            <ol data-testid="plan-waitlist" className="u8pm-waitlist">
               {waitlist.data.items.map((e) => (
                 <li key={e.id}>
                   <Link to={`/students/${e.studentId}`}>{`${e.firstName} ${e.surname}`.trim()}</Link>
@@ -95,9 +103,8 @@ export function MembershipPlanMembersPage() {
               ))}
             </ol>
           )}
-        </Card>
+        </BillingCard>
       ) : null}
-    </>
+    </BillingPage>
   );
 }
-

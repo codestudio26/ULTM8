@@ -1,0 +1,90 @@
+/* The Dashboard's "Bookings" drill-down (/bookings-drilldown) in the new look
+ * (Decision 453; Decision 460 item 17). The header is the shell's
+ * NewLookPageHeader; the cards, tags, fields and drop-down are the Billing
+ * pages' pieces (billingLook.css, under `.u8b`). Look only. */
+
+[data-look='redesign'] .u8bd-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 24px;
+}
+[data-look='redesign'] .u8bd-filters > .ultm8-field,
+[data-look='redesign'] .u8bd-filters > .u8n-dd-field {
+  margin: 0;
+  min-width: 0;
+  max-width: 100%;
+}
+[data-look='redesign'] .u8bd-filters .u8n-select {
+  max-width: 100%;
+}
+[data-look='redesign'] .u8bd-alert {
+  margin: 12px 0 0;
+  color: var(--text-danger);
+  font-size: 13px;
+}
+
+[data-look='redesign'] .u8bd-muted {
+  color: var(--u8n-quiet);
+  font-size: 13px;
+}
+[data-look='redesign'] .u8bd-day__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+  margin-bottom: 12px;
+}
+[data-look='redesign'] .u8bd-day__title {
+  margin: 0;
+}
+[data-look='redesign'] .u8bd-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+[data-look='redesign'] .u8bd-styles {
+  margin-bottom: 16px;
+}
+[data-look='redesign'] .u8bd-style {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  font-size: 13px;
+}
+[data-look='redesign'] .u8bd-classes__title {
+  margin: 0 0 8px;
+  font-weight: 500;
+}
+/* One line per class: time, name (a link to the class), Branch, the count. */
+[data-look='redesign'] .u8bd-class {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--u8n-line);
+  font-size: 14px;
+}
+[data-look='redesign'] .u8bd-class:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+[data-look='redesign'] .u8bd-class__time {
+  min-width: 48px;
+  font-variant-numeric: tabular-nums;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8bd-class__link {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-weight: 500;
+  color: var(--u8n-tile-icon);
+}
+[data-look='redesign'] .u8bd-class__count {
+  font-size: 13px;
+}
