@@ -443,8 +443,8 @@ test('the School sets its week start and layout, and the calendar filters by bra
 
   await signIn(page, s.ownerToken);
   await page.goto('/school');
-  await page.getByLabel('Timetable week starts on').selectOption('SUNDAY');
-  await page.getByLabel('Timetable opens as').selectOption('GRID');
+  await pickOption(page, 'Timetable week starts on', 'Sunday');
+  await pickOption(page, 'Timetable opens as', 'Grid');
   await page.locator('form').filter({ has: page.getByLabel('Timetable week starts on') }).getByRole('button', { name: 'Save changes' }).click();
   await expect.poll(async () => (await db.school.findUniqueOrThrow({ where: { id: s.schoolId } })).weekStartsOn).toBe('SUNDAY');
 

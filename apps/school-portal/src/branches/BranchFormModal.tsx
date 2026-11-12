@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { AddressFields, Button, CurrencyField, ErrorBanner, Field, Modal, PhoneField, PhotoUploadField, SelectField, TextField, TimezoneField, isPostalAddressEmpty, postalAddressFromRecord, preparePostalAddress, type PostalAddress, type PostalAddressErrors } from '@ultm8/ui';
+import { AddressFields, Button, CurrencyField, ErrorBanner, Field, Modal, ModalActions, PhoneField, PhotoUploadField, TextField, TimezoneField, isPostalAddressEmpty, postalAddressFromRecord, preparePostalAddress, type PostalAddress, type PostalAddressErrors } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useSchool } from '../schools/schoolQueries';
@@ -7,6 +7,7 @@ import { useCurrencies } from '../settings/settingsQueries';
 import { useRequestPublicPhotoUploadUrl } from '../uploads/uploadQueries';
 import type { BranchResponse } from './branchQueries';
 import { useT } from '../i18n/I18nProvider';
+import '../organisation/organisationForms.css';
 
 /** Fields match CreateBranchDto/UpdateBranchDto exactly (Decision 76's field list) —
  * apps/api/src/tenants/branches/dto/create-branch.dto.ts, re-verified before writing.
@@ -155,14 +156,14 @@ export function BranchFormModal({
             }
           />
         </Field>
-        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-          <Button type="submit" loading={submitting}>
-            {t('common.save')}
-          </Button>
+        <ModalActions>
           <Button type="button" variant="secondary" onClick={onClose}>
             {t('common.cancel')}
           </Button>
-        </div>
+          <Button type="submit" loading={submitting}>
+            {t('common.save')}
+          </Button>
+        </ModalActions>
       </form>
     </Modal>
   );

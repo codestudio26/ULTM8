@@ -107,7 +107,7 @@ test('the School sets when check-in opens and what a late cancel refunds', async
   await expect(page.getByText('Saved.')).toBeVisible();
   // Decision 368 (Q5) — the late-cancel setting lives in the Class cancellations card.
   const card = page.locator('form').filter({ hasText: 'Class cancellations' });
-  await card.getByLabel('Cancelling after a class starts').selectOption({ label: 'Refund until the class ends' });
+  await pickOption(card, 'Cancelling after a class starts', 'Refund until the class ends');
   await card.getByRole('button', { name: 'Save changes' }).click();
   await expect(card.getByText('Saved.')).toBeVisible();
   const school = await db.school.findUniqueOrThrow({ where: { id: s.schoolId } });

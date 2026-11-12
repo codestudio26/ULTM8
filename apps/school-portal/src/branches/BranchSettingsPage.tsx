@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { AddressFields, Button, Card, CurrencyField, ErrorBanner, Field, PageHeader, PhoneField, PhotoUploadField, SelectField, Spinner, SuccessBanner, TextField, TimezoneField, EMPTY_POSTAL_ADDRESS, hasLegacyAddressOnly, postalAddressFromRecord, preparePostalAddress, type PostalAddress, type PostalAddressErrors } from '@ultm8/ui';
+import { useParams } from 'react-router-dom';
+import { AddressFields, Button, Card, CurrencyField, ErrorBanner, Field, PhoneField, PhotoUploadField, Spinner, SuccessBanner, TextField, TimezoneField, EMPTY_POSTAL_ADDRESS, hasLegacyAddressOnly, postalAddressFromRecord, preparePostalAddress, type PostalAddress, type PostalAddressErrors } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useCurrencies, useLanguages } from '../settings/settingsQueries';
@@ -10,6 +10,10 @@ import { useSchool } from '../schools/schoolQueries';
 import { CancellationSettingsFields, cancellationSettingsForm, cancellationSettingsPayload, isCancellationSettingsValid, type CancellationSettingsForm } from '../cancellations/CancellationSettingsFields';
 import { useT } from '../i18n/I18nProvider';
 import { languageName } from '../i18n/format';
+import { NewLookPageHeader } from '../layout/NewLookPage';
+import { NewLookSelect } from '../layout/NewLookSelect';
+import '../organisation/organisationLook.css';
+import '../organisation/organisationForms.css';
 import { TaxLineFields, taxLineBody, taxLineDraft, taxLinesProblem, type TaxLineDraft } from '../charges/TaxLineFields';
 
 /**
@@ -26,7 +30,6 @@ export function BranchSettingsPage() {
   const t = useT();
   const { id } = useParams<{ id: string }>();
   const branchId = id ?? null;
-  const navigate = useNavigate();
   const { data: branch, isLoading, error } = useBranch(branchId);
   const updateBranch = useUpdateBranch(branch?.schoolId ?? '', branchId ?? '');
   const { data: languages } = useLanguages();
@@ -119,16 +122,11 @@ export function BranchSettingsPage() {
   }
 
   return (
-    <>
-      <PageHeader
-        title={branch.name}
-        subtitle={t('branches.settingsPage.subtitle')}
-        actions={
-          <Button variant="secondary" onClick={() => navigate('/branches')}>
-            {t('branches.settingsPage.back')}
-          </Button>
-        }
-      />
+    // The Organisation pages' new look (organisationLook.css, Decision 460
+    // item 17): the white page header, its "‹ Back to Branches" link in place
+    // of the old header's Back button, and the cards as the School page's.
+    <div className="u8o">
+      <NewLookPageHeader parent={{ to: '/branches', label: t('branches.settingsPage.back') }} title={branch.name} subtitle={t('branches.settingsPage.subtitle')} />
       {saved ? <SuccessBanner message={t('branches.settingsPage.saved')} /> : null}
       {saveError ? <ErrorBanner message={saveError} /> : null}
       <Card>
@@ -171,14 +169,15 @@ export function BranchSettingsPage() {
           <Field label={t('branches.form.facilities')} htmlFor="branch-settings-facilities" hint={t('branches.form.commaSeparated')}>
             <TextField value={form.facilities} onChange={(e) => setForm((f) => ({ ...f, facilities: e.target.value }))} />
           </Field>
-          <Field label={t('branches.form.defaultLanguage')} htmlFor="branch-settings-language">
-            <SelectField
+          <div className="u8n-dd-field">
+            <NewLookSelect
               id="branch-settings-language"
+              label={t('branches.form.defaultLanguage')}
               value={form.defaultLanguage}
-              onChange={(e) => setForm((f) => ({ ...f, defaultLanguage: e.target.value }))}
+              onChange={(defaultLanguage) => setForm((f) => ({ ...f, defaultLanguage }))}
               options={[{ value: '', label: t('branches.form.notSet') }, ...(languages ?? []).map((l) => ({ value: l.code, label: languageName(l.code, l.name) }))]}
             />
-          </Field>
+          </div>
           <Field label={t('branches.form.description')} htmlFor="branch-settings-description">
             <TextField value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
           </Field>
@@ -217,7 +216,7 @@ export function BranchSettingsPage() {
       </Card>
       <BranchCancellationSettingsCard branch={branch} />
       <BranchTaxCard branch={branch} />
-    </>
+    </div>
   );
 }
 
@@ -267,17 +266,18 @@ function BranchCancellationSettingsCard({ branch }: { branch: BranchResponse }) 
         <p style={{ color: 'var(--text-muted)', margin: '0 0 16px' }}>{t('branches.cancellations.subtitle')}</p>
         {error ? <ErrorBanner message={error} /> : null}
         {saved ? <SuccessBanner message={t('branches.settingsPage.saved')} /> : null}
-        <Field label={t('branches.cancellations.sourceLabel')} htmlFor="branch-cancel-source">
-          <SelectField
+        <div className="u8n-dd-field">
+          <NewLookSelect
             id="branch-cancel-source"
+            label={t('branches.cancellations.sourceLabel')}
             value={override ? 'OWN' : 'SCHOOL'}
-            onChange={(e) => toggle(e.target.value === 'OWN')}
+            onChange={(v) => toggle(v === 'OWN')}
             options={[
               { value: 'SCHOOL', label: t('branches.cancellations.sameAsSchool') },
               { value: 'OWN', label: t('branches.cancellations.own') },
             ]}
           />
-        </Field>
+        </div>
         <CancellationSettingsFields form={shown} onChange={setForm} disabled={!override} currency={branch.currencyOverride || school.defaultCurrency} schoolCurrencyMissing={!school.defaultCurrency} />
         <div style={{ marginTop: 16 }}>
           <Button type="submit" loading={update.isPending}>
@@ -341,12 +341,13 @@ function BranchTaxCard({ branch }: { branch: BranchResponse }) {
         <p style={{ color: 'var(--text-muted)', margin: '0 0 16px' }}>{t('branches.tax.subtitle')}</p>
         {error ? <ErrorBanner message={error} /> : null}
         {saved ? <SuccessBanner message={t('branches.settingsPage.saved')} /> : null}
-        <Field label={t('branches.tax.sourceLabel')} htmlFor="branch-tax-source">
-          <SelectField
+        <div className="u8n-dd-field">
+          <NewLookSelect
             id="branch-tax-source"
+            label={t('branches.tax.sourceLabel')}
             value={override ? 'OWN' : 'SCHOOL'}
-            onChange={(e) => {
-              setOverride(e.target.value === 'OWN');
+            onChange={(v) => {
+              setOverride(v === 'OWN');
               setSaved(false);
             }}
             options={[
@@ -354,7 +355,7 @@ function BranchTaxCard({ branch }: { branch: BranchResponse }) {
               { value: 'OWN', label: t('branches.tax.own') },
             ]}
           />
-        </Field>
+        </div>
         {override ? (
           <>
             <TaxLineFields id="branch-tax1" line={line1} onChange={setLine1} />

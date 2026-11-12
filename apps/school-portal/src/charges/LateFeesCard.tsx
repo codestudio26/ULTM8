@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Button, Card, Checkbox, ErrorBanner, Field, SelectField, SuccessBanner, Switch, TextField } from '@ultm8/ui';
+import { Button, Card, Checkbox, ErrorBanner, Field, SuccessBanner, Switch, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useT } from '../i18n/I18nProvider';
 import { MoneyField } from '../lib/MoneyField';
 import { rateText } from './chargeQueries';
 import { parseGraceDays, parseLateFeePercent, useLateFeeSettings, useUpdateLateFeeSettings, type LateFeeSettings } from './lateFeeQueries';
 import { CurrencyFirstNotice } from '../lib/CurrencyFirstNotice';
+import { NewLookSelect } from '../layout/NewLookSelect';
 
 /**
  * Decision 413: late fees, the School's choice. Off by default. When on, a
@@ -79,12 +80,13 @@ function LateFeesForm({ schoolId, settings }: { schoolId: string; settings: Late
             changed();
           }}
         />
-        <Field label={t('charges.lateFees.typeLabel')} htmlFor="late-fees-type">
-          <SelectField
+        <div className="u8n-dd-field">
+          <NewLookSelect
             id="late-fees-type"
+            label={t('charges.lateFees.typeLabel')}
             value={type}
-            onChange={(e) => {
-              setType(e.target.value as 'FIXED' | 'PERCENT');
+            onChange={(v) => {
+              setType(v as 'FIXED' | 'PERCENT');
               changed();
             }}
             options={[
@@ -92,7 +94,7 @@ function LateFeesForm({ schoolId, settings }: { schoolId: string; settings: Late
               { value: 'PERCENT', label: t('charges.lateFees.typePercent') },
             ]}
           />
-        </Field>
+        </div>
         {/* Decision 414 item 6: no fixed amount until the School's currency is set. */}
         {type === 'FIXED' && !settings.currency ? <CurrencyFirstNotice /> : null}
         {type === 'FIXED' ? (
