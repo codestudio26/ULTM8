@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { AddressFields, Badge, Button, Card, Checkbox, CurrencyField, ErrorBanner, Field, Modal, ModalActions, PhoneField, PhotoUploadField, SelectField, Spinner, SuccessBanner, Switch, Table, TextArea, TextField, TimezoneField, hasLegacyAddressOnly, postalAddressFromRecord, preparePostalAddress, type PostalAddress, type PostalAddressErrors } from '@ultm8/ui';
+import { AddressFields, Badge, Button, Card, Checkbox, CurrencyField, ErrorBanner, Field, Modal, ModalActions, PhoneField, PhotoUploadField, Spinner, SuccessBanner, Switch, Table, TextArea, TextField, TimezoneField, hasLegacyAddressOnly, postalAddressFromRecord, preparePostalAddress, type PostalAddress, type PostalAddressErrors } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { formatMoney } from '../lib/money';
@@ -42,8 +42,10 @@ import { IncomeCategoriesCard } from '../charges/IncomeCategoriesCard';
 import { ScheduleSharingCard } from './ScheduleSharingCard';
 import { useT } from '../i18n/I18nProvider';
 import { NewLookPageHeader } from '../layout/NewLookPage';
+import { NewLookSelect } from '../layout/NewLookSelect';
 import '../students/studentsList.css';
 import '../organisation/organisationLook.css';
+import '../organisation/organisationForms.css';
 import { formatLocale, languageName } from '../i18n/format';
 import { Trans } from '../i18n/Trans';
 import { CancellationSettingsFields, cancellationSettingsForm, cancellationSettingsPayload, isCancellationSettingsValid } from '../cancellations/CancellationSettingsFields';
@@ -343,14 +345,15 @@ function SchoolDetailsCard({ schoolId, school }: { schoolId: string; school: Sch
         <Field label={t('schools.form.description')} htmlFor="edit-description">
           <TextField maxLength={500} value={form.description} onChange={(e) => set('description', e.target.value)} />
         </Field>
-        <Field label={t('schools.form.defaultLanguage')} htmlFor="edit-language">
-          <SelectField
+        <div className="u8n-dd-field">
+          <NewLookSelect
             id="edit-language"
+            label={t('schools.form.defaultLanguage')}
             value={form.defaultLanguage}
-            onChange={(e) => set('defaultLanguage', e.target.value)}
+            onChange={(v) => set('defaultLanguage', v)}
             options={[{ value: '', label: t('schools.form.notSet') }, ...(languages ?? []).map((l) => ({ value: l.code, label: languageName(l.code, l.name) }))]}
           />
-        </Field>
+        </div>
         <Field label={t('schools.form.defaultCurrency')} htmlFor="edit-currency">
           <CurrencyField
             id="edit-currency"
@@ -387,17 +390,19 @@ function SchoolDetailsCard({ schoolId, school }: { schoolId: string; school: Sch
           />
         </Field>
         {/* Decision 380: how long the codes ULTM8 makes here are (staff codes for the front-desk tablet). */}
-        <Field label={t('schools.form.checkInCodeDigits')} htmlFor="edit-checkin-code-digits" hint={t('schools.form.checkInCodeDigitsHint')}>
-          <SelectField
+        <div className="u8n-dd-field">
+          <NewLookSelect
             id="edit-checkin-code-digits"
+            label={t('schools.form.checkInCodeDigits')}
             value={String(form.checkInCodeDigits)}
-            onChange={(e) => set('checkInCodeDigits', e.target.value === '6' ? 6 : 4)}
+            onChange={(v) => set('checkInCodeDigits', v === '6' ? 6 : 4)}
             options={[
               { value: '4', label: t('schools.form.checkInCodeDigits4') },
               { value: '6', label: t('schools.form.checkInCodeDigits6') },
             ]}
           />
-        </Field>
+          <span className="ultm8-field__hint u8n-dd-field__hint">{t('schools.form.checkInCodeDigitsHint')}</span>
+        </div>
         {/* Decision 391: how long a Visitor's free visit pass lasts. No default. */}
         <Field label={t('schools.form.visitorPeriod')} htmlFor="edit-visitor-period" hint={t('schools.form.visitorPeriodHint')}>
           <TextField
@@ -423,28 +428,30 @@ function SchoolDetailsCard({ schoolId, school }: { schoolId: string; school: Sch
           />
         </Field>
         {/* Decision 319 §4 (Decision 353, Q8): how the Timetable opens. */}
-        <Field label={t('schools.form.weekStart')} htmlFor="edit-week-start">
-          <SelectField
+        <div className="u8n-dd-field">
+          <NewLookSelect
             id="edit-week-start"
+            label={t('schools.form.weekStart')}
             value={form.weekStartsOn}
-            onChange={(e) => set('weekStartsOn', e.target.value as DetailsForm['weekStartsOn'])}
+            onChange={(v) => set('weekStartsOn', v as DetailsForm['weekStartsOn'])}
             options={[
               { value: 'MONDAY', label: t('schools.form.weekStartMonday') },
               { value: 'SUNDAY', label: t('schools.form.weekStartSunday') },
             ]}
           />
-        </Field>
-        <Field label={t('schools.form.timetableLayout')} htmlFor="edit-timetable-layout">
-          <SelectField
+        </div>
+        <div className="u8n-dd-field">
+          <NewLookSelect
             id="edit-timetable-layout"
+            label={t('schools.form.timetableLayout')}
             value={form.timetableDefaultLayout}
-            onChange={(e) => set('timetableDefaultLayout', e.target.value as DetailsForm['timetableDefaultLayout'])}
+            onChange={(v) => set('timetableDefaultLayout', v as DetailsForm['timetableDefaultLayout'])}
             options={[
               { value: 'LIST', label: t('schools.form.layoutList') },
               { value: 'GRID', label: t('schools.form.layoutGrid') },
             ]}
           />
-        </Field>
+        </div>
 
         <h2 style={{ fontSize: 18, margin: '24px 0 12px' }}>{t('schools.profile.groupStaff')}</h2>
         <Checkbox
@@ -709,21 +716,20 @@ function CancellationSettingsCard({ schoolId, school }: { schoolId: string; scho
         {error ? <ErrorBanner message={error} /> : null}
         {saved ? <SuccessBanner message={t('schools.profile.saved')} /> : null}
         <CancellationSettingsFields form={form} onChange={setForm} currency={school.defaultCurrency} schoolCurrencyMissing={!school.defaultCurrency} />
-        <Field
-          label={t('schools.form.lateCancel')}
-          htmlFor="edit-late-cancel"
-          hint={`${t('schools.form.lateCancelHint')} ${t('schools.cancellations.lateCancelAllBranches')}`}
-        >
-          <SelectField
+        <div className="u8n-dd-field">
+          <NewLookSelect
+            id="edit-late-cancel"
+            label={t('schools.form.lateCancel')}
             value={lateCancelRefundPolicy}
-            onChange={(e) => setLateCancelRefundPolicy(e.target.value as typeof lateCancelRefundPolicy)}
+            onChange={(v) => setLateCancelRefundPolicy(v as typeof lateCancelRefundPolicy)}
             options={[
               { value: 'NO_REFUND_ONCE_STARTED', label: t('schools.form.lateCancelNoRefund') },
               { value: 'REFUND_UNTIL_END', label: t('schools.form.lateCancelRefundUntilEnd') },
               { value: 'ALWAYS_REFUND', label: t('schools.form.lateCancelAlwaysRefund') },
             ]}
           />
-        </Field>
+          <span className="ultm8-field__hint u8n-dd-field__hint">{`${t('schools.form.lateCancelHint')} ${t('schools.cancellations.lateCancelAllBranches')}`}</span>
+        </div>
         <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: '8px 0 0' }}>{t('schools.cancellations.branchHint')}</p>
         <div style={{ marginTop: 16 }}>
           <Button type="submit" loading={update.isPending}>

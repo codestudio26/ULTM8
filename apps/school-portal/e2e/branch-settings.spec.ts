@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { addBranch, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
+import { pickOption } from './team-helpers';
 
 /**
  * Decision 231 — Branch field-level settings screen: a dedicated page
@@ -50,9 +51,10 @@ test('fills in and saves the Decision 231 fields, then they survive a reload', a
   await page.getByLabel('Type').fill('Dojo');
   await page.getByLabel('Activities').fill('BJJ, Judo');
   await page.getByLabel('Facilities').fill('Mats, Showers');
-  // Default language is now a real <select> (backed by GET /settings/languages),
-  // replacing the old free-text input this test used to .fill() directly.
-  await page.getByLabel('Default language').selectOption('en-GB');
+  // Default language is the new look's own drop-down (backed by GET
+  // /settings/languages), replacing the old free-text input this test used to
+  // .fill() directly.
+  await pickOption(page, 'Default language', 'English (UK)');
   await page.getByLabel('Description').fill('Our flagship location.');
   await page.getByRole('button', { name: 'Save', exact: true }).click();
 
@@ -72,7 +74,7 @@ test('fills in and saves the Decision 231 fields, then they survive a reload', a
   await expect(page.getByLabel('Type')).toHaveValue('Dojo');
   await expect(page.getByLabel('Activities')).toHaveValue('BJJ, Judo');
   await expect(page.getByLabel('Facilities')).toHaveValue('Mats, Showers');
-  await expect(page.getByLabel('Default language')).toHaveValue('en-GB');
+  await expect(page.getByRole('combobox', { name: 'Default language' }).locator('[data-shown="true"]')).toHaveText('English (UK)');
   await expect(page.getByLabel('Description')).toHaveValue('Our flagship location.');
 });
 

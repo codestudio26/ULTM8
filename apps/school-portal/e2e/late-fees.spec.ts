@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { expect, test } from '@playwright/test';
 import { cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
+import { pickOption } from './team-helpers';
 
 /**
  * Late fees (v1.3 backlog §3.7; Decision 413), the owner's side: the School
@@ -40,7 +41,7 @@ test('off by default; the owner switches late fees on only after confirming they
   await expect(card.getByLabel('Grace days')).toHaveValue('3');
 
   await card.getByLabel('Add late fees').check();
-  await card.getByLabel('Late fee', { exact: true }).selectOption('PERCENT');
+  await pickOption(card, 'Late fee', '% of what is still owed');
   await card.getByLabel('Percentage (%)').fill('2.555');
   await expect(card.getByRole('button', { name: 'Save changes' })).toBeDisabled();
   await card.getByLabel('I confirm late fees are legal where my School operates').check();

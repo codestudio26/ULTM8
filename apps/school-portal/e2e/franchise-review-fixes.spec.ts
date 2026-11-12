@@ -1,6 +1,7 @@
 import { randomUUID, createHmac } from 'crypto';
 import { expect, test } from '@playwright/test';
 import { cleanup, db, signIn } from './fixtures';
+import { pickOption } from './team-helpers';
 
 /**
  * Decision 337 — the Franchises section review's portal fixes: fees typed in
@@ -124,7 +125,7 @@ test('F7 — a Franchise can\'t be saved without a fee for its fee model', async
   await dialog.getByRole('button', { name: 'Save' }).click();
   await expect(dialog.getByText('Enter a flat fee for the Flat fee model.')).toBeVisible();
 
-  await dialog.getByLabel('Fee model').selectOption('PER_HEADCOUNT');
+  await pickOption(dialog, 'Fee model', 'Per-headcount');
   await dialog.getByRole('button', { name: 'Save' }).click();
   await expect(dialog.getByText('Enter a per-headcount rate for the Per-headcount fee model.')).toBeVisible();
   expect(await db.franchise.count({ where: { name } })).toBe(0);

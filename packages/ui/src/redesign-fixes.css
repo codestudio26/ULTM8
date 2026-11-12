@@ -335,10 +335,13 @@
   white-space: normal;
 }
 @media (max-width: 767px) {
-  /* The dimmed layer scrolls, so the button band can stay in view. */
+  /* The dimmed layer scrolls, so the button band can stay in view. The
+   * dialog fills the screen and grows with its content (stretching it only
+   * made it as tall as the screen, so a long form ran past its white sheet,
+   * over the page behind, once scrolled). */
   [data-look='redesign'] .ultm8-modal-overlay {
     padding: 0;
-    align-items: stretch;
+    align-items: flex-start;
     overflow-y: auto;
   }
   /* At least the full screen, and as tall as its content: a stretched flex

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Card, ErrorBanner, Field, SelectField, TextArea, TextField } from '@ultm8/ui';
+import { Button, Card, ErrorBanner, Field, TextArea, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useT } from '../i18n/I18nProvider';
 import {
@@ -18,6 +18,7 @@ import {
   type CustomMemberFieldType,
   type CustomMemberStatus,
 } from '../students/customMemberFieldsQueries';
+import { NewLookSelect } from '../layout/NewLookSelect';
 
 const errorText = (err: unknown, fallback: string) => (err instanceof ApiError ? err.message : fallback);
 const clean = (s: string) => s.trim().replace(/\s+/g, ' ');
@@ -102,14 +103,15 @@ function FieldsSection({ schoolId, items }: { schoolId: string; items: CustomMem
           </Field>
         </div>
         <div style={{ flex: '0 1 160px' }}>
-          <Field label={t('schools.customFields.typeLabel')} htmlFor="custom-field-new-type">
-            <SelectField
+          <div className="u8n-dd-field">
+            <NewLookSelect
               id="custom-field-new-type"
+              label={t('schools.customFields.typeLabel')}
               value={type}
-              onChange={(e) => setType(e.target.value as CustomMemberFieldType)}
+              onChange={(v) => setType(v as CustomMemberFieldType)}
               options={CUSTOM_FIELD_TYPES.map((value) => ({ value, label: t(`schools.customFields.types.${value}`) }))}
             />
-          </Field>
+          </div>
         </div>
         {type === 'DROPDOWN' ? (
           <div style={{ flex: '1 1 100%' }}>
