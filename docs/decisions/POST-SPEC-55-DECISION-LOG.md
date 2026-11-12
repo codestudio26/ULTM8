@@ -8423,3 +8423,26 @@ This is a layout change only. Business rules, the data model, API contracts, ten
 ### Recorded by
 
 User (Code), 11 Nov 2026: "ok to all, carry on", answering the questions on #558, #559, #561 and #563 with the recommendations given.
+
+## Decision 461 — Dashboard "Ready to grade" and "Check-ins today"; Platform Admin shell
+
+**Date:** 12 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 178, 181, 317, 367, 453, 454 · **Raised in:** #584 (Dashboard tiles), #588 (Branch Staff card), #585 (Platform Admin shell)
+
+### Decision
+
+The owner approved building the two Dashboard items and the Platform Admin new look ("Go ahead"), then answered:
+
+**Dashboard "Ready to grade" (#584)**
+1. It lists the students at 66% and above: the Grading Board's "Ready to Grade" column. Owner: *"From 66% and above should be listed on ready to grade"*.
+2. Students the board marks inactive (not currently attending) are left out.
+3. It always shows the whole School, whichever Branch is picked on the Dashboard.
+
+**Branch Staff (#588)**
+4. Branch Staff who may see attendance statistics get a "Check-ins today" card for their own Branches on their coach dashboard.
+
+**Platform Admin shell (#585)**
+5. No white top bar (it would be empty), and `/` keeps opening Admin Users. Owner: *"Keep as they are"*.
+
+### Recorded by
+
+User (Code), 12 Nov 2026: "Go ahead" (the two Dashboard items and the Platform Admin new look); answers to the four Dashboard questions on #584; "Keep as they are" on #585.
