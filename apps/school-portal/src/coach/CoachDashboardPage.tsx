@@ -21,7 +21,9 @@ import { useI18n, useT, type TranslationKey } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
 import { NewLookPage, NewLookPageHeader } from '../layout/NewLookPage';
 import { DashCard } from '../dashboard/DashCard';
-import { ClassAvatar } from '../dashboard/DashboardPage';
+import { ClassAvatar, StatCard } from '../dashboard/DashboardPage';
+import { useCheckInsToday } from '../dashboard/dashboardQueries';
+import { useAttendanceAccess } from '../students/AttendancePage';
 import { Avatar } from '../lib/Avatar';
 import './coachDashboard.css';
 
@@ -128,8 +130,14 @@ function CoachBody({ schoolId, me, teaches, isBranchStaff, isStudentHere }: { sc
   const school = useSchool(schoolId);
   const nextLabel =
     next && school.data && isTodayInZone(next.startDate, school.data.timezone || 'UTC') ? t('dashboard.birthdays.today') : t('coach.dashboard.nextClass');
+  // Decision 461 item 4: Branch Staff with "See attendance statistics" (the
+  // people GET …/attendance/today answers) see their Branches' check-ins
+  // today. Asked only of Branch Staff, so nobody else's page calls it.
+  const checkInsAccess = useAttendanceAccess(isBranchStaff ? schoolId : null);
+  const showCheckIns = isBranchStaff && checkInsAccess.stats;
   const body = (
     <div className="u8n-dash u8n-coach">
+      {showCheckIns ? <CheckInsToday schoolId={schoolId} /> : null}
       <div className="u8n-dash__lists">
         <GradingSection schoolId={schoolId} graded={graded} />
         {teaches ? <ClassesSection schoolId={schoolId} me={me} /> : null}
@@ -146,6 +154,33 @@ function CoachBody({ schoolId, me, teaches, isBranchStaff, isStudentHere }: { sc
     <NewLookPage inspectorLabel={next ? nextLabel : t('coach.dashboard.readyToGrade')} inspector={<CoachPanel schoolId={schoolId} next={next} nextLabel={nextLabel} styles={readyInPanel ? graded.styles : null} />}>
       {body}
     </NewLookPage>
+  );
+}
+
+/**
+ * "Check-ins today" for Branch Staff (Decision 461 item 4): the owner
+ * Dashboard's own number card and query (Decision 454 item 8), with no
+ * branch picked, so the API counts every Branch the caller covers. The coach
+ * design has no number slot, so it sits at the top of the main column.
+ */
+function CheckInsToday({ schoolId }: { schoolId: string }) {
+  const t = useT();
+  const checkIns = useCheckInsToday(schoolId);
+  return (
+    <div className="u8n-dash__stats u8n-coach__stats">
+      <StatCard
+        testId="stat-checkins"
+        label={t('dashboard.statCheckInsToday')}
+        value={checkIns.data ? checkIns.data.checkIns : checkIns.error ? '–' : 0}
+        notes={[
+          checkIns.error
+            ? errorText(checkIns.error, t('dashboard.checkInsLoadFailed'))
+            : checkIns.data && checkIns.data.classes > 0
+              ? t('dashboard.checkInsAcrossClasses', { count: checkIns.data.classes })
+              : null,
+        ]}
+      />
+    </div>
   );
 }
 
