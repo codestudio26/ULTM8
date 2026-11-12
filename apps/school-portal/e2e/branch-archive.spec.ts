@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { expect, test } from '@playwright/test';
 import { cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
+import { pickOption } from './team-helpers';
 
 /**
  * Decision 330 — "Close branch" shows what is still in use and moves it where
@@ -142,14 +143,16 @@ test('Branch pickers leave out closed Branches, except the one a class already u
   await page.goto('/classes');
 
   await page.getByRole('button', { name: 'Add class' }).click();
-  const addOptions = page.getByRole('dialog').getByLabel('Branch').locator('option');
+  await page.getByRole('dialog').getByRole('combobox', { name: 'Branch', exact: true }).click();
+  const addOptions = page.getByRole('dialog').getByRole('listbox', { name: 'Branch', exact: true }).getByRole('option');
   await expect(addOptions).toContainText(['Whole School', 'Open Branch']);
   await expect(addOptions.filter({ hasText: 'Old Branch' })).toHaveCount(0);
   await page.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click();
 
   await page.getByRole('button', { name: 'Actions for Class at Old Branch' }).click();
   await page.getByRole('menu', { name: 'Actions for Class at Old Branch' }).getByRole('menuitem', { name: 'Edit' }).click();
-  const editBranch = page.getByRole('dialog', { name: 'Edit class' }).getByLabel('Branch');
-  await expect(editBranch).toHaveValue(closed.id);
-  await expect(editBranch.locator('option', { hasText: 'Old Branch (Closed)' })).toHaveCount(1);
+  const editBranch = page.getByRole('dialog', { name: 'Edit class' }).getByRole('combobox', { name: 'Branch', exact: true });
+  await expect(editBranch.locator('[data-shown="true"]')).toHaveText('Old Branch (Closed)');
+  await editBranch.click();
+  await expect(page.getByRole('dialog', { name: 'Edit class' }).getByRole('option', { name: 'Old Branch (Closed)' })).toHaveCount(1);
 });

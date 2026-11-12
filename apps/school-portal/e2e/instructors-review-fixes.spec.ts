@@ -84,10 +84,12 @@ test('a new Class offers only active instructors, not archived or revoked ones',
   await signIn(page, s.ownerToken);
   await page.goto('/classes');
   await page.getByRole('button', { name: /Add class|New class|Create class/ }).first().click();
-  const picker = page.getByRole('dialog').getByLabel('Instructor');
+  // The new look's own drop-down: open it to read its options.
+  await page.getByRole('dialog').getByRole('combobox', { name: 'Instructor', exact: true }).click();
+  const picker = page.getByRole('dialog').getByRole('listbox', { name: 'Instructor', exact: true });
   // The instructor list loads after the page; wait for it before reading the options.
-  await expect(picker.locator('option', { hasText: 'Amy Active' })).toHaveCount(1);
-  const options = await picker.locator('option').allInnerTexts();
+  await expect(picker.getByRole('option', { name: 'Amy Active' })).toHaveCount(1);
+  const options = await picker.getByRole('option').allInnerTexts();
   expect(options).toContain('Amy Active');
   expect(options.some((o) => o.includes('Arlo'))).toBe(false);
   expect(options.some((o) => o.includes('Rex'))).toBe(false);

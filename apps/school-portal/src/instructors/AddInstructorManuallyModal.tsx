@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Button, ErrorBanner, Field, Modal, SelectField, TextField } from '@ultm8/ui';
+import { Button, ErrorBanner, Field, Modal, ModalActions, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { branchSelectOptions, type BranchResponse } from '../branches/branchQueries';
 import { useT } from '../i18n/I18nProvider';
+import { NewLookSelect } from '../layout/NewLookSelect';
 
 /**
  * Decision 1/230/237 — a real Instructor record created immediately from
@@ -32,6 +33,12 @@ export function AddInstructorManuallyModal({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    // The branch drop-down is the new look's own, with no browser `required`
+    // check, so the same guardrail is made here.
+    if (requiresBranch && !form.branchId) {
+      setError(t('instructors.inviteModal.selectBranch'));
+      return;
+    }
     try {
       await onSubmit({
         firstName: form.firstName,
@@ -58,18 +65,21 @@ export function AddInstructorManuallyModal({
           <TextField required type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} />
         </Field>
         {requiresBranch ? (
-          <Field label={t('instructors.manualModal.branch')} htmlFor="add-manually-branch">
-            <SelectField
-              required
+          <div className="u8n-dd-field">
+            <NewLookSelect
+              id="add-manually-branch"
+              label={t('instructors.manualModal.branch')}
               value={form.branchId}
-              onChange={(e) => setForm((f) => ({ ...f, branchId: e.target.value }))}
+              onChange={(branchId) => setForm((f) => ({ ...f, branchId }))}
               options={[{ value: '', label: t('instructors.manualModal.branchPlaceholder') }, ...branchSelectOptions(branches, t('branches.archivedBadge'))]}
             />
-          </Field>
+          </div>
         ) : null}
-        <Button type="submit" loading={submitting}>
-          {t('instructors.manualModal.submit')}
-        </Button>
+        <ModalActions>
+          <Button type="submit" loading={submitting}>
+            {t('instructors.manualModal.submit')}
+          </Button>
+        </ModalActions>
       </form>
     </Modal>
   );

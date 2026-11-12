@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Badge, Button, Card, EmptyState, ErrorBanner, Field, Modal, PageHeader, SelectField, Spinner, SuccessBanner, Table, TextField } from '@ultm8/ui';
+import { Button, EmptyState, ErrorBanner, Field, Modal, ModalActions, Spinner, SuccessBanner, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useClass } from './classQueries';
 import { useBookClass, useCancelBooking, useClassBookings, type BookingResponse } from '../bookings/bookingQueries';
@@ -16,6 +16,20 @@ import { useClassGuestWaivers, type BookingGuests } from '../waivers/guestWaiver
 import { useClassZone } from './useClassZone';
 import { endsNextDayInZone, formatInZone, formatTimeInZone } from '../lib/datetime';
 import { whoCanBookLabel } from './WhoCanBookFields';
+import { NewLookPage, NewLookPageHeader } from '../layout/NewLookPage';
+import { NewLookSelect } from '../layout/NewLookSelect';
+import { RosterTable } from './RosterTable';
+import '../schedule/schedule.css';
+import './classForms.css';
+import './classDetail.css';
+
+/** A status tag in the new look (schedule.css `.u8s-tag`): grey, mint
+ * (good), soft blue (info), amber (needs attention) or red. */
+type TagTone = 'plain' | 'mint' | 'info' | 'warn' | 'danger';
+function Tag({ tone = 'plain', children }: { tone?: TagTone; children: React.ReactNode }) {
+  const mod = { plain: '', mint: ' u8s-tag--mint', info: ' u8cd-tag--info', warn: ' u8cd-tag--warn', danger: ' u8s-tag--danger' }[tone];
+  return <span className={'u8s-tag' + mod}>{children}</span>;
+}
 
 /** Decision 291 — the School cancels this whole class: every booking is
  * resolved by the School's "When the school cancels a whole class" setting,
@@ -31,15 +45,15 @@ function GuestsCell({ count, guests }: { count: number; guests: BookingGuests | 
   if (count === 0) return <>—</>;
   if (!guests || !guests.waiverRequired) return <>{count}</>;
   return (
-    <div style={{ display: 'grid', gap: 4 }}>
+    <div className="u8cd-guests">
       {guests.guests.map((g) => (
-        <div key={g.attendeeId} style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div key={g.attendeeId} className="u8cd-guests__row">
           {g.waiverStatus === 'SIGNED' ? (
-            <Badge variant="success">{t('classes.detail.guestSigned', { name: g.guestFullName ?? '' })}</Badge>
+            <Tag tone="mint">{t('classes.detail.guestSigned', { name: g.guestFullName ?? '' })}</Tag>
           ) : g.waiverStatus === 'UNSIGNED' ? (
-            <Badge variant="warning">{t('classes.detail.guestUnsigned')}</Badge>
+            <Tag tone="warn">{t('classes.detail.guestUnsigned')}</Tag>
           ) : (
-            <Badge>{t('classes.detail.guest')}</Badge>
+            <Tag>{t('classes.detail.guest')}</Tag>
           )}
           {g.link && g.waiverStatus === 'UNSIGNED' ? (
             <Button
@@ -91,14 +105,14 @@ function CancelClassButton({ classId }: { classId: string }) {
           <Field label={t('classes.detail.cancelReasonLabel')} htmlFor="cancel-class-reason" hint={t('classes.detail.cancelReasonHint')}>
             <TextField id="cancel-class-reason" maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)} />
           </Field>
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
+          <ModalActions>
             <Button variant="secondary" onClick={() => setOpen(false)}>
               {t('classes.detail.cancelClassBack')}
             </Button>
             <Button variant="danger" loading={cancelClass.isPending} onClick={confirm}>
               {t('classes.detail.cancelClassConfirm')}
             </Button>
-          </div>
+          </ModalActions>
         </Modal>
       ) : null}
     </>
@@ -166,12 +180,13 @@ function AddStudentDialog({
       {isLoading ? (
         <Spinner />
       ) : (
-        <Field label={t('classes.detail.addStudentLabel')} htmlFor="add-student">
-          <SelectField
+        <div className="u8n-dd-field">
+          <NewLookSelect
             id="add-student"
+            label={t('classes.detail.addStudentLabel')}
             value={studentId}
-            onChange={(e) => {
-              setStudentId(e.target.value);
+            onChange={(v) => {
+              setStudentId(v);
               setFull(false);
               setError(null);
             }}
@@ -180,9 +195,9 @@ function AddStudentDialog({
               ...students.map((s) => ({ value: s.id, label: `${s.firstName} ${s.surname}`.trim() })),
             ]}
           />
-        </Field>
+        </div>
       )}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
+      <ModalActions>
         <Button variant="secondary" onClick={onClose}>
           {t('common.cancel')}
         </Button>
@@ -195,7 +210,7 @@ function AddStudentDialog({
             {t('classes.detail.addStudentConfirm')}
           </Button>
         )}
-      </div>
+      </ModalActions>
     </Modal>
   );
 }
@@ -231,33 +246,33 @@ function CancelBookingDialog({
     <Modal title={t('classes.detail.cancelBookingTitle', { name })} onClose={onClose}>
       <p style={{ marginTop: 0 }}>{t('classes.detail.cancelBookingBody')}</p>
       {error ? <ErrorBanner message={error} /> : null}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
+      <ModalActions>
         <Button variant="secondary" onClick={onClose}>
           {t('classes.detail.cancelBookingBack')}
         </Button>
         <Button variant="danger" loading={cancelBooking.isPending} onClick={confirm}>
           {t('classes.detail.cancelBookingConfirm')}
         </Button>
-      </div>
+      </ModalActions>
     </Modal>
   );
 }
 
 function bookingStatusBadge(status: string, t: TranslateFn) {
-  if (status === 'UPCOMING') return <Badge variant="success">{t('classes.detail.bookingUpcoming')}</Badge>;
-  if (status === 'CANCELLED') return <Badge>{t('classes.detail.bookingCancelled')}</Badge>;
-  if (status === 'COMPLETED') return <Badge variant="accent">{t('classes.detail.bookingCompleted')}</Badge>;
-  if (status === 'NO_SHOW') return <Badge variant="accent">{t('classes.detail.bookingNoShow')}</Badge>;
-  return <Badge variant="accent">{titleCase(status)}</Badge>;
+  if (status === 'UPCOMING') return <Tag tone="mint">{t('classes.detail.bookingUpcoming')}</Tag>;
+  if (status === 'CANCELLED') return <Tag>{t('classes.detail.bookingCancelled')}</Tag>;
+  if (status === 'COMPLETED') return <Tag tone="info">{t('classes.detail.bookingCompleted')}</Tag>;
+  if (status === 'NO_SHOW') return <Tag tone="info">{t('classes.detail.bookingNoShow')}</Tag>;
+  return <Tag tone="info">{titleCase(status)}</Tag>;
 }
 
 function waitlistStatusBadge(status: string, t: TranslateFn) {
-  if (status === 'WAITING') return <Badge variant="accent">{t('classes.detail.waitlistWaiting')}</Badge>;
-  if (status === 'NOTIFIED') return <Badge variant="success">{t('classes.detail.waitlistNotified')}</Badge>;
-  if (status === 'CLAIMED') return <Badge variant="success">{t('classes.detail.waitlistClaimed')}</Badge>;
-  if (status === 'EXPIRED') return <Badge variant="danger">{t('classes.detail.waitlistExpired')}</Badge>;
-  if (status === 'CANCELLED') return <Badge variant="danger">{t('classes.detail.waitlistCancelled')}</Badge>;
-  return <Badge>{titleCase(status)}</Badge>;
+  if (status === 'WAITING') return <Tag tone="info">{t('classes.detail.waitlistWaiting')}</Tag>;
+  if (status === 'NOTIFIED') return <Tag tone="mint">{t('classes.detail.waitlistNotified')}</Tag>;
+  if (status === 'CLAIMED') return <Tag tone="mint">{t('classes.detail.waitlistClaimed')}</Tag>;
+  if (status === 'EXPIRED') return <Tag tone="danger">{t('classes.detail.waitlistExpired')}</Tag>;
+  if (status === 'CANCELLED') return <Tag tone="danger">{t('classes.detail.waitlistCancelled')}</Tag>;
+  return <Tag>{titleCase(status)}</Tag>;
 }
 
 /** Read-only Booking/Waitlist admin view for one Class — reached via a "View
@@ -327,7 +342,8 @@ export function ClassDetailPage() {
 
   return (
     <>
-      <PageHeader
+      <NewLookPageHeader
+        parent={{ to: '/classes', label: t('layout.nav.classes') }}
         title={cls?.title ?? t('classes.detail.fallbackTitle')}
         subtitle={
           cls
@@ -346,103 +362,111 @@ export function ClassDetailPage() {
         }
         actions={cls && mayCancelClass && !cls.cancelledAt && new Date(cls.endDate) > new Date() ? <CancelClassButton classId={cls.id} /> : undefined}
       />
-      {done ? <SuccessBanner message={done} /> : null}
-      {cls?.cancelledAt ? (
-        <div style={{ marginBottom: 16 }}>
-          <Badge variant="danger">{t('classes.detail.cancelledBadge')}</Badge>
-          {cls.cancellationReason ? <span style={{ marginLeft: 8 }}>{t('classes.detail.cancelledReason', { reason: cls.cancellationReason })}</span> : null}
-        </div>
-      ) : null}
+      <NewLookPage>
+        {done ? <SuccessBanner message={done} /> : null}
+        {cls?.cancelledAt ? (
+          <p className="u8cd-cancelled">
+            <Tag tone="danger">{t('classes.detail.cancelledBadge')}</Tag>
+            {cls.cancellationReason ? <span>{t('classes.detail.cancelledReason', { reason: cls.cancellationReason })}</span> : null}
+          </p>
+        ) : null}
 
-      {!mayReadRoster ? (
-        <Card>
-          <p style={{ margin: 0 }}>{t('classes.detail.rosterHidden')}</p>
-        </Card>
-      ) : null}
+        {!mayReadRoster ? (
+          <section className="u8s-card u8cd-card">
+            <p className="u8cd-card__note">{t('classes.detail.rosterHidden')}</p>
+          </section>
+        ) : null}
 
-      {mayReadRoster ? (
-      <div style={{ marginBottom: 24 }}>
-        <Card>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
-            <h2 className="ultm8-page-header__title" style={{ fontSize: 16, margin: 0 }}>
-              {t('classes.detail.bookingsHeading')}
-            </h2>
-            {open ? (
-              <Button
-                onClick={() => {
-                  setDone(null);
-                  setAdding(true);
-                }}
-              >
-                {t('classes.detail.addStudent')}
-              </Button>
-            ) : null}
-          </div>
-          {unsignedGuests > 0 ? (
-            <div className="ultm8-banner ultm8-banner--warning" role="status">
-              {t('classes.detail.guestsUnsigned', { count: unsignedGuests })}
+        {mayReadRoster ? (
+          <section className="u8s-card u8cd-card" aria-labelledby="class-bookings-heading">
+            <div className="u8cd-card__head">
+              <h2 id="class-bookings-heading" className="u8cd-card__title">
+                {t('classes.detail.bookingsHeading')}
+              </h2>
+              {open ? (
+                <Button
+                  onClick={() => {
+                    setDone(null);
+                    setAdding(true);
+                  }}
+                >
+                  {t('classes.detail.addStudent')}
+                </Button>
+              ) : null}
             </div>
-          ) : null}
-          {bookings.length === 0 ? (
-            <EmptyState title={t('classes.detail.bookingsEmptyTitle')} description={t('classes.detail.bookingsEmptyDescription')} />
-          ) : (
-            <Table<BookingResponse>
-              rows={bookings}
-              columns={[
-                { key: 'student', header: t('classes.detail.columnStudent'), render: (b) => fullName(b) },
-                { key: 'status', header: t('classes.detail.columnStatus'), render: (b) => bookingStatusBadge(b.status, t) },
-                { key: 'attendees', header: t('classes.detail.columnAttendees'), render: (b) => <GuestsCell count={b.attendees.length} guests={guestsByBooking.get(b.id)} /> },
-                { key: 'override', header: t('classes.detail.columnOverrideReason'), render: (b) => b.overrideReason ?? '—' },
-                { key: 'createdAt', header: t('classes.detail.columnBooked'), render: (b) => at(b.createdAt) },
-                ...(open
-                  ? [
-                      {
-                        key: 'actions',
-                        header: t('classes.detail.columnActions'),
-                        render: (b: BookingResponse) =>
-                          b.status === 'UPCOMING' ? (
-                            <Button
-                              variant="secondary"
-                              aria-label={t('classes.detail.cancelBookingFor', { name: fullName(b) })}
-                              onClick={() => {
-                                setDone(null);
-                                setCancelling(b);
-                              }}
-                            >
-                              {t('classes.detail.cancelBooking')}
-                            </Button>
-                          ) : null,
-                      },
-                    ]
-                  : []),
-              ]}
-            />
-          )}
-        </Card>
-      </div>
-      ) : null}
+            {unsignedGuests > 0 ? (
+              <div className="ultm8-banner ultm8-banner--warning u8cd-card__banner" role="status">
+                {t('classes.detail.guestsUnsigned', { count: unsignedGuests })}
+              </div>
+            ) : null}
+            {bookings.length === 0 ? (
+              <div className="u8cd-card__empty">
+                <EmptyState title={t('classes.detail.bookingsEmptyTitle')} description={t('classes.detail.bookingsEmptyDescription')} />
+              </div>
+            ) : (
+              <RosterTable<BookingResponse>
+                testId="class-bookings"
+                rows={bookings}
+                columns={[
+                  { key: 'student', header: t('classes.detail.columnStudent'), render: (b) => fullName(b) },
+                  { key: 'status', header: t('classes.detail.columnStatus'), render: (b) => bookingStatusBadge(b.status, t) },
+                  { key: 'attendees', header: t('classes.detail.columnAttendees'), render: (b) => <GuestsCell count={b.attendees.length} guests={guestsByBooking.get(b.id)} /> },
+                  { key: 'override', header: t('classes.detail.columnOverrideReason'), render: (b) => b.overrideReason ?? '—' },
+                  { key: 'createdAt', header: t('classes.detail.columnBooked'), render: (b) => at(b.createdAt) },
+                  ...(open
+                    ? [
+                        {
+                          key: 'actions',
+                          header: t('classes.detail.columnActions'),
+                          render: (b: BookingResponse) =>
+                            b.status === 'UPCOMING' ? (
+                              <Button
+                                variant="secondary"
+                                aria-label={t('classes.detail.cancelBookingFor', { name: fullName(b) })}
+                                onClick={() => {
+                                  setDone(null);
+                                  setCancelling(b);
+                                }}
+                              >
+                                {t('classes.detail.cancelBooking')}
+                              </Button>
+                            ) : null,
+                        },
+                      ]
+                    : []),
+                ]}
+              />
+            )}
+          </section>
+        ) : null}
 
-      {mayReadRoster ? (
-      <Card>
-        <h2 className="ultm8-page-header__title" style={{ fontSize: 16, marginBottom: 8 }}>
-          {t('classes.detail.waitlistHeading')}
-        </h2>
-        {waitlist.length === 0 ? (
-          <EmptyState title={t('classes.detail.waitlistEmptyTitle')} description={t('classes.detail.waitlistEmptyDescription')} />
-        ) : (
-          <Table<WaitlistEntryResponse>
-            rows={waitlist}
-            columns={[
-              { key: 'position', header: '#', render: (e) => e.position },
-              { key: 'student', header: t('classes.detail.columnStudent'), render: (e) => (e.studentFirstName || e.studentSurname ? `${e.studentFirstName} ${e.studentSurname}`.trim() : e.studentId.slice(0, 8)) },
-              { key: 'status', header: t('classes.detail.columnStatus'), render: (e) => waitlistStatusBadge(e.status, t) },
-              { key: 'joinedAt', header: t('classes.detail.columnJoined'), render: (e) => at(e.joinedAt) },
-              { key: 'claimBy', header: t('classes.detail.columnClaimBy'), render: (e) => (e.claimByDeadline ? at(e.claimByDeadline) : '—') },
-            ]}
-          />
-        )}
-      </Card>
-      ) : null}
+        {mayReadRoster ? (
+          <section className="u8s-card u8cd-card" aria-labelledby="class-waitlist-heading">
+            <div className="u8cd-card__head">
+              <h2 id="class-waitlist-heading" className="u8cd-card__title">
+                {t('classes.detail.waitlistHeading')}
+              </h2>
+            </div>
+            {waitlist.length === 0 ? (
+              <div className="u8cd-card__empty">
+                <EmptyState title={t('classes.detail.waitlistEmptyTitle')} description={t('classes.detail.waitlistEmptyDescription')} />
+              </div>
+            ) : (
+              <RosterTable<WaitlistEntryResponse>
+                testId="class-waitlist"
+                rows={waitlist}
+                columns={[
+                  { key: 'position', header: '#', render: (e) => e.position },
+                  { key: 'student', header: t('classes.detail.columnStudent'), render: (e) => (e.studentFirstName || e.studentSurname ? `${e.studentFirstName} ${e.studentSurname}`.trim() : e.studentId.slice(0, 8)) },
+                  { key: 'status', header: t('classes.detail.columnStatus'), render: (e) => waitlistStatusBadge(e.status, t) },
+                  { key: 'joinedAt', header: t('classes.detail.columnJoined'), render: (e) => at(e.joinedAt) },
+                  { key: 'claimBy', header: t('classes.detail.columnClaimBy'), render: (e) => (e.claimByDeadline ? at(e.claimByDeadline) : '—') },
+                ]}
+              />
+            )}
+          </section>
+        ) : null}
+      </NewLookPage>
 
       {adding && cls ? (
         <AddStudentDialog classId={cls.id} schoolId={cls.schoolId} bookedIds={booked} onClose={() => setAdding(false)} onDone={finish} />

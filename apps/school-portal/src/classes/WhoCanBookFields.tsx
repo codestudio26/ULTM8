@@ -1,5 +1,7 @@
 import React from 'react';
-import { Field, SelectField, TextField } from '@ultm8/ui';
+import { Field, TextField } from '@ultm8/ui';
+import { NewLookSelect } from '../layout/NewLookSelect';
+import './classForms.css';
 import { useT, type TranslateFn } from '../i18n/I18nProvider';
 
 export type Audience = 'EVERYONE' | 'WOMEN' | 'MEN';
@@ -48,20 +50,22 @@ export function whoCanBookLabel(c: { audience?: Audience | null; minAge?: number
 export function WhoCanBookFields({ idPrefix, value, onChange }: { idPrefix: string; value: WhoCanBookForm; onChange: (next: WhoCanBookForm) => void }) {
   const t = useT();
   return (
-    <fieldset style={{ border: 'none', padding: 0, margin: '12px 0 0' }}>
-      <Field label={t('classes.whoCanBook.title')} htmlFor={`${idPrefix}-audience`} hint={t('classes.whoCanBook.hint')}>
-        <SelectField
+    <fieldset className="u8cf-who">
+      <div className="u8n-dd-field">
+        <NewLookSelect
           id={`${idPrefix}-audience`}
+          label={t('classes.whoCanBook.title')}
           value={value.audience}
-          onChange={(e) => onChange({ ...value, audience: e.target.value as Audience })}
+          onChange={(v) => onChange({ ...value, audience: v as Audience })}
           options={[
             { value: 'EVERYONE', label: t('classes.whoCanBook.everyone') },
             { value: 'WOMEN', label: t('classes.whoCanBook.women') },
             { value: 'MEN', label: t('classes.whoCanBook.men') },
           ]}
         />
-      </Field>
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+        <span className="ultm8-field__hint u8n-dd-field__hint">{t('classes.whoCanBook.hint')}</span>
+      </div>
+      <div className="u8cf-who__ages">
         <Field label={t('classes.whoCanBook.minAge')} htmlFor={`${idPrefix}-minAge`}>
           <TextField id={`${idPrefix}-minAge`} type="number" min={0} max={120} value={value.minAge} onChange={(e) => onChange({ ...value, minAge: e.target.value })} />
         </Field>

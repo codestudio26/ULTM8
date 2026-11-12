@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Button, ErrorBanner, Field, Modal, SelectField, Spinner } from '@ultm8/ui';
+import { Button, ErrorBanner, Modal, ModalActions, Spinner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { instructorSelectOptions, useInstructors } from '../instructors/instructorQueries';
 import { useT } from '../i18n/I18nProvider';
+import { NewLookSelect } from '../layout/NewLookSelect';
 import { useRemoveFromSchool, useStaffTeaching, type RemoveFromSchoolInput } from './roleGrantQueries';
 
 type Choice = NonNullable<RemoveFromSchoolInput['classes']>;
@@ -67,7 +68,7 @@ export function RemoveFromSchoolModal({
   return (
     <Modal title={t('roleGrants.list.removeTitle', { name })} onClose={onClose}>
       {error ? <ErrorBanner message={error} /> : null}
-      <p style={{ marginTop: 0 }}>{description}</p>
+      <p>{description}</p>
       {teaching.isLoading ? <Spinner /> : null}
       {teaching.error ? <ErrorBanner message={t('roleGrants.list.teachingLoadFailed')} /> : null}
       {teaches ? (
@@ -94,25 +95,26 @@ export function RemoveFromSchoolModal({
             ))}
           </div>
           {choice === 'REASSIGN' ? (
-            <Field label={t('roleGrants.list.reassignTo')} htmlFor="remove-reassign-to">
-              <SelectField
+            <div className="u8n-dd-field">
+              <NewLookSelect
                 id="remove-reassign-to"
+                label={t('roleGrants.list.reassignTo')}
                 value={toUserId}
-                onChange={(e) => setToUserId(e.target.value)}
+                onChange={setToUserId}
                 options={[{ value: '', label: t('roleGrants.list.reassignPlaceholder') }, ...coachOptions]}
               />
-            </Field>
+            </div>
           ) : null}
         </>
       ) : null}
-      <div style={{ display: 'flex', gap: 8 }}>
-        <Button variant="danger" onClick={confirm} loading={remove.isPending} disabled={!ready}>
-          {t('roleGrants.list.removeFromSchool')}
-        </Button>
+      <ModalActions>
         <Button variant="secondary" onClick={onClose}>
           {t('common.cancel')}
         </Button>
-      </div>
+        <Button variant="danger" onClick={confirm} loading={remove.isPending} disabled={!ready}>
+          {t('roleGrants.list.removeFromSchool')}
+        </Button>
+      </ModalActions>
     </Modal>
   );
 }

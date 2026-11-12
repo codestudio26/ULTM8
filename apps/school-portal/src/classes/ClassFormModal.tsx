@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Checkbox, ErrorBanner, Field, Modal, PhotoUploadField, SelectField, TextArea, TextField } from '@ultm8/ui';
+import { Button, Checkbox, ErrorBanner, Field, Modal, ModalActions, PhotoUploadField, TextArea, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { branchSelectOptions, type BranchResponse } from '../branches/branchQueries';
 import { instructorSelectOptions, type InstructorResponse } from '../instructors/instructorQueries';
@@ -11,6 +11,8 @@ import type { DisciplineResponse } from '../disciplines/disciplineQueries';
 import { StylePicker, styleSelectionProblem, type StyleSelection } from '../disciplines/StylePicker';
 import { useT } from '../i18n/I18nProvider';
 import { CurrencyFirstNotice } from '../lib/CurrencyFirstNotice';
+import { NewLookSelect } from '../layout/NewLookSelect';
+import './classForms.css';
 import { WhoCanBookFields, whoCanBookForm, whoCanBookProblem, whoCanBookValues, type Audience } from './WhoCanBookFields';
 
 export interface ClassFormValues {
@@ -223,7 +225,7 @@ export function ClassFormModal({
 
   return (
     <Modal title={title} onClose={onClose}>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className="u8cf-form">
         {error ? <ErrorBanner message={error} /> : null}
         <Field label={t('classes.form.titleLabel')} htmlFor="class-title">
           <TextField required value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} />
@@ -239,26 +241,31 @@ export function ClassFormModal({
             />
           </Field>
         )}
-        <Field label={t('classes.form.branchLabel')} htmlFor="class-branch" hint={t('classes.form.branchHint')}>
-          <SelectField
+        <div className="u8n-dd-field">
+          <NewLookSelect
+            id="class-branch"
+            label={t('classes.form.branchLabel')}
             value={form.branchId}
-            onChange={(e) => setForm((f) => ({ ...f, branchId: e.target.value }))}
+            onChange={(v) => setForm((f) => ({ ...f, branchId: v }))}
             options={[
               ...(wholeSchool ? [{ value: '', label: t('classes.form.wholeSchool') }] : []),
               ...branchSelectOptions(branches, t('branches.archivedBadge'), initial?.branchId),
             ]}
           />
-        </Field>
-        <Field label={t('classes.form.instructorLabel')} htmlFor="class-instructor">
-          <SelectField
+          <span className="ultm8-field__hint u8n-dd-field__hint">{t('classes.form.branchHint')}</span>
+        </div>
+        <div className="u8n-dd-field">
+          <NewLookSelect
+            id="class-instructor"
+            label={t('classes.form.instructorLabel')}
             value={form.instructorId}
-            onChange={(e) => setForm((f) => ({ ...f, instructorId: e.target.value }))}
+            onChange={(v) => setForm((f) => ({ ...f, instructorId: v }))}
             options={[
               { value: '', label: t('classes.form.unassigned') },
               ...instructorSelectOptions(instructors, { archived: t('instructors.pickerArchived'), revoked: t('instructors.pickerRevoked') }, initial?.instructorId),
             ]}
           />
-        </Field>
+        </div>
         <Field label={t('classes.form.startDateLabel')} htmlFor="class-startDate" hint={t('classes.form.timezoneHint', { zone })}>
           <TextField
             required
@@ -330,6 +337,8 @@ export function ClassFormModal({
           />
         </Field>
         <Field label={t('classes.form.bannerLabel')} htmlFor="class-banner">
+          {/* The banner is the class's avatar, so its preview is a circle
+              (DESIGN.md → "Avatars"). */}
           <PhotoUploadField
             value={form.bannerUrl}
             onChange={(bannerUrl) => setForm((f) => ({ ...f, bannerUrl }))}
@@ -368,21 +377,21 @@ export function ClassFormModal({
           </>
         )}
         {closedDay ? (
-          <div role="alert" style={{ marginTop: 12 }}>
+          <div role="alert" className="u8cf-note">
             <p>{t('classes.form.closedDay')}</p>
             <Button type="button" loading={submitting} onClick={() => void handleSubmit(null, true)}>
               {t('classes.form.closedDayConfirm')}
             </Button>
           </div>
         ) : null}
-        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-          <Button type="submit" loading={submitting}>
-            {t('common.save')}
-          </Button>
+        <ModalActions>
           <Button type="button" variant="secondary" onClick={onClose}>
             {t('common.cancel')}
           </Button>
-        </div>
+          <Button type="submit" loading={submitting}>
+            {t('common.save')}
+          </Button>
+        </ModalActions>
       </form>
     </Modal>
   );
