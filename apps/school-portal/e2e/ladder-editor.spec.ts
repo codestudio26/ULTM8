@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
+import { pickOption } from './team-helpers';
 
 /**
  * Ladder editor (roadmap Phase 4, item 1; Decisions 152, 180), against the
@@ -54,7 +55,7 @@ test('editing a rung: name, "each type" numbers and time in rank only', async ({
 
   await dialog.getByRole('button', { name: 'Edit White 2' }).click();
   await dialog.getByLabel('Name of this grade').fill('White · 2 stripes');
-  await dialog.getByLabel('Which classes count').selectOption('EACH_TYPE');
+  await pickOption(dialog, 'Which classes count', 'A number for each ticked class type');
   await dialog.getByLabel('Fundamentals').first().check();
   await dialog.getByLabel('Sparring').first().check();
   await dialog.getByLabel('Fundamentals classes').fill('20');

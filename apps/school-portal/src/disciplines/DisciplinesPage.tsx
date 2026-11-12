@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Badge, Button, Card, Checkbox, EmptyState, ErrorBanner, PageHeader, Spinner, Table } from '@ultm8/ui';
+import { Button, Checkbox, EmptyState, ErrorBanner, Spinner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
 import {
@@ -15,8 +15,12 @@ import {
 import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import { DisciplineFormModal } from './DisciplineFormModal';
 import { DuplicateModal, TemplateModal } from './StyleTemplateModals';
-import { GradingTabs } from '../grading/GradingTabs';
+import { useGradingHeaderTabs } from '../grading/GradingTabs';
 import { useT } from '../i18n/I18nProvider';
+import { BillingCard, BillingPage } from '../billing/BillingLook';
+import { NewLookPageHeader } from '../layout/NewLookPage';
+import { FitTable } from '../students/StudentsSectionLook';
+import './stylesLook.css';
 
 /** Disciplines are reference data Instructors' specializations and Classes'/
  * TimetableSlots' activities are conceptually drawn from (domain-rules §4 —
@@ -28,7 +32,11 @@ import { useT } from '../i18n/I18nProvider';
  * read-only, so they can check what each belt needs. Archived styles are
  * hidden behind "Show archived". Decision 383: Branch Staff the owner ticked
  * "Can manage disciplines" for edit it too, and an archived style nobody uses
- * can be deleted permanently. */
+ * can be deleted permanently.
+ *
+ * New look (Decision 460): the new page header with the Grading tabs, a white
+ * card, and a table that becomes cards when it doesn't fit. Same columns,
+ * buttons and checks as before. */
 export function DisciplinesPage() {
   const navigate = useNavigate();
   const t = useT();
@@ -48,6 +56,7 @@ export function DisciplinesPage() {
   const [archiving, setArchiving] = useState<DisciplineResponse | null>(null);
   const [rowError, setRowError] = useState<string | null>(null);
   const deleteDiscipline = useDeleteDiscipline(schoolId ?? '');
+  const headerTabs = useGradingHeaderTabs();
 
   if (!schoolId) return null;
   if (isLoading) return <Spinner />;
@@ -65,40 +74,41 @@ export function DisciplinesPage() {
   }
 
   return (
-    <>
-      <PageHeader
+    <BillingPage>
+      <NewLookPageHeader
         title={t('disciplines.list.title')}
         subtitle={canEdit ? t('disciplines.list.subtitle') : t('disciplines.list.readOnlySubtitle')}
         actions={
           canEdit ? (
-            <div style={{ display: 'flex', gap: 8 }}>
+            <>
               <Button variant="secondary" onClick={() => setFromTemplate(true)}>
                 {t('disciplines.list.startFromTemplate')}
               </Button>
               <Button onClick={() => setCreating(true)}>{t('disciplines.list.addButton')}</Button>
-            </div>
+            </>
           ) : undefined
         }
+        {...headerTabs}
       />
-      <GradingTabs />
-      <Card>
-        <div style={{ marginBottom: 12 }}>
+      <BillingCard>
+        <div className="u8gs-filter">
           <Checkbox label={t('disciplines.list.showArchived')} checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
         </div>
         {rowError ? <ErrorBanner message={rowError} /> : null}
         {disciplines.length === 0 ? (
           <EmptyState title={t('disciplines.list.emptyTitle')} description={t('disciplines.list.emptyDescription')} />
         ) : (
-          <Table<DisciplineResponse>
+          <FitTable<DisciplineResponse>
             rows={disciplines}
             columns={[
               {
                 key: 'name',
                 header: t('disciplines.list.columnName'),
+                main: true,
                 render: (d) => (
-                  <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
-                    {d.name}
-                    {d.archivedAt ? <Badge variant="default">{t('disciplines.list.archived')}</Badge> : null}
+                  <span className="u8gs-name">
+                    <span className="u8b-name">{d.name}</span>
+                    {d.archivedAt ? <span className="u8gs-tag">{t('disciplines.list.archived')}</span> : null}
                   </span>
                 ),
               },
@@ -108,30 +118,30 @@ export function DisciplinesPage() {
                 key: 'actions',
                 header: '',
                 render: (d) => (
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    <Button variant="secondary" onClick={() => navigate(`/disciplines/${d.id}`)} aria-label={t('disciplines.list.openAria', { name: d.name })}>
+                  <div className="u8gs-actions">
+                    <Button variant="secondary" className="u8b-pill--row" onClick={() => navigate(`/disciplines/${d.id}`)} aria-label={t('disciplines.list.openAria', { name: d.name })}>
                       {t('disciplines.list.manageSkills')}
                     </Button>
                     {canEdit && !d.archivedAt ? (
                       <>
-                        <Button variant="secondary" onClick={() => setEditing(d)}>
+                        <Button variant="secondary" className="u8b-pill--row" onClick={() => setEditing(d)}>
                           {t('disciplines.list.edit')}
                         </Button>
-                        <Button variant="secondary" onClick={() => setDuplicating(d)}>
+                        <Button variant="secondary" className="u8b-pill--row" onClick={() => setDuplicating(d)}>
                           {t('disciplines.list.duplicate')}
                         </Button>
-                        <Button variant="secondary" onClick={() => setArchiving(d)} aria-label={t('disciplines.list.archiveAria', { name: d.name })}>
+                        <Button variant="secondary" className="u8b-pill--row" onClick={() => setArchiving(d)} aria-label={t('disciplines.list.archiveAria', { name: d.name })}>
                           {t('disciplines.list.archive')}
                         </Button>
                       </>
                     ) : null}
                     {canEdit && d.archivedAt ? (
-                      <Button variant="secondary" onClick={() => void unarchive(d)} aria-label={t('disciplines.list.unarchiveAria', { name: d.name })}>
+                      <Button variant="secondary" className="u8b-pill--row" onClick={() => void unarchive(d)} aria-label={t('disciplines.list.unarchiveAria', { name: d.name })}>
                         {t('disciplines.list.unarchive')}
                       </Button>
                     ) : null}
                     {canEdit ? (
-                      <Button variant="secondary" onClick={() => setDeleting(d)} aria-label={t('disciplines.list.deleteAria', { name: d.name })}>
+                      <Button variant="secondary" className="u8b-pill--row" onClick={() => setDeleting(d)} aria-label={t('disciplines.list.deleteAria', { name: d.name })}>
                         {d.archivedAt ? t('disciplines.list.deletePermanently') : t('disciplines.list.delete')}
                       </Button>
                     ) : null}
@@ -141,7 +151,7 @@ export function DisciplinesPage() {
             ]}
           />
         )}
-      </Card>
+      </BillingCard>
 
       {creating ? (
         <DisciplineFormModal
@@ -191,7 +201,7 @@ export function DisciplinesPage() {
       {editing ? (
         <EditDisciplineModal schoolId={schoolId} discipline={editing} styles={disciplines} onClose={() => setEditing(null)} />
       ) : null}
-    </>
+    </BillingPage>
   );
 }
 

@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Badge, Button, Card, EmptyState, ErrorBanner, PageHeader, Spinner, Table } from '@ultm8/ui';
+import { Button, EmptyState, ErrorBanner, Spinner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { nullsToUndefined } from '../lib/nullableFields';
 import { useOwnedSchoolIds } from '../auth/AuthContext';
@@ -10,8 +10,12 @@ import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import { SkillFormModal } from '../skills/SkillFormModal';
 import { useRanks, useRungHolders } from '../ranks/rankQueries';
 import { LadderSection } from '../ranks/LadderSection';
-import { GradingTabs } from '../grading/GradingTabs';
+import { useGradingHeaderTabs } from '../grading/GradingTabs';
 import { useT } from '../i18n/I18nProvider';
+import { BillingCard, BillingPage } from '../billing/BillingLook';
+import { NewLookPageHeader } from '../layout/NewLookPage';
+import { FitTable } from '../students/StudentsSectionLook';
+import './stylesLook.css';
 
 /** A Discipline's own Skills and Ranks catalog. Reached via a "Manage
  * skills" link from DisciplinesPage's own table — both Skill and Rank CRUD
@@ -24,7 +28,11 @@ import { useT } from '../i18n/I18nProvider';
  * rungs require them and how many lessons teach them; the owner also sees
  * the students on each belt. Decision 383: Branch Staff the owner ticked "Can
  * manage disciplines" for edit it like the owner, except grade prices, and
- * still don't see the students. */
+ * still don't see the students.
+ *
+ * New look (Decision 460): the new page header with the Grading tabs, white
+ * cards, tags, and tables that become cards when they don't fit. Same
+ * content, order buttons and permission checks as before. */
 export function DisciplineDetailPage() {
   const t = useT();
   const { id } = useParams<{ id: string }>();
@@ -43,6 +51,7 @@ export function DisciplineDetailPage() {
   const [deletingSkill, setDeletingSkill] = useState<SkillResponse | null>(null);
   const [skillError, setSkillError] = useState<string | null>(null);
   const deleteSkill = useDeleteSkill(disciplineId ?? '');
+  const headerTabs = useGradingHeaderTabs();
 
   const ranks = useMemo(() => rankData?.items ?? [], [rankData]);
   /** Which rungs require each skill, by rung name, in ladder order. */
@@ -85,82 +94,77 @@ export function DisciplineDetailPage() {
   }
 
   return (
-    <>
-      <PageHeader
+    <BillingPage>
+      <NewLookPageHeader
         title={discipline?.name ?? t('disciplines.detail.fallbackTitle')}
         subtitle={discipline?.classTypesOffered.length ? discipline.classTypesOffered.join(', ') : undefined}
+        {...headerTabs}
       />
-      <GradingTabs />
       {discipline?.archivedAt ? (
-        <div style={{ marginBottom: 16 }}>
-          <Badge variant="default">{t('disciplines.list.archived')}</Badge> <span className="ultm8-field__hint">{t('disciplines.detail.archivedNote')}</span>
-        </div>
-      ) : !canManage ? (
-        <p className="ultm8-field__hint" style={{ marginTop: 0 }}>
-          {t('disciplines.detail.readOnlyNote')}
+        <p className="u8gs-status">
+          <span className="u8gs-tag">{t('disciplines.list.archived')}</span> <span className="u8gs-note">{t('disciplines.detail.archivedNote')}</span>
         </p>
+      ) : !canManage ? (
+        <p className="u8gs-note">{t('disciplines.detail.readOnlyNote')}</p>
       ) : null}
 
-      <div style={{ marginBottom: 24 }}>
-        <Card>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-            <div>
-              <h2 className="ultm8-page-header__title" style={{ fontSize: 16, marginBottom: 4 }}>
-                {t('disciplines.detail.skillsHeading')}
-              </h2>
-              <p style={{ margin: 0 }}>{t('disciplines.detail.skillsIntro')}</p>
-            </div>
-            {canEdit ? <Button onClick={() => setCreatingSkill(true)}>{t('disciplines.detail.addSkill')}</Button> : null}
+      <BillingCard>
+        <div className="u8gs-card-head">
+          <div>
+            <h2 className="u8b-card__title">{t('disciplines.detail.skillsHeading')}</h2>
+            <p className="u8b-note">{t('disciplines.detail.skillsIntro')}</p>
           </div>
-          {skillError ? <ErrorBanner message={skillError} /> : null}
-          {skills.length === 0 ? (
-            <EmptyState title={t('disciplines.detail.emptyTitle')} description={t('disciplines.detail.emptyDescription')} />
-          ) : (
-            <Table<SkillResponse>
-              rows={skills}
-              columns={[
-                { key: 'name', header: t('disciplines.detail.columnName'), render: (s) => s.name },
-                { key: 'description', header: t('disciplines.detail.columnDescription'), render: (s) => s.description ?? '—' },
-                {
-                  key: 'requiredOn',
-                  header: t('disciplines.detail.columnRequiredOn'),
-                  render: (s) => (requiredOn.get(s.id) ?? []).join(', ') || '—',
+          {canEdit ? <Button onClick={() => setCreatingSkill(true)}>{t('disciplines.detail.addSkill')}</Button> : null}
+        </div>
+        {skillError ? <ErrorBanner message={skillError} /> : null}
+        {skills.length === 0 ? (
+          <EmptyState title={t('disciplines.detail.emptyTitle')} description={t('disciplines.detail.emptyDescription')} />
+        ) : (
+          <FitTable<SkillResponse>
+            rows={skills}
+            columns={[
+              { key: 'name', header: t('disciplines.detail.columnName'), main: true, render: (s) => <span className="u8b-name">{s.name}</span> },
+              { key: 'description', header: t('disciplines.detail.columnDescription'), render: (s) => s.description ?? '—' },
+              {
+                key: 'requiredOn',
+                header: t('disciplines.detail.columnRequiredOn'),
+                render: (s) => (requiredOn.get(s.id) ?? []).join(', ') || '—',
+              },
+              { key: 'lessons', header: t('disciplines.detail.columnLessons'), render: (s) => String(s.lessonCount) },
+              {
+                key: 'actions',
+                header: '',
+                render: (s) => {
+                  if (!canEdit) return null;
+                  const i = skills.findIndex((x) => x.id === s.id);
+                  return (
+                    <div className="u8gs-actions">
+                      <Button variant="secondary" className="u8b-pill--row" onClick={() => void moveSkill(i, -1)} disabled={i === 0 || reorderSkills.isPending} aria-label={t('disciplines.detail.moveUpAria', { name: s.name })}>
+                        ↑
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        className="u8b-pill--row"
+                        onClick={() => void moveSkill(i, 1)}
+                        disabled={i === skills.length - 1 || reorderSkills.isPending}
+                        aria-label={t('disciplines.detail.moveDownAria', { name: s.name })}
+                      >
+                        ↓
+                      </Button>
+                      <Button variant="secondary" className="u8b-pill--row" onClick={() => setEditingSkill(s)}>
+                        {t('disciplines.detail.edit')}
+                      </Button>
+                      <Button variant="secondary" className="u8b-pill--row" onClick={() => setDeletingSkill(s)} aria-label={t('disciplines.detail.deleteAria', { name: s.name })}>
+                        {t('disciplines.detail.delete')}
+                      </Button>
+                    </div>
+                  );
                 },
-                { key: 'lessons', header: t('disciplines.detail.columnLessons'), render: (s) => String(s.lessonCount) },
-                {
-                  key: 'actions',
-                  header: '',
-                  render: (s) => {
-                    if (!canEdit) return null;
-                    const i = skills.findIndex((x) => x.id === s.id);
-                    return (
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                        <Button variant="secondary" onClick={() => void moveSkill(i, -1)} disabled={i === 0 || reorderSkills.isPending} aria-label={t('disciplines.detail.moveUpAria', { name: s.name })}>
-                          ↑
-                        </Button>
-                        <Button
-                          variant="secondary"
-                          onClick={() => void moveSkill(i, 1)}
-                          disabled={i === skills.length - 1 || reorderSkills.isPending}
-                          aria-label={t('disciplines.detail.moveDownAria', { name: s.name })}
-                        >
-                          ↓
-                        </Button>
-                        <Button variant="secondary" onClick={() => setEditingSkill(s)}>
-                          {t('disciplines.detail.edit')}
-                        </Button>
-                        <Button variant="secondary" onClick={() => setDeletingSkill(s)} aria-label={t('disciplines.detail.deleteAria', { name: s.name })}>
-                          {t('disciplines.detail.delete')}
-                        </Button>
-                      </div>
-                    );
-                  },
-                },
-              ]}
-            />
-          )}
-        </Card>
-      </div>
+              },
+            ]}
+          />
+        )}
+      </BillingCard>
 
       {discipline ? <LadderSection discipline={discipline} skills={skills} ranks={ranks} readOnly={!canEdit} showHolders={isOwner} canSetPrices={isOwner} /> : null}
 
@@ -192,8 +196,7 @@ export function DisciplineDetailPage() {
       {editingSkill ? (
         <EditSkillModal disciplineId={disciplineId} skill={editingSkill} onClose={() => setEditingSkill(null)} />
       ) : null}
-
-    </>
+    </BillingPage>
   );
 }
 
@@ -211,30 +214,28 @@ function StudentsSection({ disciplineId, ranks }: { disciplineId: string; ranks:
       [...rank.stripeTiers].sort((a, b) => a.order - b.order).flatMap((tier) => (byRung.get(tier.id) ?? []).filter((s) => s.enrolled).map((s) => ({ ...s, id: s.studentId, rung: tier.name }))),
     );
   return (
-    <div style={{ marginTop: 24 }}>
-      <Card>
-        <h2 className="ultm8-page-header__title" style={{ fontSize: 16, marginBottom: 4 }}>
-          {t('disciplines.detail.studentsHeading', { count: rows.length })}
-        </h2>
-        {rows.length === 0 ? (
-          <p className="ultm8-field__hint" style={{ margin: 0 }}>
-            {t('disciplines.detail.studentsEmpty')}
-          </p>
-        ) : (
-          <Table<(typeof rows)[number]>
-            rows={rows}
-            columns={[
-              {
-                key: 'name',
-                header: t('disciplines.detail.columnStudent'),
-                render: (s) => <Link to={`/students/${s.studentId}`}>{`${s.firstName} ${s.surname}`.trim()}</Link>,
-              },
-              { key: 'rung', header: t('disciplines.detail.columnRank'), render: (s) => s.rung },
-            ]}
-          />
-        )}
-      </Card>
-    </div>
+    <BillingCard title={t('disciplines.detail.studentsHeading', { count: rows.length })}>
+      {rows.length === 0 ? (
+        <p className="u8b-note">{t('disciplines.detail.studentsEmpty')}</p>
+      ) : (
+        <FitTable<(typeof rows)[number]>
+          rows={rows}
+          columns={[
+            {
+              key: 'name',
+              header: t('disciplines.detail.columnStudent'),
+              main: true,
+              render: (s) => (
+                <Link to={`/students/${s.studentId}`} className="u8b-name">
+                  {`${s.firstName} ${s.surname}`.trim()}
+                </Link>
+              ),
+            },
+            { key: 'rung', header: t('disciplines.detail.columnRank'), render: (s) => s.rung },
+          ]}
+        />
+      )}
+    </BillingCard>
   );
 }
 

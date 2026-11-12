@@ -341,8 +341,12 @@
     align-items: stretch;
     overflow-y: auto;
   }
+  /* At least the full screen, and as tall as its content: a stretched flex
+     item stops at the screen's height, and a long dialog (the belt editor)
+     then spilled past its white card onto the dimmed page. */
   [data-look='redesign'] .ultm8-modal,
   [data-look='redesign'] .ultm8-modal--wide {
+    align-self: flex-start;
     max-width: none;
     max-height: none;
     min-height: 100%;
@@ -414,4 +418,19 @@
 }
 [data-look='redesign'] .ultm8-checklist__item--done::before {
   background-color: var(--u8-check-done);
+}
+
+/* 8. Address fields' Region drop-down (Decision 460): the new look's drop-down
+ *    (NewLookSelect in .u8n-dd-field) fills its column, as the City and Postal
+ *    code fields beside it do; its error sits under it like theirs. */
+[data-look='redesign'] .ultm8-address__region .u8n-select {
+  align-items: stretch;
+}
+[data-look='redesign'] .ultm8-address__region .u8n-select__field {
+  width: 100%;
+  justify-content: space-between;
+}
+[data-look='redesign'] .ultm8-address__region .ultm8-field__error {
+  display: block;
+  margin-top: 6px;
 }

@@ -79,7 +79,11 @@ test('My profile: change the first name and save; email and phone are read-only'
   await expect(page.getByLabel('First name')).toHaveValue('Olive');
   await page.getByLabel('First name').fill('Olivia');
   // Decision 276 — the same country-first address fields as every other form.
-  await page.getByLabel('Country').selectOption('GB');
+  // Decision 460: Country is a searchable picker (type, then pick the match).
+  const country = page.getByRole('combobox', { name: 'Country', exact: true });
+  await country.click();
+  await country.fill('United Kingdom');
+  await page.getByRole('listbox').getByRole('option', { name: 'United Kingdom', exact: true }).click();
   await page.getByLabel('Address line 1').fill('1 Mat Street');
   await page.getByLabel('Town/City').fill('Leeds');
   await page.getByRole('button', { name: 'Save changes' }).click();

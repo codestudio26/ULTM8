@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { expect, test, type Page } from '@playwright/test';
 import { addStudent, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
+import { pickOption } from './team-helpers';
 
 /**
  * Kids and Adult programs (backlog 3.20): a Kids style links to its Adult
@@ -41,7 +42,7 @@ test('Edit discipline links a Kids style to its Adult program', async ({ page })
   await page.goto('/disciplines');
   await page.getByRole('row', { name: /^BJJ(?! Adult)/ }).getByRole('button', { name: 'Edit' }).click();
   const dialog = page.getByRole('dialog', { name: 'Edit discipline' });
-  await dialog.getByLabel('Adult program (for a Kids style)').selectOption({ label: 'BJJ Adult' });
+  await pickOption(dialog, 'Adult program (for a Kids style)', 'BJJ Adult');
   await dialog.getByRole('button', { name: 'Save' }).click();
   await expect(dialog).toHaveCount(0);
   expect((await db.discipline.findUniqueOrThrow({ where: { id: s.disciplineId } })).adultDisciplineId).toBe(adultId);
