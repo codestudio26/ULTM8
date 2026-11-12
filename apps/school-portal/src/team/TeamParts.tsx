@@ -15,6 +15,7 @@ import { BeltChip } from '../grading/BeltChip';
 import { useSchool } from '../schools/schoolQueries';
 import { NewLookPageHeader } from '../layout/NewLookPage';
 import './teamLook.css';
+import './teamForms.css';
 
 /**
  * Pieces the Team pages share in the new look (Decision 453; DESIGN.md →

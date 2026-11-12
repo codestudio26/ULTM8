@@ -65,7 +65,7 @@ test('inviting an existing user opens Add instructor with them already picked', 
 
   const add = page.getByRole('dialog', { name: /Add instructor/i });
   await expect(add).toBeVisible();
-  await expect(add.getByLabel('User')).toHaveValue(person.id);
+  await expect(add.getByRole('combobox', { name: 'User', exact: true }).locator('[data-shown="true"]')).toHaveText(`Ivy Existing (${person.email})`);
   await add.getByRole('button', { name: /^(Save|Add|Create)/ }).click();
   await expect(page.getByRole('row', { name: /Ivy Existing/ })).toBeVisible();
 });
@@ -105,9 +105,11 @@ test('the detail page shows what the instructor filled in, and hands their class
   await page.getByRole('link', { name: 'Profile', exact: true }).click();
   await page.getByRole('button', { name: 'Hand over classes' }).click();
   const dialog = page.getByRole('dialog', { name: "Hand over Lea Leaving's classes" });
-  const picker = dialog.getByLabel('New instructor');
-  expect(await picker.locator('option').allInnerTexts()).not.toContain('Lea Leaving');
-  await picker.selectOption({ label: 'Tom Takeover' });
+  await dialog.getByRole('combobox', { name: 'New instructor', exact: true }).click();
+  const picker = dialog.getByRole('listbox', { name: 'New instructor', exact: true });
+  await expect(picker.getByRole('option', { name: 'Tom Takeover', exact: true })).toBeVisible();
+  expect(await picker.getByRole('option').allInnerTexts()).not.toContain('Lea Leaving');
+  await picker.getByRole('option', { name: 'Tom Takeover', exact: true }).click();
   await dialog.getByRole('button', { name: 'Hand over' }).click();
   await expect(page.getByText('Tom Takeover took over. Upcoming classes moved: 1. Weekly slots moved: 1.')).toBeVisible();
 

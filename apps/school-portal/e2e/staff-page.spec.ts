@@ -35,8 +35,8 @@ test('the owner gives someone Branch Staff, sees them in the list, and removes t
   await giveCard(page).getByLabel('Email').fill(tara.email.toUpperCase());
   await page.getByRole('button', { name: 'Find' }).click();
   await expect(page.getByText('Found Tara Target.')).toBeVisible();
-  await giveCard(page).getByLabel('Role').selectOption('BRANCH_STAFF');
-  await giveCard(page).getByLabel('Branch').selectOption({ label: 'North' });
+  await pickOption(giveCard(page), 'Role', 'Branch Staff');
+  await pickOption(giveCard(page), 'Branch', 'North');
   await giveCard(page).getByRole('button', { name: 'Give role' }).click();
   await expect(page.getByText(/^Tara Target is now Branch Staff/)).toBeVisible();
 
