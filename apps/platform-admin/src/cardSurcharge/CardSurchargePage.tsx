@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { Button, Card, Checkbox, EmptyState, ErrorBanner, Field, Modal, PageHeader, Spinner, Table, TextField } from '@ultm8/ui';
+import { Button, Card, Checkbox, EmptyState, ErrorBanner, Field, Modal, Spinner, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
+import { AdminTable } from '../layout/AdminTable';
+import { NewLookPageHeader } from '../layout/NewLookPage';
 import { useAddCardSurchargeCountry, useCardSurchargeCountries, useRemoveCardSurchargeCountry, type CardSurchargeCountry } from './cardSurchargeQueries';
 
 /** Country name in English, falling back to the code. */
@@ -42,8 +44,8 @@ export function CardSurchargePage() {
   }
 
   return (
-    <>
-      <PageHeader
+    <div className="u8a">
+      <NewLookPageHeader
         title="Card surcharge countries"
         subtitle="Schools in these countries may add a card surcharge (up to 3%) to members' card payments. Everywhere else it is off. Billing & Payments Ops and Full Admins only; every change is recorded in the audit log."
       />
@@ -52,21 +54,21 @@ export function CardSurchargePage() {
 
       <Card>
         <form onSubmit={handleAdd}>
-          <h3 style={{ marginTop: 0 }}>Add a country</h3>
-          <p style={{ marginTop: 0 }}>
+          <h2 className="u8a-card__title">Add a country</h2>
+          <p className="u8a-intro">
             Only add a country after legal review. Consumer card surcharges are illegal in the UK and the EU.
           </p>
           <Field label="Country code" htmlFor="surcharge-country" hint="Two letters (ISO 3166-1), e.g. US.">
             <TextField id="surcharge-country" value={code} maxLength={2} onChange={(e) => setCode(e.target.value)} />
           </Field>
-          {valid ? <p style={{ margin: '0 0 8px' }}>{countryName(code.trim().toUpperCase())}</p> : null}
+          {valid ? <p className="u8a-intro">{countryName(code.trim().toUpperCase())}</p> : null}
           <Checkbox
             id="surcharge-reviewed"
             label="Legal review confirmed card surcharges are allowed in this country"
             checked={reviewed}
             onChange={(e) => setReviewed(e.target.checked)}
           />
-          <div style={{ marginTop: 12 }}>
+          <div className="u8a-buttons u8a-buttons--start">
             <Button type="submit" loading={add.isPending} disabled={!valid || !reviewed}>
               Add country
             </Button>
@@ -74,13 +76,13 @@ export function CardSurchargePage() {
         </form>
       </Card>
 
-      <Card>
+      <Card className={!isLoading && items.length > 0 ? 'ultm8-card--flush' : undefined}>
         {isLoading ? (
           <Spinner />
         ) : items.length === 0 ? (
           <EmptyState title="No countries yet" description="Card surcharges are off for every School until a country is added here." />
         ) : (
-          <Table<CardSurchargeCountry & { id: string }>
+          <AdminTable<CardSurchargeCountry & { id: string }>
             rows={items.map((c) => ({ ...c, id: c.countryCode }))}
             columns={[
               { key: 'countryCode', header: 'Code', render: (c) => c.countryCode },
@@ -89,6 +91,7 @@ export function CardSurchargePage() {
               {
                 key: 'actions',
                 header: '',
+                end: true,
                 render: (c) => (
                   <Button variant="secondary" onClick={() => setRemoving(c.countryCode)}>
                     Remove
@@ -102,10 +105,10 @@ export function CardSurchargePage() {
 
       {removing ? (
         <Modal title={`Remove ${countryName(removing)}?`} onClose={() => setRemoving(null)}>
-          <p style={{ marginTop: 0 }}>
+          <p>
             Schools there stop adding a card surcharge to new payments straight away, and members' running subscriptions there stop paying it from their next renewal. The Schools' saved % is kept, but isn't charged or shown unless the country is added again; adding it back applies to new subscriptions only.
           </p>
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+          <div className="u8a-buttons">
             <Button variant="secondary" onClick={() => setRemoving(null)}>
               Back
             </Button>
@@ -115,6 +118,6 @@ export function CardSurchargePage() {
           </div>
         </Modal>
       ) : null}
-    </>
+    </div>
   );
 }
