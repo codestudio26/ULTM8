@@ -2575,6 +2575,14 @@ export const messages: PartialMessages<EnglishMessages> = {
     branchLabel: "Vestiging",
     branchAll: "Alle vestigingen",
     statActiveStudents: "Actieve leerlingen",
+    statCheckInsToday: "Check-ins vandaag",
+    checkInsAcrossClasses: {
+      one: "In {count} les tot nu toe",
+      other: "In {count} lessen tot nu toe",
+    },
+    checkInsLoadFailed: "Check-ins konden niet worden geladen.",
+    readySeeAll: "Alle {count} bekijken →",
+    readyLoadFailed: "De lijst \"Klaar voor graduatie\" kon niet worden geladen.",
     wholeSchool: "Hele school",
     birthdays: {
       title: "Verjaardagen deze week",
