@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
+import { pickOption } from './team-helpers';
 
 /**
  * The New Portal belt editor (DESIGN.md → "Belt editor: one grade at a
@@ -46,7 +47,7 @@ test('Add rank asks where it goes, and saves it there', async ({ page }) => {
   await page.getByRole('button', { name: 'Add rank' }).click();
   const dialog = page.getByRole('dialog', { name: 'Add rank' });
   await dialog.getByLabel('Rank name').fill('Grey');
-  await dialog.getByLabel('Where it goes in the ladder').selectOption({ label: 'After White' });
+  await pickOption(dialog, 'Where it goes in the ladder', 'After White');
   await expect(dialog.getByText('Belt 2 of 3')).toBeVisible();
   await dialog.getByLabel('Classes required').fill('10');
   await dialog.getByRole('button', { name: 'Save', exact: true }).click();
@@ -61,7 +62,7 @@ test('Duplicate copies every grade, with no students, right after the original',
   const dialog = page.getByRole('dialog', { name: 'Duplicate White' });
   await expect(dialog.getByText('Give it a new name and colour, then save.')).toBeVisible();
   await expect(dialog.getByLabel('Rank name')).toHaveValue('White (copy)');
-  await expect(dialog.getByLabel('Where it goes in the ladder')).toHaveValue('1');
+  await expect(dialog.getByRole('combobox', { name: 'Where it goes in the ladder', exact: true }).locator('[data-shown="true"]')).toHaveText('After White');
   await dialog.getByLabel('Rank name').fill('Grey');
   await dialog.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(dialog).toBeHidden();

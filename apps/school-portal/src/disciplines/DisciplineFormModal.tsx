@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { Button, Checkbox, ErrorBanner, Field, Modal, SelectField, TextField } from '@ultm8/ui';
+import { Button, Checkbox, ErrorBanner, Field, Modal, ModalActions, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import type { DisciplineResponse } from './disciplineQueries';
 import { useT } from '../i18n/I18nProvider';
+import { NewLookSelect } from '../layout/NewLookSelect';
+import './stylesLook.css';
 
 export interface DisciplineFormValues {
   name: string;
@@ -31,7 +33,11 @@ const row = (original: string | null, value = original ?? ''): TypeRow => ({ key
 /** Fields match CreateDisciplineDto/UpdateDisciplineDto —
  * apps/api/src/ranks/dto/create-discipline.dto.ts and update-discipline.dto.ts.
  * Class types are a list, one per row, that can be renamed and reordered
- * (Decision 309). */
+ * (Decision 309).
+ *
+ * New look (Decision 460): the shared dialog frame and button band (Cancel
+ * first), and the new look's own drop-downs for "Ranks shown as" and the
+ * Adult program, where a pick counts as an edit as the old `<select>` did. */
 export function DisciplineFormModal({
   title,
   initial,
@@ -114,13 +120,11 @@ export function DisciplineFormModal({
         <Field label={t('disciplines.form.nameLabel')} htmlFor="discipline-name">
           <TextField id="discipline-name" required maxLength={100} value={name} onChange={(e) => setName(e.target.value)} />
         </Field>
-        <fieldset style={{ border: 'none', padding: 0, margin: '0 0 12px' }}>
+        <fieldset className="u8gs-fieldset">
           <legend className="ultm8-field__label">{t('disciplines.form.classTypesLabel')}</legend>
-          <p className="ultm8-field__hint" style={{ marginTop: 0 }}>
-            {t('disciplines.form.classTypesHint')}
-          </p>
+          <p className="ultm8-field__hint">{t('disciplines.form.classTypesHint')}</p>
           {types.map((r, i) => (
-            <div key={r.key} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
+            <div key={r.key} className="u8gs-type">
               <TextField
                 aria-label={t('disciplines.form.classTypeAria', { number: i + 1 })}
                 maxLength={100}
@@ -142,38 +146,42 @@ export function DisciplineFormModal({
             {t('disciplines.form.addClassType')}
           </Button>
         </fieldset>
-        <Field label={t('disciplines.form.rankDisplayLabel')} htmlFor="discipline-rank-display" hint={t('disciplines.form.rankDisplayHint')}>
-          <SelectField
+        <div className="u8n-dd-field">
+          <NewLookSelect
             id="discipline-rank-display"
+            label={t('disciplines.form.rankDisplayLabel')}
             value={rankDisplay}
-            onChange={(e) => setRankDisplay(e.target.value as 'BELTS' | 'LEVELS')}
+            onChange={(v) => setRankDisplay(v as 'BELTS' | 'LEVELS')}
             options={[
               { value: 'BELTS', label: t('disciplines.form.rankDisplayBelts') },
               { value: 'LEVELS', label: t('disciplines.form.rankDisplayLevels') },
             ]}
           />
-        </Field>
+          <span className="ultm8-field__hint u8n-dd-field__hint">{t('disciplines.form.rankDisplayHint')}</span>
+        </div>
         <Checkbox label={t('disciplines.form.skillsRequired')} checked={skillsRequiredToGrade} onChange={(e) => setSkillsRequired(e.target.checked)} />
         {adultChoices ? (
-          <Field label={t('disciplines.form.adultProgramLabel')} htmlFor="discipline-adult" hint={t('disciplines.form.adultProgramHint')}>
-            <SelectField
+          <div className="u8n-dd-field">
+            <NewLookSelect
               id="discipline-adult"
+              label={t('disciplines.form.adultProgramLabel')}
               value={adultId}
-              onChange={(e) => setAdultId(e.target.value)}
+              onChange={setAdultId}
               options={[{ value: '', label: t('disciplines.form.adultProgramNone') }, ...adultChoices.map((d) => ({ value: d.id, label: d.name }))]}
             />
-          </Field>
+            <span className="ultm8-field__hint u8n-dd-field__hint">{t('disciplines.form.adultProgramHint')}</span>
+          </div>
         ) : adultChoices === null ? (
           <p className="ultm8-field__hint">{t('disciplines.form.isAdultProgram')}</p>
         ) : null}
-        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-          <Button type="submit" loading={submitting}>
-            {t('common.save')}
-          </Button>
+        <ModalActions>
           <Button type="button" variant="secondary" onClick={onClose}>
             {t('common.cancel')}
           </Button>
-        </div>
+          <Button type="submit" loading={submitting}>
+            {t('common.save')}
+          </Button>
+        </ModalActions>
       </form>
     </Modal>
   );
