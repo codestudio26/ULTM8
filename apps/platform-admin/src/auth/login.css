@@ -1,0 +1,87 @@
+/* Platform Admin's sign-in page in the new look (Decision 453): the same
+ * frame as the School Portal's pages drawn by the shared AuthCard
+ * (apps/school-portal/src/auth/signIn.css), a white card on the grey page,
+ * with the shared new-look buttons (packages/ui redesign-fixes.css).
+ * Built on the shell's --u8n-* colours (layout/adminShell.css), so dark mode
+ * follows them. Phone first: 16px sides. Look only. */
+
+[data-look='redesign'] {
+  --u8a-auth-shadow: 0 8px 24px rgba(21, 23, 25, 0.06);
+  --u8a-auth-link: #3a7556;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-look='redesign']:not([data-theme='light']) {
+    --u8a-auth-shadow: none;
+    --u8a-auth-link: #9fd3b2;
+  }
+}
+:root[data-look='redesign'][data-theme='dark'] {
+  --u8a-auth-shadow: none;
+  --u8a-auth-link: #9fd3b2;
+}
+
+[data-look='redesign'] .ultm8-auth-page {
+  min-height: 100vh;
+  box-sizing: border-box;
+  align-items: flex-start;
+  padding: 56px 24px;
+  background: var(--u8n-page-bg);
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .ultm8-auth-card {
+  max-width: 560px;
+  min-width: 0;
+}
+[data-look='redesign'] .ultm8-auth-card > .ultm8-card {
+  background: var(--u8n-surface);
+  color: var(--u8n-text);
+  border: 1px solid var(--u8n-line);
+  border-radius: 16px;
+  box-shadow: var(--u8a-auth-shadow);
+  padding: 28px 28px 24px;
+}
+[data-look='redesign'] .ultm8-auth-card__title {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 300;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .ultm8-auth-card__subtitle {
+  margin: 6px 0 22px;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .ultm8-auth-card__title + :not(.ultm8-auth-card__subtitle) {
+  margin-top: 22px;
+}
+[data-look='redesign'] .ultm8-auth-card .ultm8-banner {
+  border-radius: 12px;
+}
+[data-look='redesign'] .ultm8-auth-card > .ultm8-card a,
+[data-look='redesign'] .ultm8-auth-card__footer a {
+  color: var(--u8a-auth-link);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+[data-look='redesign'] .ultm8-auth-card__footer {
+  margin-top: 20px;
+  font-size: 14px;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .ultm8-auth-card > .ultm8-card .u8n-select__field {
+  max-width: 100%;
+}
+@media (max-width: 767px) {
+  [data-look='redesign'] .ultm8-auth-page {
+    padding: 24px 16px 32px;
+  }
+  [data-look='redesign'] .ultm8-auth-card > .ultm8-card {
+    padding: 22px 16px 18px;
+  }
+  [data-look='redesign'] .ultm8-auth-card__title {
+    font-size: 24px;
+  }
+}
