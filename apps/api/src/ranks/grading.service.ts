@@ -1929,6 +1929,59 @@ export class GradingService {
     return { items, hiddenInactive, atTopRank };
   }
 
+  /**
+   * The Dashboard's "Ready to grade" list (Decision 454 item 8): the students
+   * in the Grading Board's Ready to Grade column of every style the caller
+   * grades. Each style's board is read exactly as the Grading Board reads it
+   * (getGradingBoard, the same engine and the same "who may see whom"), with
+   * "Currently attending only" on, so inactive students are left out. The
+   * owner gets every open style; other staff only the styles they may grade
+   * (a grading permission for the style, as the portal's board picker shows
+   * them; Decision 181) and, within them, only their own Branches' students
+   * (Decision 168). Archived styles aren't graded (Decision 309).
+   */
+  async getReadyToGrade(callerId: string, schoolId: string) {
+    if (!UUID_PATTERN.test(schoolId)) throw new BadRequestException('schoolId must be a valid UUID');
+    const owner = await this.isSchoolOwner(callerId, schoolId);
+    if (!owner) await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    const styles = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const open = await tx.discipline.findMany({ where: { schoolId, archivedAt: null }, select: { id: true, name: true }, orderBy: [{ name: 'asc' }, { id: 'asc' }] });
+      if (owner) return open;
+      const mine = new Set((await tx.gradingPermission.findMany({ where: { schoolId, userId: callerId }, select: { disciplineId: true } })).map((p) => p.disciplineId));
+      return open.filter((d) => mine.has(d.id));
+    });
+    const items: Array<{
+      studentId: string;
+      firstName: string;
+      surname: string;
+      photoUrl: string | null;
+      disciplineId: string;
+      disciplineName: string;
+      currentStripeId: string | null;
+      nextRungId: string;
+      progressPercent: number;
+    }> = [];
+    for (const style of styles) {
+      const board = await this.getGradingBoard(callerId, schoolId, style.id, { activeOnly: true });
+      for (const item of board.items) {
+        if (item.eligibility.boardColumn !== 'READY_TO_GRADE') continue;
+        items.push({
+          studentId: item.studentId,
+          firstName: item.firstName,
+          surname: item.surname,
+          photoUrl: (item as { photoUrl?: string | null }).photoUrl ?? null,
+          disciplineId: style.id,
+          disciplineName: style.name,
+          currentStripeId: item.currentStripeId,
+          nextRungId: item.eligibility.nextRungId,
+          progressPercent: item.eligibility.progressPercent,
+        });
+      }
+    }
+    items.sort((a, b) => b.progressPercent - a.progressPercent || a.surname.localeCompare(b.surname) || a.firstName.localeCompare(b.firstName));
+    return { total: items.length, items };
+  }
+
   /** Whether the style's automatic promotion gives this step (Decision 321
    * item 5): every step in AUTO_ALL; the next stripe of the same belt in
    * AUTO_STRIPES. */

@@ -2538,6 +2538,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     branchLabel: "สาขา",
     branchAll: "ทุกสาขา",
     statActiveStudents: "นักเรียนที่ยังใช้งาน",
+    statCheckInsToday: "เช็กอินวันนี้",
+    checkInsAcrossClasses: {
+      other: "จาก {count} คลาสจนถึงตอนนี้",
+    },
+    checkInsLoadFailed: "โหลดการเช็กอินไม่สำเร็จ",
+    readySeeAll: "ดูทั้งหมด {count} คน →",
+    readyLoadFailed: "โหลดรายชื่อผู้พร้อมเลื่อนระดับไม่สำเร็จ",
     wholeSchool: "ทั้งโรงเรียน",
     birthdays: {
       title: "วันเกิดสัปดาห์นี้",

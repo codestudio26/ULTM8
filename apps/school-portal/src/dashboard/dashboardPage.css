@@ -35,7 +35,7 @@
 
 [data-look='redesign'] .u8n-dash__stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 16px;
 }
 [data-look='redesign'] .u8n-dash__stat {
@@ -400,5 +400,60 @@
   }
   [data-look='redesign'] .u8n-dash-branch {
     width: 100% !important;
+  }
+}
+
+/* ---------------------------------------- Ready to grade (Decision 454) */
+
+[data-look='redesign'] {
+  --u8n-dash-av-bg: #d3d9df;
+  --u8n-dash-av-text: #2f3941;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-look='redesign']:not([data-theme='light']) {
+    --u8n-dash-av-bg: #3a434b;
+    --u8n-dash-av-text: #e1e3e5;
+  }
+}
+:root[data-look='redesign'][data-theme='dark'] {
+  --u8n-dash-av-bg: #3a434b;
+  --u8n-dash-av-text: #e1e3e5;
+}
+
+/* The design's right-hand column: Ready to grade, then Birthdays. */
+[data-look='redesign'] .u8n-dash__col {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+[data-look='redesign'] .u8n-dash__card-note {
+  margin: 0;
+  padding: 0 22px 10px;
+  font-size: 13px;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8n-dash__row--link {
+  color: var(--u8n-text);
+  text-decoration: none;
+}
+[data-look='redesign'] .u8n-dash__row--link:hover .u8n-dash__row-name {
+  text-decoration: underline;
+}
+[data-look='redesign'] .u8n-dash__row--link:focus-visible {
+  outline: 2px solid var(--fill-accent);
+  outline-offset: -2px;
+}
+[data-look='redesign'] .u8n-dash__row-line {
+  display: block;
+  overflow-wrap: anywhere;
+}
+[data-look='redesign'] .u8n-dash__row--link .u8n-dash__row-name {
+  display: block;
+}
+@media (max-width: 767px) {
+  [data-look='redesign'] .u8n-dash__card-note {
+    padding-left: 16px;
+    padding-right: 16px;
   }
 }

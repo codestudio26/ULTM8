@@ -2538,6 +2538,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     branchLabel: "分校",
     branchAll: "所有分校",
     statActiveStudents: "活跃学员",
+    statCheckInsToday: "今日签到",
+    checkInsAcrossClasses: {
+      other: "目前共 {count} 节课",
+    },
+    checkInsLoadFailed: "无法加载签到。",
+    readySeeAll: "查看全部 {count} 人 →",
+    readyLoadFailed: "无法加载可晋级名单。",
     wholeSchool: "全校",
     birthdays: {
       title: "本周生日",
