@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { AuthCard, Button, ErrorBanner, Spinner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { isCognitoConfigured, useAuth } from './AuthContext';
+import './login.css';
 
 export function LoginPage() {
   const { beginCognitoLogin, completeCognitoLogin } = useAuth();

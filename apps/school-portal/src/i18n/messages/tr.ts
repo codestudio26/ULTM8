@@ -2575,6 +2575,14 @@ export const messages: PartialMessages<EnglishMessages> = {
     branchLabel: "Şube",
     branchAll: "Tüm şubeler",
     statActiveStudents: "Aktif öğrenciler",
+    statCheckInsToday: "Bugünkü girişler",
+    checkInsAcrossClasses: {
+      one: "Şu ana kadar {count} derste",
+      other: "Şu ana kadar {count} derste",
+    },
+    checkInsLoadFailed: "Girişler yüklenemedi.",
+    readySeeAll: "{count} kişinin tümünü gör →",
+    readyLoadFailed: "Sınava hazır olanlar listesi yüklenemedi.",
     wholeSchool: "Tüm okul",
     birthdays: {
       title: "Bu haftaki doğum günleri",

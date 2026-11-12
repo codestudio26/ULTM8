@@ -49,6 +49,18 @@
 
 /* -------------------------------------------------------------- Cards */
 
+/* "Check-ins today" for Branch Staff (Decision 461 item 4): the owner
+ * Dashboard's number card, at the owner's card width rather than stretched
+ * across the page; one column on a phone. */
+[data-look='redesign'] .u8n-coach .u8n-coach__stats {
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+@media (max-width: 767px) {
+  [data-look='redesign'] .u8n-coach .u8n-coach__stats {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 /* "Open the Grading Board": the mint main button, small, in the card head. */
 [data-look='redesign'] .u8n-coach__go {
   display: inline-flex;

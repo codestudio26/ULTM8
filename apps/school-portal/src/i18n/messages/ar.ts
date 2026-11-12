@@ -2723,6 +2723,18 @@ export const messages: PartialMessages<EnglishMessages> = {
     branchLabel: "الفرع",
     branchAll: "كل الفروع",
     statActiveStudents: "الطلاب النشطون",
+    statCheckInsToday: "تسجيلات الحضور اليوم",
+    checkInsAcrossClasses: {
+      zero: "في لا حصص حتى الآن",
+      one: "في حصة واحدة حتى الآن",
+      two: "في حصتين حتى الآن",
+      few: "في {count} حصص حتى الآن",
+      many: "في {count} حصة حتى الآن",
+      other: "في {count} حصة حتى الآن",
+    },
+    checkInsLoadFailed: "تعذّر تحميل تسجيلات الحضور.",
+    readySeeAll: "عرض الكل ({count}) ←",
+    readyLoadFailed: "تعذّر تحميل قائمة الجاهزين للترقية.",
     wholeSchool: "المدرسة كلها",
     birthdays: {
       title: "أعياد الميلاد هذا الأسبوع",

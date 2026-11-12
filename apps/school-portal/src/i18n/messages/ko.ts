@@ -2538,6 +2538,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     branchLabel: "지점",
     branchAll: "모든 지점",
     statActiveStudents: "활동 중인 수련생",
+    statCheckInsToday: "오늘의 체크인",
+    checkInsAcrossClasses: {
+      other: "지금까지 수업 {count}개",
+    },
+    checkInsLoadFailed: "체크인을 불러올 수 없습니다.",
+    readySeeAll: "{count}명 모두 보기 →",
+    readyLoadFailed: "승급 준비 목록을 불러올 수 없습니다.",
     wholeSchool: "도장 전체",
     birthdays: {
       title: "이번 주 생일",
