@@ -101,7 +101,8 @@ test('a coach: Check-in on its own, no Students tabs in the page header, the sam
 
   await expect(page.getByRole('heading', { level: 1, name: 'Check-in' })).toBeVisible();
   await expect(page.getByRole('navigation', { name: 'Students sections' })).toHaveCount(0);
-  await expect(page.getByRole('link', { name: 'Front-desk mode' })).toBeVisible();
+  // Only the owner and Branch Staff can start front-desk mode, so a coach has no button for it.
+  await expect(page.getByRole('link', { name: 'Front-desk mode' })).toHaveCount(0);
   await expect(page.getByRole('tablist', { name: 'Check in by' })).toBeVisible();
   await expect(panel(page).getByTestId('fd-recent')).toContainText('Sam Lee');
 });

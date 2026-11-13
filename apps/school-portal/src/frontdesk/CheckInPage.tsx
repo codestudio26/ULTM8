@@ -13,6 +13,7 @@ import { useSchool } from '../schools/schoolQueries';
 import { useMyOpenMat } from './openMatQueries';
 import { useMyStaffAccess } from '../roleGrants/roleGrantQueries';
 import { OpenMatDialog } from './OpenMatDialog';
+import { useFrontDeskStart } from './frontDeskStart';
 import {
   ClassList,
   CodePad,
@@ -61,6 +62,7 @@ export function CheckInPage() {
   const openMatBranches = branches.filter((b) => myOpenMat.data?.branchIds == null || myOpenMat.data.branchIds.includes(b.id));
   // Decision 394: the owner, and Branch Staff with "Change check-in rules".
   const myAccess = useMyStaffAccess(schoolId);
+  const frontDesk = useFrontDeskStart(schoolId);
 
   const [method, setMethod] = useState<CheckInMethod>('scan');
   const [who, setWho] = useState<{ student: FrontDeskStudent; qr: QrLookup | null } | null>(null);
@@ -82,13 +84,16 @@ export function CheckInPage() {
               {t('frontDesk.page.rules')}
             </Link>
           ) : null}
-          <Link to="/front-desk" className="u8n-pill">
-            <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8">
-              <rect x="4" y="3" width="16" height="18" rx="2.5" />
-              <path d="M10 17.5h4" />
-            </svg>
-            {t('frontDesk.page.openKiosk')}
-          </Link>
+          {/* Only for those who can start it: the owner, or Branch Staff for their own Branch. */}
+          {frontDesk.allowed ? (
+            <Link to="/front-desk" className="u8n-pill">
+              <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <rect x="4" y="3" width="16" height="18" rx="2.5" />
+                <path d="M10 17.5h4" />
+              </svg>
+              {t('frontDesk.page.openKiosk')}
+            </Link>
+          ) : null}
         </>
       }
     />
