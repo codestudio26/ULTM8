@@ -111,7 +111,7 @@ failed step; the message says what to fix. The usual ones:
 | `signing in as owner.hq@... failed` | The API and the secret point at different databases: check `STAGING_DATABASE_URL` is the same database as Render's `DATABASE_URL`. |
 
 Run it again whenever you like: the demo's dates start from the day it runs
-("today" always has classes), so re-seed before showing it to someone.
+("today" always has classes), so re-seed before showing it to someone. "Check-ins today" only counts classes that had started when the seed ran, so re-run it after the day's first class to refresh today's check-ins (`apps/api/scripts/demo/README.md`, "Today's check-ins").
 
 ## 5. Open it
 
@@ -121,9 +121,9 @@ Use the passcode you saved as `DEMO_PASSCODE` for every login.
 
 | Who | Email | What to look at |
 |---|---|---|
-| School owner, main academy (London) | `owner.hq@apex-demo.example` | Everything: Dashboard, Students, Grading, Timetable, Check-in, Plans, Transactions, Billing reports, Payroll, Waivers, Notifications, Sign-ups |
-| Head coach (London, Shoreditch) | `coach.hq@apex-demo.example` | Coach dashboard, roll call and class QR, Grading Board |
-| Front desk (Shoreditch) | `desk.hq@apex-demo.example` | Students, Check-in, Timetable, Sign-ups; no money pages |
+| School owner, main academy (London) | `owner.hq@apex-demo.example` | Everything, in the new look: the Dashboard with **Check-ins today** and **Ready to grade**, Students (Check-in, Sign-ups, Attendance), Team, Schedule, Grading, Billing (Plans, Transactions, Billing reports, Payroll), Waivers, Organisation, Notifications |
+| Head coach (London, Shoreditch) | `coach.hq@apex-demo.example` | The new-look Coach dashboard (ready to grade, my classes with roll call and class QR), Grading Board |
+| Front desk (Shoreditch) | `desk.hq@apex-demo.example` | Coach dashboard with **Check-ins today** for Shoreditch (it may see attendance statistics), Students, Check-in, Timetable, Sign-ups; no money pages |
 | Front desk, fewer permissions (Clapham) | `desk.clapham@apex-demo.example` | The same without class management or charges |
 | Franchise owner | `founder@apex-demo.example` | Franchises → Apex Jiu-Jitsu: the member Schools and franchise fees |
 | School owner, Manchester | `owner.manchester@apex-demo.example` | A franchisee's own School |
