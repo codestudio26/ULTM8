@@ -10,6 +10,37 @@ Compare any two versions with `git diff <old> <new>`, e.g. `git diff v1.0.0 mast
 
 Post-v1.4.0 work on `master`.
 
+- **New look: Platform Admin** (#585). Platform Admin: the new look's app shell,
+  with the side menu and icon tiles, the phone top bar, and light and dark mode.
+  Same pages and Log out. No top bar, and `/` still opens Admin Users (Decision
+  461).
+- **New look: Platform Admin** (#586). Platform Admin: the sign-in page in the
+  new look, a white card on the grey page, in light and dark.
+- **New look: Platform Admin** (#587). Platform Admin → Admin Users: page
+  header, a list that turns into cards on narrow screens, tier and status tags,
+  and the new-look Tier drop-down in Invite.
+- **New look: Platform Admin** (#589). Platform Admin → Schools: page header,
+  details as label/value pairs, owners and staff as rows with tags, and the
+  trial, account status and payment account cards with tags and equal button
+  pairs.
+- **New look: Platform Admin** (#591). Platform Admin → Franchises: page header,
+  details as label/value pairs with tags, and the shared account status and
+  payment account cards.
+- **New look: Platform Admin** (#592). Platform Admin → Impersonation: page
+  header, the form in a white card, and the started session as label/value pairs
+  with the token in a grey code box.
+- **New look: Platform Admin** (#593). Platform Admin → Translations: page
+  header, filters in a card, a list that turns into cards on narrow screens with
+  Edit · Delete as an equal pair, and Load more under it.
+- **New look: Platform Admin** (#594). Platform Admin → Card Surcharge: page
+  header, the Add a country form with the new-look tick box, the list as the
+  new-look table, and Back · Remove as an equal pair.
+- **New look: Platform Admin** (#595). Platform Admin → What's new: New post in
+  the page header, each post as a card, and the post dialog's translations as
+  soft rows that open.
+- **New look: Platform Admin** (#596). Platform Admin → Subscription Plans: page
+  header, the plans as a list that turns into cards on narrow screens, and Load
+  more under it.
 - **Dashboard: Ready to grade and Check-ins today** (#584). The owner Dashboard
   shows Ready to grade (the Grading Board's Ready to Grade column across every
   style, with "See all N →") and Check-ins today (today's check-ins on the

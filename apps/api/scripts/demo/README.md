@@ -20,8 +20,8 @@ About 30% of each School's members are children, each with a parent (some parent
 - **Membership plans**: monthly Subscriptions (adult, kids), a 10-class pack, a drop-in, a free trial week and a Friend Pass. São Paulo takes no cards, as built for Brazil: its monthly fee is a 30-day pass paid each month by Pix or cash.
 - **Memberships**: mostly monthly, plus packs, trials (new joiners), lapsed members, a few subscriptions cancelling at the end of the month and a few frozen (approved freezes in progress).
 - **Payments**: card (pretend Stripe) first payments and monthly renewals for up to a year, a few failed renewals retried, two refunds per card School, cash and Pix at the desk, and a few cash/Pix orders waiting for the School to confirm.
-- **Attendance**: about 25,000 bookings over 13 weeks (checked in by app QR, check-in code, coach scan or by hand), with no-shows and cancellations, hours trained, and bookings for this week. Today's classes have people checked in.
-- **Grading**: a rank for every member, a promotion and stripe history, and progress from their real check-ins: some just starting, some getting there, some ready to grade. A couple of new members' self-declared belts wait to be verified.
+- **Attendance**: about 25,000 bookings over 13 weeks (checked in by app QR, check-in code, coach scan or by hand), with no-shows and cancellations, hours trained, and bookings for this week. Today's classes that had started when the seed ran have people checked in, so the Dashboard's **Check-ins today** isn't zero (see "Today's check-ins" below).
+- **Grading**: a rank for every member, a promotion and stripe history, and progress from their real check-ins: some just starting, some getting there, some ready to grade (dozens of active students at HQ sit in the Grading Board's Ready to Grade column, 66% and over, so the Dashboard's **Ready to grade** shows three of them and "See all N →"). A couple of new members' self-declared belts wait to be verified.
 - **Waivers** signed by almost everyone (a parent for each child; some on paper); a few still to sign.
 - **Guardians**: each child linked to a parent, with the parent's consent (and camera consent for most).
 - **Notifications** (ready to grade, payment to confirm, membership ended, frozen, School messages), **sign-ups** waiting on the front-desk list, **staff permissions** for the front desk, **pay rates** for payroll, a small **curriculum** (lessons without video: video needs Cloudflare Stream, deferred to v1.3, Decision 267), member **tags** and **notes**, emergency contacts.
@@ -36,10 +36,10 @@ Every passcode is **123456** (or `DEMO_PASSCODE` when the seed was run with one)
 | Role | School | Email | Where | What it shows |
 |---|---|---|---|---|
 | Franchise owner | Apex Jiu-Jitsu (all four) | `founder@apex-demo.example` | Portal | Franchises → Apex Jiu-Jitsu: the four member Schools, fee billing and the monthly fee charges |
-| School owner (main academy) | HQ | `owner.hq@apex-demo.example` | Portal | Everything: Dashboard, Students, a student's profile, Grading Board, Timetable, Check-in, Membership Plans, Transactions, Billing reports, Payroll, Waivers, Notifications, Sign-ups |
-| Head coach | HQ, Shoreditch | `coach.hq@apex-demo.example` | Portal | Coach dashboard (styles, readiness, my classes with roll call and class QR), Grading Board and students for their branch, notifications |
-| Front desk (Branch Staff) | HQ, Shoreditch | `desk.hq@apex-demo.example` | Portal | Students, Check-in and front-desk mode, Timetable (book someone in), sign-ups; no money pages |
-| Front desk, fewer permissions | HQ, Clapham | `desk.clapham@apex-demo.example` | Portal | The same for Clapham, without class management or charges |
+| School owner (main academy) | HQ | `owner.hq@apex-demo.example` | Portal | Everything, in the new look. Lands on the **Dashboard**: Bookings this week, Upcoming, **Check-ins today** (check-ins to classes that start today, London time), Active students, Attendance, Today's classes, **Ready to grade** (the Grading Board's Ready to Grade column, active students only: the top three and "See all N →"), Birthdays, and Notifications on the right. A "Belts waiting to be verified" pop-up comes first (new members' self-declared belts): tap **Later**. Then Students (Check-in, Sign-ups, Attendance, Growth tabs) and a student's profile, Team, Schedule (Classes, Timetable, Curriculum, Cancellations), Grading Board, Billing (Membership Plans, Transactions, Billing reports, Payroll), Waivers, Organisation, Notifications |
+| Head coach | HQ, Shoreditch | `coach.hq@apex-demo.example` | Portal | The new-look **Coach dashboard** (`/coach`): Grading (each style's "ready to grade" and "getting there" counts, Open the Grading Board), My classes (every week, and coming up with **Roll call** and **Show QR**), Notifications, Birthdays, and on the right the next class and the Ready to grade list. Grading Board and Students for their branch, My belts, My coach profile. No "Check-ins today": that card is for the owner and the front desk |
+| Front desk (Branch Staff) | HQ, Shoreditch | `desk.hq@apex-demo.example` | Portal | Has **See attendance statistics**, so its new-look Coach dashboard (`/coach`) opens with **Check-ins today** for Shoreditch (Decision 461), then the branch's classes this week with Roll call and Show QR, and Birthdays. Students (Check-in and front-desk mode, Sign-ups, Attendance, Growth), Team, Schedule (book someone in on the Timetable); no money pages, and nothing to grade (no grading permission) |
+| Front desk, fewer permissions | HQ, Clapham | `desk.clapham@apex-demo.example` | Portal | The same for Clapham (Check-ins today for Clapham too), without class management or charges |
 | School owner | Manchester | `owner.manchester@apex-demo.example` | Portal | A franchisee's own School |
 | Coach | Manchester | `coach.manchester@apex-demo.example` | Portal | |
 | Front desk | Manchester | `desk.manchester@apex-demo.example` | Portal | |
@@ -56,7 +56,16 @@ Every passcode is **123456** (or `DEMO_PASSCODE` when the seed was run with one)
 
 Every other member is `firstname.surname@apex-demo.example` (a number is added when a name repeats), all with the same passcode. Children have no login of their own (as built: the parent acts for them). Once "I agree" is ticked for `new.member@`, it stays ticked until the demo is seeded again.
 
-**Coaches** sign in to the School Portal with the same login page as owners (email and passcode). A coach lands on the **Coach dashboard** (`/coach`): the styles they may grade with how many students are ready, their weekly classes, and the coming classes with **Roll call** and **Show QR** links; Grading and Students show only their own branch.
+**Coaches** and the **front desk** sign in to the School Portal with the same login page as owners (email and passcode) and land on the **Coach dashboard** (`/coach`). A coach sees the styles they may grade with how many students are ready, their weekly classes, and the coming classes with **Roll call** and **Show QR** links, with the next class and the Ready to grade list in the right-hand panel; Grading and Students show only their own branch. The front desk sees its Branch's classes instead, and **Check-ins today** for its Branch, because every demo front desk has "See attendance statistics".
+
+### Today's check-ins
+
+The Dashboard's **Check-ins today** (and the front desk's card on `/coach`) counts check-ins to the classes that start today on the School's clock. The seed checks people in only to classes that had started when it ran, as the API would (nobody checks in to a class that hasn't opened yet), and it runs once. So:
+
+- seeded before the day's first class, the card shows 0 that day. HQ's first class is at 06:30 on Monday, Wednesday and Friday, 07:00 on Tuesday and Thursday (Clapham; Shoreditch's is 12:15), 09:30 on Saturday and 10:00 on Sunday (the women's class at Shoreditch; Clapham has no Sunday classes, so `desk.clapham@`'s card stays at 0 on Sundays);
+- the next day it starts again from 0, and only real check-ins made in the demo add to it.
+
+**Re-run the seed to refresh today's check-ins** (after the day's first class has started). At the end the seed reads both new tiles back through the API, as the HQ owner and each HQ front desk, and prints them, for example: `Apex Jiu-Jitsu HQ: "Ready to grade" 74 students; "Check-ins today" (…, Europe/London) 101 for the owner, 70 for desk.hq@apex-demo.example (Shoreditch), 31 for desk.clapham@apex-demo.example (Clapham)`. It says so when today's count is still 0.
 
 ## Run it on one machine
 
@@ -98,7 +107,7 @@ ULTM8_ALLOW_DEV_SEED_HOST=<host> API=https://<api-host>/v1 node scripts/demo/see
 - `DEMO_KEEP_EXISTING=1` (optional): if the demo is already there, leave it as it is.
 - It takes a minute or two locally, longer against a remote database.
 
-Re-running it is safe: it first deletes its own tenants (the Franchise `de300000-0000-4000-8000-000000000001`, its Schools, every account on `@apex-demo.example`, and the children only those accounts look after), with everything that depends on them, then seeds them again. Nothing else in the database is touched. The data is dated from the day it runs ("today" always has classes), so re-seed to bring a demo back up to date.
+Re-running it is safe: it first deletes its own tenants (the Franchise `de300000-0000-4000-8000-000000000001`, its Schools, every account on `@apex-demo.example`, and the children only those accounts look after), with everything that depends on them, then seeds them again. Nothing else in the database is touched. The data is dated from the day it runs ("today" always has classes), so re-seed to bring a demo back up to date, and to refresh today's check-ins.
 
 On a server with real Stripe, SMS or email, remember the demo Schools are fake: a payment needs a test-mode Stripe account, and the made-up phone numbers and `.example` emails never receive anything.
 
