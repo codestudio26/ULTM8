@@ -545,7 +545,9 @@ async function main() {
       WHERE g."userId" = j."studentId" AND g."schoolId" = j."schoolId" AND g.role = 'STUDENT' AND j."schoolId" = $1`, ctx.S.id, ctx.S.timezone);
   }
 
-  // Instructor profiles, staff permissions.
+  // Instructor profiles, staff permissions. Every front desk may see attendance
+  // statistics, which also gives them "Check-ins today" for their own Branches
+  // on /coach (Decision 461 item 4).
   for (const ctx of world) {
     await db.instructor.createMany({ data: ctx.coaches.map((c) => ({ id: randomUUID(), userId: c.user.id, schoolId: ctx.S.id, branchId: c.branchId, yearsOfExperience: c.years, bio: c.bio, phone: c.user.phone, activities: ['Brazilian Jiu-Jitsu'], specializations: ['Brazilian Jiu-Jitsu'], createdAt: c.at })) });
     await db.staffPermission.createMany({ data: ctx.staff.map((st) => ({
@@ -1082,12 +1084,42 @@ async function main() {
   await db.notification.deleteMany({ where: { type: 'WAIVER_SIGNATURE_REQUEST', schoolId: { in: world.map((c) => c.S.id) }, userId: { notIn: [...stillToSign] } } });
 
   console.table(stats);
+  await reportNewTiles(hq);
   for (const ctx of world) {
     const sch = await db.school.findUnique({ where: { id: ctx.S.id }, select: { joinCode: true } });
     console.log(`${ctx.S.name}: join code ${sch.joinCode}, owner ${ctx.owner.email}, coach ${ctx.coaches[0].user.email}${ctx.staff[0] ? `, front desk ${ctx.staff[0].user.email}` : ''}`);
   }
   console.log(`Franchise owner ${founder.email}; members ${['member', 'parent', 'new.member', 'aluno'].map((e) => `${e}@${DOMAIN}`).join(', ')}; passcode ${process.env.DEMO_PASSCODE ? '(DEMO_PASSCODE)' : PASSCODE}`);
   log('done');
+}
+
+/**
+ * Reads back, through the API, what the newest tiles show for a School
+ * (Decision 461): the owner Dashboard's "Ready to grade" (the Grading Board's
+ * Ready to Grade column, active students only) and "Check-ins today" (check-ins
+ * to classes that start today on the School's clock), for the owner and for
+ * the front desk (Branch Staff with "See attendance statistics", on /coach).
+ * Read-only, and it never fails the seed: it only says what a viewer will see.
+ *
+ * Check-ins are only written for classes that had started when the seed ran
+ * (as the API allows them), so a seed run before the day's first class shows
+ * none "today", and the next day's tile starts from zero: re-run the seed.
+ */
+async function reportNewTiles(ctx) {
+  const { S } = ctx;
+  try {
+    const ready = await api('GET', `/schools/${S.id}/grading-board/ready`, ctx.tok);
+    const owner = await api('GET', `/schools/${S.id}/attendance/today`, ctx.tok);
+    const desks = [];
+    for (const st of ctx.staff) {
+      const d = await api('GET', `/schools/${S.id}/attendance/today`, session(st.user.email));
+      desks.push(`${d.checkIns} for ${st.user.email} (${ctx.branches.find((b) => b.id === st.branchId)?.name})`);
+    }
+    log(`${S.name}: "Ready to grade" ${ready.total} students; "Check-ins today" (${owner.date}, ${owner.timeZone}) ${owner.checkIns} for the owner${desks.length ? `, ${desks.join(', ')}` : ''}`);
+    if (!owner.checkIns) log(`${S.name}: no class had started yet today when the seed ran, so "Check-ins today" is 0. Re-run the seed after the first class of the day has started.`);
+  } catch (e) {
+    log(`${S.name}: could not read the Dashboard tiles back through the API (${e.message}); the seed itself is done.`);
+  }
 }
 
 main()
