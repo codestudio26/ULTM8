@@ -16,6 +16,10 @@ Post-v1.4.0 work on `master`.
   Before, iOS registered an Apple token the server couldn't send to. Pushes need a
   new app build (not Expo Go), and on iOS the Apple push key in Firebase too. The
   web app no longer asks for notification permission it can't use.
+- **Member app: logging out stops push notifications on that phone** (Decision
+  463). The phone's token is removed from the account and deleted in Firebase, so
+  someone else logging in on a shared phone gets their own notifications instead
+  of none.
 - **Dashboard: Ready to grade and Check-ins today** (#584). The owner Dashboard
   shows Ready to grade (the Grading Board's Ready to Grade column across every
   style, with "See all N →") and Check-ins today (today's check-ins on the

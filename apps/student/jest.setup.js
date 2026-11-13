@@ -35,5 +35,6 @@ jest.mock('react-native-signature-canvas', () => {
 jest.mock('@react-native-firebase/messaging', () => ({
   getMessaging: jest.fn(() => ({})),
   getToken: jest.fn(async () => 'test-fcm-token'),
+  deleteToken: jest.fn(async () => undefined),
   onTokenRefresh: jest.fn(() => () => undefined),
 }));

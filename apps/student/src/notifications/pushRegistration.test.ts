@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { Platform } from 'react-native';
-import { registerForPushNotificationsAsync, stopPushTokenRefresh } from './pushRegistration';
+import { registerForPushNotificationsAsync, unregisterPushTokenAsync } from './pushRegistration';
 
 jest.mock('../api', () => ({
-  apiClient: { POST: jest.fn() },
+  apiClient: { POST: jest.fn(), DELETE: jest.fn() },
 }));
 jest.mock('expo-notifications', () => ({
   getPermissionsAsync: jest.fn(),
@@ -13,7 +13,7 @@ jest.mock('expo-notifications', () => ({
 // @react-native-firebase/messaging is mocked globally in jest.setup.js.
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const { apiClient } = require('../api') as { apiClient: { POST: ReturnType<typeof jest.fn> } };
+const { apiClient } = require('../api') as { apiClient: { POST: ReturnType<typeof jest.fn>; DELETE: ReturnType<typeof jest.fn> } };
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const Notifications = require('expo-notifications') as {
   getPermissionsAsync: ReturnType<typeof jest.fn>;
@@ -24,11 +24,16 @@ const Notifications = require('expo-notifications') as {
 const Messaging = require('@react-native-firebase/messaging') as {
   getMessaging: ReturnType<typeof jest.fn>;
   getToken: ReturnType<typeof jest.fn>;
+  deleteToken: ReturnType<typeof jest.fn>;
   onTokenRefresh: ReturnType<typeof jest.fn>;
 };
 
 function okResponse<T>(data: T) {
   return Promise.resolve({ data, response: { ok: true, status: 201 } as Response });
+}
+
+function noContent() {
+  return Promise.resolve({ data: undefined, response: { ok: true, status: 204 } as Response });
 }
 
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
@@ -40,19 +45,21 @@ describe('registerForPushNotificationsAsync', () => {
 
   beforeEach(() => {
     apiClient.POST.mockReset();
+    apiClient.DELETE.mockReset().mockReturnValue(noContent());
     Notifications.getPermissionsAsync.mockReset();
     Notifications.requestPermissionsAsync.mockReset();
     Notifications.getDevicePushTokenAsync.mockReset();
     Messaging.getMessaging.mockReset().mockReturnValue({});
     Messaging.getToken.mockReset();
+    Messaging.deleteToken.mockReset().mockResolvedValue(undefined);
     unsubscribe = jest.fn();
     Messaging.onTokenRefresh.mockReset().mockReturnValue(unsubscribe);
     warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
   });
 
-  afterEach(() => {
-    // Module-level refresh listener: reset between tests.
-    stopPushTokenRefresh();
+  afterEach(async () => {
+    // Module-level listener and token id: reset between tests.
+    await unregisterPushTokenAsync();
     warnSpy.mockRestore();
     Platform.OS = originalPlatformOS;
   });
@@ -176,13 +183,88 @@ describe('registerForPushNotificationsAsync', () => {
       expect(warnSpy).toHaveBeenCalledWith('Push notification token refresh not registered:', expect.anything());
     });
 
-    it('stopPushTokenRefresh (logout) stops listening, and the next login listens again', async () => {
+    it('logout stops listening, and the next login listens again', async () => {
       await registerForPushNotificationsAsync();
-      stopPushTokenRefresh();
+      await unregisterPushTokenAsync();
       expect(unsubscribe).toHaveBeenCalledTimes(1);
 
       await registerForPushNotificationsAsync();
       expect(Messaging.onTokenRefresh).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('logout (shared phones, Decision 463)', () => {
+    beforeEach(() => {
+      Platform.OS = 'android';
+      Notifications.getPermissionsAsync.mockResolvedValue({ status: 'granted' });
+      Messaging.getToken.mockResolvedValue('fcm-token-a');
+      apiClient.POST.mockReturnValue(okResponse({ id: 'dt-a', userId: 'user-a', platform: 'ANDROID', token: 'fcm-token-a' }));
+    });
+
+    it('removes the token from the account, then makes Firebase throw it away', async () => {
+      await registerForPushNotificationsAsync();
+
+      await unregisterPushTokenAsync();
+
+      expect(apiClient.DELETE).toHaveBeenCalledWith('/v1/notifications/device-tokens/{id}', { params: { path: { id: 'dt-a' } } });
+      expect(Messaging.deleteToken).toHaveBeenCalledTimes(1);
+      expect(apiClient.DELETE.mock.invocationCallOrder[0]).toBeLessThan(Messaging.deleteToken.mock.invocationCallOrder[0]);
+    });
+
+    it('the next person to log in registers a fresh token of their own', async () => {
+      await registerForPushNotificationsAsync();
+      await unregisterPushTokenAsync();
+      Messaging.getToken.mockResolvedValue('fcm-token-b');
+      apiClient.POST.mockReturnValue(okResponse({ id: 'dt-b', userId: 'user-b', platform: 'ANDROID', token: 'fcm-token-b' }));
+
+      await registerForPushNotificationsAsync();
+
+      expect(apiClient.POST).toHaveBeenLastCalledWith('/v1/notifications/device-tokens', {
+        body: { token: 'fcm-token-b', platform: 'ANDROID' },
+      });
+    });
+
+    it('a refreshed token is the one removed at logout', async () => {
+      await registerForPushNotificationsAsync();
+      const listener = Messaging.onTokenRefresh.mock.calls[0][1] as (token: string) => void;
+      apiClient.POST.mockReturnValue(okResponse({ id: 'dt-a2', userId: 'user-a', platform: 'ANDROID', token: 'fcm-token-a2' }));
+      listener('fcm-token-a2');
+      await flush();
+
+      await unregisterPushTokenAsync();
+
+      expect(apiClient.DELETE).toHaveBeenCalledWith('/v1/notifications/device-tokens/{id}', { params: { path: { id: 'dt-a2' } } });
+    });
+
+    it('with no registration this run, only Firebase is asked (no server call)', async () => {
+      await unregisterPushTokenAsync();
+
+      expect(apiClient.DELETE).not.toHaveBeenCalled();
+      expect(Messaging.deleteToken).toHaveBeenCalledTimes(1);
+    });
+
+    it('never throws when the server delete fails, and still deletes the Firebase token', async () => {
+      await registerForPushNotificationsAsync();
+      apiClient.DELETE.mockReturnValue(Promise.reject(new TypeError('Network request failed')));
+
+      await expect(unregisterPushTokenAsync()).resolves.toBeUndefined();
+      expect(Messaging.deleteToken).toHaveBeenCalledTimes(1);
+      expect(warnSpy).toHaveBeenCalled();
+    });
+
+    it('never throws when Firebase is missing (Expo Go)', async () => {
+      Messaging.deleteToken.mockRejectedValue(new Error('not installed natively'));
+
+      await expect(unregisterPushTokenAsync()).resolves.toBeUndefined();
+    });
+
+    it('does nothing on the web app', async () => {
+      Platform.OS = 'web';
+
+      await unregisterPushTokenAsync();
+
+      expect(apiClient.DELETE).not.toHaveBeenCalled();
+      expect(Messaging.deleteToken).not.toHaveBeenCalled();
     });
   });
 });

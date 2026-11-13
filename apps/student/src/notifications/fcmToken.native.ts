@@ -1,4 +1,4 @@
-import { getMessaging, getToken, onTokenRefresh } from '@react-native-firebase/messaging';
+import { deleteToken, getMessaging, getToken, onTokenRefresh } from '@react-native-firebase/messaging';
 
 /**
  * The FCM registration token for this device, on iOS AND Android (Decision
@@ -16,6 +16,14 @@ import { getMessaging, getToken, onTokenRefresh } from '@react-native-firebase/m
  */
 export function getFcmTokenAsync(): Promise<string> {
   return getToken(getMessaging());
+}
+
+/**
+ * Makes Firebase throw this device's token away (on logout, Decision 463), so
+ * the next person to log in on this phone gets a fresh token of their own.
+ */
+export function deleteFcmTokenAsync(): Promise<void> {
+  return deleteToken(getMessaging());
 }
 
 /** Calls `listener` with the new token whenever FCM rotates it. Returns the unsubscribe. */

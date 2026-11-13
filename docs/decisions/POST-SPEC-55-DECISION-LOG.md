@@ -8471,3 +8471,23 @@ Unchanged: the 409 when a second person signs in on the same device (still flagg
 ### Recorded by
 
 User (Code), 12 Nov 2026: asked to wire real Firebase Cloud Messaging into the member app with the given Firebase config files, fix the iOS token, and handle token refresh.
+
+## Decision 463 — Logging out stops push notifications on that phone
+
+**Date:** 13 Nov 2026 · **Status:** Product-owner decision, built · **Builds on:** Decisions 223, 264, 462 · **Resolves:** the shared-phone 409 that `pushRegistration.ts` and Decision 462 flagged as not built
+
+### Decision
+
+1. **Logging out of the member app stops push notifications on that phone.** On logout the app stops listening for token refreshes, removes the phone's token from the account (`DELETE /notifications/device-tokens/:id`, the endpoint already built) while the access token is still valid, and then has Firebase delete the token (`deleteToken`).
+2. **So a shared phone works for the next person.** Someone else logging in on the same phone (a family phone, a Guardian and a Student) gets a fresh token of their own instead of the 409 the server gives for a token another account owns.
+3. **Best effort, never blocks logout.** If the delete can't reach the server, the Firebase token is still deleted, so the old row's token is dead: the next send reports it stale and `NotificationFanoutProcessor` deletes the row (existing behaviour).
+4. No change to the API, the data model, tenancy/RLS or permissions. The server still answers 409 for a token another account owns; with this change a working app no longer sends one.
+
+### Not covered
+
+- A phone where the app was deleted without logging out: its token stops working and is cleaned up on the next send, as before.
+- React Native Firebase marks the FCM token APIs (`getToken`, `deleteToken`, `onTokenRefresh`) as deprecated in favour of Firebase Installation ID messaging. They still work while that option is off (the default). Moving to it would need its own decision and a backend check.
+
+### Recorded by
+
+User (Code), 13 Nov 2026: "go ahead", answering the recommendation that logging out removes the phone's token from the account and has Firebase delete it.

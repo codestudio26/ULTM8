@@ -997,6 +997,12 @@ needed: a native EAS build (no `eas.json`/EAS project yet; Expo Go can't receive
 these pushes) and, for iOS, the APNs `.p8` key uploaded to Firebase once there is an
 Apple Developer membership.
 
+**Update, 13 Nov 2026 (Decision 463):** the shared-phone 409 above is closed. Logout
+removes the phone's token from the account and has Firebase delete it, so the next
+person to log in gets a fresh token. `apps/student/eas.json` now has a `preview`
+profile (internal APK, pointed at the staging API); `eas init` (the EAS project id)
+is still to be run by the owner.
+
 ---
 
 ## Coach dashboard (Decision 184) — DONE

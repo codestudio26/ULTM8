@@ -2,7 +2,7 @@ import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
-import { getFcmTokenAsync, onFcmTokenRefresh } from './fcmToken';
+import { deleteFcmTokenAsync, getFcmTokenAsync, onFcmTokenRefresh } from './fcmToken';
 
 /**
  * Device-token registration (Decision 223/264; FCM token on both platforms,
@@ -24,16 +24,17 @@ import { getFcmTokenAsync, onFcmTokenRefresh } from './fcmToken';
  *
  * Token refresh: FCM can rotate a token at any time. After the first
  * successful registration this listens for a new token and registers it the
- * same way. `stopPushTokenRefresh()` (called on logout) stops listening, so a
- * logged-out device doesn't try to register.
+ * same way.
  *
- * Known, deliberately unresolved edge case: if a second person logs into
- * this same device (e.g. a shared family phone, a Guardian and a Student),
- * re-registering the same device token under a different user hits the
- * existing 409 (NotificationsService.registerDeviceToken's own documented
- * conflict response) — swallowed by the catch below like any other failure,
- * not actively handled by deregistering the previous user's token on
- * logout. Flagged, not built, this phase.
+ * Logout (`unregisterPushTokenAsync()`, Decision 463): logging out stops push
+ * notifications on this phone. The app stops listening for refreshes, removes
+ * this device's token from the account (`DELETE /notifications/device-tokens/
+ * :id`), and makes Firebase throw the token away. So the next person to log in
+ * on a shared phone (a family phone, a Guardian and a Student) gets a fresh
+ * token instead of the 409 the server gives for a token another account
+ * owns. If the delete can't reach the server, the old row's token is dead
+ * anyway once Firebase drops it: the next send reports it stale and
+ * NotificationFanoutProcessor deletes it.
  */
 export async function registerForPushNotificationsAsync(): Promise<void> {
   // The web app has no push notifications (fcmToken.ts). Returning here also
@@ -62,20 +63,45 @@ export async function registerForPushNotificationsAsync(): Promise<void> {
   }
 }
 
-/** Stops re-registering refreshed tokens. Called on logout. */
-export function stopPushTokenRefresh(): void {
+/**
+ * Called on logout, while the access token is still valid (Decision 463).
+ * Best effort and never throws: a failure here must not stop the logout.
+ */
+export async function unregisterPushTokenAsync(): Promise<void> {
   unsubscribeTokenRefresh?.();
   unsubscribeTokenRefresh = null;
+  if (Platform.OS === 'web') return;
+
+  const id = registeredDeviceTokenId;
+  registeredDeviceTokenId = null;
+  if (id) {
+    try {
+      await unwrap(apiClient.DELETE('/v1/notifications/device-tokens/{id}', { params: { path: { id } } }));
+    } catch (err) {
+      console.warn('Push notification token not removed from the account:', err instanceof Error ? err.message : err);
+    }
+  }
+  try {
+    await deleteFcmTokenAsync();
+  } catch (err) {
+    // Also covers no Firebase native module (Expo Go).
+    console.warn('Push notification token not deleted in Firebase:', err instanceof Error ? err.message : err);
+  }
 }
 
 let unsubscribeTokenRefresh: (() => void) | null = null;
+// The server's id for this device's token row, from the last registration in
+// this app run (every launch and login registers again, so it is always set
+// once registration has succeeded).
+let registeredDeviceTokenId: string | null = null;
 
 function platformName(): 'IOS' | 'ANDROID' {
   return Platform.OS === 'ios' ? 'IOS' : 'ANDROID';
 }
 
 async function registerToken(token: string): Promise<void> {
-  await unwrap(apiClient.POST('/v1/notifications/device-tokens', { body: { token, platform: platformName() } }));
+  const deviceToken = await unwrap(apiClient.POST('/v1/notifications/device-tokens', { body: { token, platform: platformName() } }));
+  registeredDeviceTokenId = deviceToken.id;
 }
 
 // One listener per app run, however many times registration runs (launch,

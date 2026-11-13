@@ -9,6 +9,10 @@ export function getFcmTokenAsync(): Promise<string> {
   return Promise.reject(new Error('Push notifications are not available on the web app.'));
 }
 
+export function deleteFcmTokenAsync(): Promise<void> {
+  return Promise.resolve();
+}
+
 export function onFcmTokenRefresh(_listener: (token: string) => void): () => void {
   return () => undefined;
 }
