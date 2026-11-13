@@ -199,10 +199,14 @@ test("a colleague does not see an instructor's address or certification", async 
   await db.instructor.create({ data: { id: randomUUID(), userId: colleague.id, schoolId: s.schoolId } });
 
   await signIn(page, s.ownerToken);
+  // The API's address is whatever the portal itself calls (its
+  // VITE_API_BASE_URL), read off the page's own request — never a fixed port.
+  const apiCall = page.waitForRequest((r) => r.url().includes('/v1/'));
   await page.goto(`/instructors/${coach.profileId}`);
   await expect(page.getByText('9 Hidden Lane, Springfield')).toBeVisible();
 
-  const res = await page.request.get(`http://localhost:3100/v1/instructors/${coach.profileId}`, {
+  const api = new URL((await apiCall).url()).origin;
+  const res = await page.request.get(`${api}/v1/instructors/${coach.profileId}`, {
     headers: { Authorization: `Bearer ${colleague.token}` },
   });
   expect(res.status()).toBe(200);
