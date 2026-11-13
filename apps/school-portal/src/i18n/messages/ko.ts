@@ -3104,6 +3104,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     emptyFilteredTitle: "이 필터에 맞는 수련생이 없습니다",
     emptyDescription: "수련생이 도장에 가입하면(또는 보호자가 등록하면) 여기에 표시됩니다.",
     emptyFilteredDescription: "다른 검색어나 필터를 사용해 보세요.",
+    noBranchTitle: "아직 배정된 지점이 없습니다",
+    noBranchDescription: "배정된 지점의 수련생이 표시됩니다. 도장 원장이 지점을 배정할 수 있습니다.",
     columnName: "이름",
     columnEmail: "이메일",
     columnStatus: "상태",

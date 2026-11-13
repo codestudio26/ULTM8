@@ -3309,6 +3309,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     emptyFilteredTitle: "لا يوجد طلاب يطابقون هذا الفلتر",
     emptyDescription: "يظهر الطلاب هنا بعد انضمامهم إلى مدرستك (أو عندما يسجّلهم وليّ الأمر).",
     emptyFilteredDescription: "جرّب بحثًا أو فلترًا مختلفًا.",
+    noBranchTitle: "لم يتم تعيينك في أي فرع بعد",
+    noBranchDescription: "ترى طلاب الفروع المعيّن فيها. يمكن لمالك المدرسة تعيينك في فرع.",
     columnName: "الاسم",
     columnEmail: "البريد الإلكتروني",
     columnStatus: "الحالة",

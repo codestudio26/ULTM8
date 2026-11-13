@@ -3104,6 +3104,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     emptyFilteredTitle: "没有符合此筛选条件的学员",
     emptyDescription: "学员加入你的学校（或由监护人为其注册）后会显示在这里。",
     emptyFilteredDescription: "请尝试其他搜索词或筛选条件。",
+    noBranchTitle: "你还没有被分配到分校",
+    noBranchDescription: "你可以看到所分配分校的学员。学校负责人可以为你分配分校。",
     columnName: "姓名",
     columnEmail: "邮箱",
     columnStatus: "状态",

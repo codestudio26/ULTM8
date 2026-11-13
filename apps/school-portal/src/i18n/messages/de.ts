@@ -3145,6 +3145,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     emptyFilteredTitle: "Keine Schüler entsprechen diesem Filter",
     emptyDescription: "Schüler erscheinen hier, sobald sie deiner Schule beitreten (oder ein Erziehungsberechtigter sie anmeldet).",
     emptyFilteredDescription: "Versuche eine andere Suche oder einen anderen Filter.",
+    noBranchTitle: "Du bist noch keiner Filiale zugeordnet",
+    noBranchDescription: "Du siehst die Schüler der Filialen, denen du zugeordnet bist. Der Schulinhaber kann dich einer Filiale zuordnen.",
     columnName: "Name",
     columnEmail: "E-Mail",
     columnStatus: "Status",

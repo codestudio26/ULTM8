@@ -297,6 +297,8 @@ export const students = {
   emptyFilteredTitle: 'No Students match this filter',
   emptyDescription: 'Students appear here once they join your School (or a Guardian enrolls them).',
   emptyFilteredDescription: 'Try a different search or filter.',
+  noBranchTitle: "You aren't assigned to a branch yet",
+  noBranchDescription: "You see the students of the branches you're assigned to. The School owner can assign you to a branch.",
   columnName: 'Name',
   columnEmail: 'Email',
   columnStatus: 'Status',

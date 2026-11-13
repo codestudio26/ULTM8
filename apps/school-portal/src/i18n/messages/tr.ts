@@ -3145,6 +3145,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     emptyFilteredTitle: "Bu filtreyle eşleşen öğrenci yok",
     emptyDescription: "Öğrenciler okulunuza katıldığında (veya bir veli onları kaydettiğinde) burada görünür.",
     emptyFilteredDescription: "Farklı bir arama veya filtre deneyin.",
+    noBranchTitle: "Henüz bir şubeye atanmadın",
+    noBranchDescription: "Atandığın şubelerin öğrencilerini görürsün. Okul sahibi seni bir şubeye atayabilir.",
     columnName: "Ad",
     columnEmail: "E-posta",
     columnStatus: "Durum",

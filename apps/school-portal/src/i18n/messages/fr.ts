@@ -3145,6 +3145,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     emptyFilteredTitle: "Aucun élève ne correspond à ce filtre",
     emptyDescription: "Les élèves apparaissent ici lorsqu’ils rejoignent votre école (ou qu’un tuteur les inscrit).",
     emptyFilteredDescription: "Essayez une autre recherche ou un autre filtre.",
+    noBranchTitle: "Vous n'êtes encore rattaché à aucun site",
+    noBranchDescription: "Vous voyez les élèves des sites auxquels vous êtes rattaché. Le propriétaire de l'école peut vous rattacher à un site.",
     columnName: "Nom",
     columnEmail: "E-mail",
     columnStatus: "Statut",

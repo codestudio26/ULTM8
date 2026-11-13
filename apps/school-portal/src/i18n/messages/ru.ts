@@ -3227,6 +3227,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     emptyFilteredTitle: "Нет учеников по этому фильтру",
     emptyDescription: "Ученики появятся здесь, когда вступят в вашу школу (или их запишет опекун).",
     emptyFilteredDescription: "Попробуйте другой поиск или фильтр.",
+    noBranchTitle: "Вы ещё не закреплены за филиалом",
+    noBranchDescription: "Вы видите учеников филиалов, за которыми закреплены. Владелец школы может закрепить вас за филиалом.",
     columnName: "Имя",
     columnEmail: "Эл. почта",
     columnStatus: "Статус",

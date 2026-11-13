@@ -76,7 +76,7 @@ export function StudentsPage() {
   // no other school-portal page persists a view/UI preference today.
   const [viewMode, setViewMode] = useState<ViewMode>('rows');
   const { data, isLoading, error } = useStudents(schoolId, statusFilter);
-  const { data: branchData } = useBranches(schoolId);
+  const { data: branchData, isLoading: branchesLoading } = useBranches(schoolId);
   const [search, setSearch] = useState('');
   const [branchFilter, setBranchFilter] = useState('');
   // Decision 404: only students with a membership frozen today.
@@ -143,11 +143,19 @@ export function StudentsPage() {
 
   const branches = branchData?.items ?? [];
   const hasBranches = branches.length > 0;
+  // Decision 168 (reused for Students by Decision 341): in a School with
+  // branches, staff see only their branches' students, and a coach or Branch
+  // Staff grant with no branch covers none. Say so instead of "No Students
+  // yet". The branch list counts archived branches too, as the API's own
+  // check (staffBranchCoverage) does.
+  const noBranchHere =
+    isStaffHere && hasBranches && !claims?.grants.some((g) => (g.role === 'INSTRUCTOR' || g.role === 'BRANCH_STAFF') && g.schoolId === coachSchoolId && !!g.branchId);
   const pageCount = Math.max(1, Math.ceil(filtered.length / STUDENTS_PAGE_SIZE));
   const page = Math.min(pageIndex, pageCount - 1);
   const students = filtered.slice(page * STUDENTS_PAGE_SIZE, (page + 1) * STUDENTS_PAGE_SIZE);
   const filtering = statusFilter !== 'ACTIVE' || search.trim() !== '' || branchFilter !== '' || frozenOnly || rosterFilter !== '' || tagFilter !== '' || memberStatusFilter !== '' || fieldFiltering;
-  const loading = isLoading || (!!tagFilter && tagged.isLoading) || (!!rosterFilter && rosterMembers.isLoading) || (!!memberStatusFilter && assignments.isLoading) || (fieldFiltering && fieldMatches.isLoading);
+  // Staff wait for the branch list too, so the no-branch note doesn't flash "No Students yet" first.
+  const loading = isLoading || (isStaffHere && branchesLoading) || (!!tagFilter && tagged.isLoading) || (!!rosterFilter && rosterMembers.isLoading) || (!!memberStatusFilter && assignments.isLoading) || (fieldFiltering && fieldMatches.isLoading);
   const selected = students.find((s) => s.id === selectedId) ?? students[0] ?? null;
   // The Edit page's own gate (Decision 448 item 11): the owner, or Branch
   // Staff with "Manage students"; never for a former student.
@@ -349,6 +357,10 @@ export function StudentsPage() {
           ) : error ? (
             <div className="u8n-list__state">
               <ErrorBanner message={error instanceof ApiError ? error.message : t('students.loadFailed')} />
+            </div>
+          ) : students.length === 0 && noBranchHere ? (
+            <div className="u8n-list__state">
+              <EmptyState title={t('students.noBranchTitle')} description={t('students.noBranchDescription')} />
             </div>
           ) : students.length === 0 ? (
             <div className="u8n-list__state">
