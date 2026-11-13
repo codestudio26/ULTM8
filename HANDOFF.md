@@ -1,5 +1,9 @@
 # Handoff workflow
 
+> Branch, PR, decision-number and migration rules for two developers are in
+> [CONTRIBUTING.md](CONTRIBUTING.md). This file covers only the daily
+> push-before-you-stop habit.
+
 Two people work on this repo at different hours, each in their own [GitHub
 Codespace](https://github.com/codestudio26/ULTM8/tree/master/.devcontainer)
 (not a live pairing session). This file is the whole handoff system — there's
