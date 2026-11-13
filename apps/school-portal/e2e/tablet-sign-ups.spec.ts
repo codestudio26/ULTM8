@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { expect, test, type Page } from '@playwright/test';
 import { cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
+import { pickOption } from './team-helpers';
 
 /**
  * Decision 392 — sign-up on the front-desk tablet (handover F5): someone signs
@@ -44,7 +45,8 @@ async function fillSignUp(page: Page, email: string, opts: { visitor?: boolean }
   await page.getByLabel('Date of birth *').fill('1994-06-15');
   await page.getByRole('button', { name: 'Next' }).click();
   await page.getByLabel('Email *').fill(email);
-  await page.getByLabel('How did you hear about us?').selectOption('Walked past');
+  // The new look's own drop-down, never a browser <select>.
+  await pickOption(page, 'How did you hear about us?', 'Walked past');
   await page.getByRole('button', { name: 'Next' }).click();
   await page.getByLabel('Name').first().fill('Ray Tablet');
   await page.getByRole('button', { name: /Send sign-up/ }).click();
@@ -124,5 +126,7 @@ test('the School edits its "How did you hear about us?" list, and the tablet sho
   await page.getByLabel('Last name *').fill('Tablet');
   await page.getByLabel('Date of birth *').fill('1994-06-15');
   await page.getByRole('button', { name: 'Next' }).click();
-  await expect(page.getByLabel('How did you hear about us?').locator('option')).toHaveText(['', 'Friend', 'Instagram', 'Google', 'Flyer', 'Radio']);
+  // The new look's drop-down: "Not set" first (the old blank choice), then the School's list.
+  await page.getByRole('combobox', { name: 'How did you hear about us?', exact: true }).click();
+  await expect(page.getByRole('listbox', { name: 'How did you hear about us?', exact: true }).getByRole('option')).toHaveText(['Not set', 'Friend', 'Instagram', 'Google', 'Flyer', 'Radio']);
 });
