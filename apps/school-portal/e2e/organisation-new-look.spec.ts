@@ -55,13 +55,13 @@ test.describe('Branches', () => {
     await page.goto('/branches');
 
     await expect(page.getByRole('heading', { level: 1, name: 'Branches' })).toBeVisible();
-    const list = page.getByRole('region', { name: 'Branches' });
+    const list = page.getByRole('region', { name: 'Branches', exact: true });
     await expect(list.getByRole('searchbox', { name: 'Search', exact: true })).toBeVisible();
-    await expect(list.getByRole('combobox', { name: 'City' })).toBeVisible();
+    await expect(list.getByRole('combobox', { name: 'City', exact: true })).toBeVisible();
     await expect(list.locator('select')).toHaveCount(0);
 
     // Closed Branches are hidden until the chip is pressed.
-    const showClosed = list.getByRole('button', { name: 'Show closed (1)' });
+    const showClosed = list.getByRole('button', { name: 'Show closed (1)', exact: true });
     await expect(showClosed).toHaveAttribute('aria-pressed', 'false');
     await expect(page.getByRole('cell', { name: 'Org Old' })).toHaveCount(0);
     await showClosed.click();
@@ -69,9 +69,9 @@ test.describe('Branches', () => {
     await expect(page.getByRole('row', { name: /Org Old/ }).getByText('Closed', { exact: true })).toBeVisible();
 
     const row = page.getByRole('row', { name: /Org North/ });
-    await expect(row.getByRole('button', { name: 'Actions for Org North' })).toBeVisible();
+    await expect(row.getByRole('button', { name: 'Actions for Org North', exact: true })).toBeVisible();
     await expectRoundButtons(list);
-    await row.getByRole('button', { name: 'Settings' }).click();
+    await row.getByRole('button', { name: 'Settings', exact: true }).click();
     await expect(page).toHaveURL(new RegExp(`/branches/${north.id}$`));
   });
 
@@ -80,11 +80,13 @@ test.describe('Branches', () => {
     branchIds.push(north.id);
     await signIn(page, s.ownerToken);
     await page.goto('/branches');
-    await page.getByRole('button', { name: 'Grid' }).click();
+    // Scoped to the view switch and exact: a bare "Grid" also matches this
+    // Branch's own "Actions for Org Grid" button once the rows have loaded.
+    await page.getByRole('group', { name: 'Branches view', exact: true }).getByRole('button', { name: 'Grid', exact: true }).click();
     const card = page.locator('.u8n-grid__card', { hasText: 'Org Grid' });
     await expect(card.getByText('0 students · 0 upcoming classes')).toBeVisible();
-    await expect(card.getByRole('button', { name: 'Settings' })).toBeVisible();
-    await expect(card.getByRole('button', { name: 'Actions for Org Grid' })).toBeVisible();
+    await expect(card.getByRole('button', { name: 'Settings', exact: true })).toBeVisible();
+    await expect(card.getByRole('button', { name: 'Actions for Org Grid', exact: true })).toBeVisible();
   });
 
   test('the School page: header with the School name, white setting cards, round buttons, red-outlined Close card', async ({ page }) => {
@@ -146,16 +148,16 @@ test.describe('Franchises', () => {
   test('the list card: our own Fee model drop-down, tags, View details and Edit as pills', async ({ page }) => {
     await signIn(page, token);
     await page.goto('/franchises');
-    const list = page.getByRole('region', { name: 'Franchises' });
-    await expect(list.getByRole('combobox', { name: 'Fee model' })).toBeVisible();
-    await expect(list.getByRole('textbox', { name: 'Activity' })).toBeVisible();
+    const list = page.getByRole('region', { name: 'Franchises', exact: true });
+    await expect(list.getByRole('combobox', { name: 'Fee model', exact: true })).toBeVisible();
+    await expect(list.getByRole('textbox', { name: 'Activity', exact: true })).toBeVisible();
     await expect(list.locator('select')).toHaveCount(0);
     const row = page.getByRole('row', { name: new RegExp(franchiseName) });
     await expect(row.getByText('Jiu Jitsu', { exact: true })).toBeVisible();
     await expect(row.getByText('Flat', { exact: true })).toBeVisible();
-    await expect(row.getByRole('button', { name: 'Edit' })).toBeVisible();
+    await expect(row.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
     await expectRoundButtons(list);
-    await row.getByRole('button', { name: 'View details' }).click();
+    await row.getByRole('button', { name: 'View details', exact: true }).click();
     await expect(page).toHaveURL(new RegExp(`/franchises/${franchiseId}$`));
   });
 
@@ -170,13 +172,13 @@ test.describe('Franchises', () => {
       await expect(page.getByRole('heading', { level: 2, name: title })).toBeVisible();
     }
     await expect(page.getByRole('row', { name: /Org Member Dojo/ }).getByText('Not billing yet')).toBeVisible();
-    await expect(page.getByRole('region', { name: 'Close this Franchise' })).toHaveClass(/u8o-card--danger/);
+    await expect(page.getByRole('region', { name: 'Close this Franchise', exact: true })).toHaveClass(/u8o-card--danger/);
     await expectRoundButtons(main(page));
 
     await page.getByTestId('franchise-overview-link').click();
     await expect(page).toHaveURL(new RegExp(`/franchises/${franchiseId}/overview$`));
     await expect(page.locator('.u8n-page-header__parent')).toHaveAttribute('href', `/franchises/${franchiseId}`);
-    await expect(page.getByRole('combobox', { name: 'Show' })).toBeVisible();
+    await expect(page.getByRole('combobox', { name: 'Show', exact: true })).toBeVisible();
     await expect(main(page).locator('select')).toHaveCount(0);
   });
 });
