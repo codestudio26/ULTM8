@@ -32,6 +32,14 @@
   gap: 16px;
   min-width: 0;
 }
+/* The style switch on top (Decision 462 item 10) is as wide as its styles. */
+.u8gst-main > .u8ss {
+  justify-self: start;
+}
+/* It sits on the grey page, not a white card: a thin line keeps the track in view. */
+[data-look='redesign'] .u8gst-main > .u8ss {
+  box-shadow: inset 0 0 0 1px var(--u8n-line);
+}
 [data-look='redesign'] .u8gst-main > .u8b-card,
 [data-look='redesign'] .u8gst-about > .u8b-card {
   margin: 0;

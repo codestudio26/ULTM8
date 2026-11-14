@@ -10,6 +10,7 @@ import { BillingCard, BillingPage } from '../billing/BillingLook';
 import { NewLookPageHeader } from '../layout/NewLookPage';
 import { NewLookSelect } from '../layout/NewLookSelect';
 import { FitTable } from './StudentsSectionLook';
+import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import {
   ROSTER_NAME_MAX,
   useAddRosterStudents,
@@ -37,7 +38,7 @@ const fullName = (s: StudentSummary) => `${s.firstName} ${s.surname}`.trim();
  * page keeps its lists, forms and actions and takes the new header (with
  * "‹ Students" in place of the old back link), white cards, soft fields, the
  * new drop-down and pill buttons; the students table becomes cards when it
- * doesn't fit.
+ * doesn't fit. Delete asks in the standard delete pop-up (Decision 462 item 3).
  */
 export function RostersPage() {
   const t = useT();
@@ -49,8 +50,10 @@ export function RostersPage() {
   const schoolId = ownedSchoolId ?? (myAccess.data?.access.students ? coachSchoolId : null);
   const rosters = useRosters(schoolId);
   const create = useCreateRoster(schoolId ?? '');
+  const remove = useDeleteRoster(schoolId ?? '');
   const [name, setName] = useState('');
   const [openId, setOpenId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<Roster | null>(null);
 
   if (isBranchStaff && myAccess.isLoading) return <Spinner />;
   if (!schoolId) return <Navigate to="/" replace />;
@@ -68,7 +71,14 @@ export function RostersPage() {
         {items.length ? (
           <ul className="u8st-rosters">
             {items.map((roster) => (
-              <RosterRow key={`${roster.id}-${roster.name}`} schoolId={schoolId} roster={roster} isOpen={roster.id === openId} onOpen={() => setOpenId(roster.id === openId ? null : roster.id)} />
+              <RosterRow
+                key={`${roster.id}-${roster.name}`}
+                schoolId={schoolId}
+                roster={roster}
+                isOpen={roster.id === openId}
+                onOpen={() => setOpenId(roster.id === openId ? null : roster.id)}
+                onDelete={() => setDeleting(roster)}
+              />
             ))}
           </ul>
         ) : null}
@@ -88,17 +98,25 @@ export function RostersPage() {
         </form>
       </BillingCard>
       {open ? <RosterMembersCard schoolId={schoolId} roster={open} /> : null}
+      {deleting ? (
+        <ConfirmDeleteModal
+          title={t('students.rosters.deleteTitle', { name: deleting.name })}
+          description={t('students.rosters.confirmDelete')}
+          genericErrorMessage={t('students.rosters.failed')}
+          onConfirm={() => remove.mutateAsync(deleting.id)}
+          onClose={() => setDeleting(null)}
+        />
+      ) : null}
     </BillingPage>
   );
 }
 
-function RosterRow({ schoolId, roster, isOpen, onOpen }: { schoolId: string; roster: Roster; isOpen: boolean; onOpen: () => void }) {
+function RosterRow({ schoolId, roster, isOpen, onOpen, onDelete }: { schoolId: string; roster: Roster; isOpen: boolean; onOpen: () => void; onDelete: () => void }) {
   const t = useT();
   const rename = useRenameRoster(schoolId);
-  const remove = useDeleteRoster(schoolId);
   const [name, setName] = useState(roster.name);
-  const [confirming, setConfirming] = useState(false);
-  const error = rename.error ?? remove.error;
+  // A failed delete shows in the delete pop-up, which stays open.
+  const error = rename.error;
   const changed = clean(name) !== '' && clean(name) !== roster.name;
 
   return (
@@ -122,21 +140,9 @@ function RosterRow({ schoolId, roster, isOpen, onOpen }: { schoolId: string; ros
         <Button type="submit" variant="secondary" disabled={!changed} loading={rename.isPending}>
           {t('students.rosters.rename')}
         </Button>
-        {confirming ? (
-          <>
-            <span className="u8st-roster__confirm">{t('students.rosters.confirmDelete')}</span>
-            <Button type="button" variant="danger" loading={remove.isPending} onClick={() => remove.mutate(roster.id)}>
-              {t('students.rosters.delete')}
-            </Button>
-            <Button type="button" variant="secondary" onClick={() => setConfirming(false)}>
-              {t('common.cancel')}
-            </Button>
-          </>
-        ) : (
-          <Button type="button" variant="secondary" onClick={() => setConfirming(true)}>
-            {t('students.rosters.delete')}
-          </Button>
-        )}
+        <Button type="button" variant="secondary" onClick={onDelete}>
+          {t('students.rosters.delete')}
+        </Button>
         </div>
       </form>
     </li>

@@ -9,7 +9,7 @@ import { StudentsHeader } from './StudentsTabs';
 import { BillingCard, BillingPage, BillingStats } from '../billing/BillingLook';
 import { NewLookSelect } from '../layout/NewLookSelect';
 import { FitTable, SectionStat } from './StudentsSectionLook';
-import { useAttendanceAccess } from './AttendancePage';
+import { useAttendanceAccess, useStatsBranchOptions } from './AttendancePage';
 import { useGrowth, type Growth } from './growthQueries';
 import { barHeights, monthLabel } from './growthChart';
 
@@ -77,12 +77,11 @@ export function GrowthPage() {
   const [branchId, setBranchId] = useState('');
   const growth = useGrowth(schoolId, branchId || undefined, may.stats);
   const branches = useBranches(may.stats ? schoolId : null);
+  const branchOptions = useStatsBranchOptions(branches.data?.items ?? [], branchId, growth.data?.branchIds);
 
   if (!schoolId) return null;
   const number = (n: number) => n.toLocaleString(formatLocale());
   const data = growth.data;
-  // Staff see only their own Branches; the API says which.
-  const branchOptions = (branches.data?.items ?? []).filter((b) => !data?.branchIds || data.branchIds.includes(b.id) || b.id === branchId);
   const current = data?.months[data.months.length - 1];
   const sum = (key: 'newStudents' | 'cancelled') => (data?.months ?? []).reduce((n, m) => n + m[key], 0);
 

@@ -50,7 +50,9 @@ test.afterAll(async () => {
 });
 
 const header = (page: Page) => page.locator('.u8n-page-header');
-const styleField = (page: Page) => page.getByRole('combobox', { name: 'Style', exact: true });
+/** The style switch (Decision 462 item 11): one button per style, the chosen one pressed. */
+const styleField = (page: Page) => page.getByRole('group', { name: 'Style', exact: true });
+const styleButton = (page: Page, name: string) => styleField(page).getByRole('button', { name, exact: true });
 
 test('the board has the new header with the Grading tabs, new-look cards and no browser <select>', async ({ page }) => {
   // Two branches and Cat with none, so the owner's "No branch" group and its picker show too.
@@ -81,27 +83,28 @@ test('the board has the new header with the Grading tabs, new-look cards and no 
   await expect(page.locator('.u8gb-panel')).toBeVisible();
 });
 
-test('picking a style on our drop-down shows that style\'s students, as the <select> did', async ({ page }) => {
+test('picking a style on the style switch shows that style\'s students, as the drop-down did', async ({ page }) => {
   await signIn(page, s.ownerToken);
   await page.goto('/grading');
-  await expect(styleField(page).locator('[data-shown="true"]')).toHaveText('BJJ');
+  await expect(page.getByRole('combobox', { name: 'Style', exact: true })).toHaveCount(0);
+  await expect(styleField(page).getByRole('button')).toHaveText(['BJJ', 'Judo']);
+  await expect(styleButton(page, 'BJJ')).toHaveAttribute('aria-pressed', 'true');
+  await expect(styleButton(page, 'Judo')).toHaveAttribute('aria-pressed', 'false');
   await expect(page.getByRole('listitem', { name: cat.name })).toBeVisible();
   // Tick Cat: changing the style clears the selection, as before.
   await page.getByLabel(`Select ${cat.name}`).check();
   await expect(page.getByRole('region', { name: 'Selection' }).getByText('1 selected')).toBeVisible();
 
-  await styleField(page).click();
-  await expect(page.getByRole('listbox').getByRole('option')).toHaveText(['BJJ', 'Judo']);
-  await page.getByRole('option', { name: 'Judo' }).click();
-  await expect(styleField(page).locator('[data-shown="true"]')).toHaveText('Judo');
+  await styleButton(page, 'Judo').click();
+  await expect(styleButton(page, 'Judo')).toHaveAttribute('aria-pressed', 'true');
+  await expect(styleButton(page, 'BJJ')).toHaveAttribute('aria-pressed', 'false');
   await expect(page.getByRole('listitem', { name: judo.student.name })).toBeVisible();
   await expect(page.getByRole('listitem', { name: cat.name })).toHaveCount(0);
   await expect(page.getByRole('region', { name: 'Selection' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Promote selected' })).toBeDisabled();
 
   // And back.
-  await styleField(page).click();
-  await page.getByRole('option', { name: 'BJJ' }).click();
+  await styleButton(page, 'BJJ').click();
   await expect(page.getByRole('listitem', { name: cat.name })).toBeVisible();
   await expect(page.getByRole('listitem', { name: judo.student.name })).toHaveCount(0);
 });
@@ -128,8 +131,7 @@ test('a coach sees the same header and only the styles they grade', async ({ pag
   await expect(header(page).getByRole('heading', { level: 1, name: 'Grading Board' })).toBeVisible();
   await expect(header(page).getByRole('navigation', { name: 'Grading', exact: true }).getByRole('link', { name: 'Board' })).toHaveAttribute('aria-current', 'page');
   await expect(page.getByRole('listitem', { name: cat.name })).toBeVisible();
-  await styleField(page).click();
-  await expect(page.getByRole('listbox').getByRole('option')).toHaveText(['BJJ']);
+  await expect(styleField(page).getByRole('button')).toHaveText(['BJJ']);
   await expect(page.locator('.u8gb select')).toHaveCount(0);
   // No "No branch" group: that is the owner's (Decision 148.2).
   await expect(page.getByRole('region', { name: 'No branch' })).toHaveCount(0);
