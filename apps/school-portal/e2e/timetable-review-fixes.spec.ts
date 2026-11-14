@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto';
 import { expect, test } from '@playwright/test';
 import { addBranch, addPerson, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
-import { pickOption } from './team-helpers';
+import { pickOption, pickSearchOption } from './team-helpers';
 
 /** The calendar itself, without the right-hand panel, which names the
  * selected class and holds its actions as buttons (Decision 455). */
@@ -301,7 +301,7 @@ test('the calendar shows a one-off class with its seats, and booking it from the
   await page.getByRole('button', { name: `Actions for One-off Seminar on ${key}` }).click();
   await page.getByRole('menuitem', { name: 'Book' }).click();
   const dialog = page.getByRole('dialog', { name: 'Book — One-off Seminar' });
-  await pickOption(dialog, 'Student', 'Sam Lee');
+  await pickSearchOption(dialog, 'Student', 'Sam Lee');
   await dialog.getByRole('button', { name: 'Confirm' }).click();
   await expect(calendar(page).getByText('2 of 4 booked')).toBeVisible();
 });
@@ -363,7 +363,7 @@ test('Branch Staff see their own branch on a read-only timetable and book walk-i
   await page.getByRole('menuitem', { name: 'Book' }).click();
   const dialog = page.getByRole('dialog', { name: 'Book — North Fundamentals' });
   await dialog.getByRole('combobox', { name: 'Student', exact: true }).click();
-  await expect(dialog.getByRole('listbox', { name: 'Student', exact: true }).getByRole('option')).toHaveText(['Select a Student…', 'Sam Lee']);
+  await expect(dialog.getByRole('listbox').getByRole('option')).toHaveText(['Select a Student…', 'Sam Lee']);
   await dialog.getByRole('option', { name: 'Sam Lee', exact: true }).click();
   await dialog.getByRole('button', { name: 'Confirm' }).click();
   await expect(calendar(page).getByText('1 of 4 booked')).toBeVisible();

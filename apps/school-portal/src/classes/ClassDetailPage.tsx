@@ -6,6 +6,7 @@ import { useClass } from './classQueries';
 import { useBookClass, useCancelBooking, useClassBookings, type BookingResponse } from '../bookings/bookingQueries';
 import { useClassWaitlist, useJoinWaitlist, type WaitlistEntryResponse } from '../waitlist/waitlistQueries';
 import { useStudents } from '../students/studentQueries';
+import { StudentPickerField } from '../students/StudentPickerField';
 import { titleCase } from '../lib/text';
 import { useT, type TranslateFn } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
@@ -17,7 +18,6 @@ import { useClassZone } from './useClassZone';
 import { endsNextDayInZone, formatInZone, formatTimeInZone } from '../lib/datetime';
 import { whoCanBookLabel } from './WhoCanBookFields';
 import { NewLookPage, NewLookPageHeader } from '../layout/NewLookPage';
-import { NewLookSelect } from '../layout/NewLookSelect';
 import { RosterTable } from './RosterTable';
 import '../schedule/schedule.css';
 import './classForms.css';
@@ -180,22 +180,18 @@ function AddStudentDialog({
       {isLoading ? (
         <Spinner />
       ) : (
-        <div className="u8n-dd-field">
-          <NewLookSelect
-            id="add-student"
-            label={t('classes.detail.addStudentLabel')}
-            value={studentId}
-            onChange={(v) => {
-              setStudentId(v);
-              setFull(false);
-              setError(null);
-            }}
-            options={[
-              { value: '', label: t('classes.detail.addStudentSelect') },
-              ...students.map((s) => ({ value: s.id, label: `${s.firstName} ${s.surname}`.trim() })),
-            ]}
-          />
-        </div>
+        <StudentPickerField
+          id="add-student"
+          label={t('classes.detail.addStudentLabel')}
+          emptyLabel={t('classes.detail.addStudentSelect')}
+          students={students}
+          value={studentId}
+          onChange={(v) => {
+            setStudentId(v);
+            setFull(false);
+            setError(null);
+          }}
+        />
       )}
       <ModalActions>
         <Button variant="secondary" onClick={onClose}>

@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto';
 import { expect, test } from '@playwright/test';
 import { cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
-import { pickOption } from './team-helpers';
+import { pickSearchOption } from './team-helpers';
 
 /**
  * The Class page's Add student and Cancel booking (Classes review follow-up,
@@ -50,7 +50,7 @@ test('staff add a student to a class, then cancel their booking', async ({ page 
 
   await page.getByRole('button', { name: 'Add student' }).click();
   const dialog = page.getByRole('dialog', { name: 'Add a student to this class' });
-  await pickOption(dialog, 'Student', s.student.name);
+  await pickSearchOption(dialog, 'Student', s.student.name);
   await dialog.getByRole('button', { name: 'Book' }).click();
   await expect(page.getByText(`${s.student.name} is booked into this class.`)).toBeVisible();
   await expect(page.getByRole('cell', { name: s.student.name, exact: true })).toBeVisible();
@@ -62,7 +62,8 @@ test('staff add a student to a class, then cancel their booking', async ({ page 
   await page.getByRole('dialog').getByRole('combobox', { name: 'Student', exact: true }).click();
   await expect(page.getByRole('dialog').getByRole('option', { name: 'Select a student…' })).toBeVisible();
   await expect(page.getByRole('dialog').getByRole('option', { name: s.student.name })).toHaveCount(0);
-  await page.getByRole('dialog').getByRole('combobox', { name: 'Student', exact: true }).click();
+  await page.getByRole('dialog').getByRole('combobox', { name: 'Student', exact: true }).fill('Sam');
+  await expect(page.getByRole('dialog').getByText('No matches.')).toBeVisible();
   await page.getByRole('dialog').getByRole('button', { name: 'Cancel', exact: true }).click();
 
   await page.getByRole('button', { name: `Cancel ${s.student.name}'s booking` }).click();
@@ -84,7 +85,7 @@ test('a full class offers the waitlist instead', async ({ page }) => {
 
   await page.getByRole('button', { name: 'Add student' }).click();
   const dialog = page.getByRole('dialog', { name: 'Add a student to this class' });
-  await pickOption(dialog, 'Student', s.newStudent.name);
+  await pickSearchOption(dialog, 'Student', s.newStudent.name);
   await dialog.getByRole('button', { name: 'Book' }).click();
   await dialog.getByRole('button', { name: 'Add to waitlist' }).click();
   await expect(page.getByText(`${s.newStudent.name} is number 1 on the waitlist.`)).toBeVisible();

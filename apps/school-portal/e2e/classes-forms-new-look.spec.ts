@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
-import { pickOption } from './team-helpers';
+import { pickOption, pickSearchOption } from './team-helpers';
 
 /**
  * The Classes / Schedule dialogs in the new look (Decisions 453, 460): the
@@ -174,7 +174,7 @@ test('Book a student and Closures: the student drop-down, the details card and t
   const book = page.getByRole('dialog', { name: 'Book — Desk Class' });
   await expectNewLook(book, ['Cancel', 'Confirm']);
   await expect(book.locator('.u8cf-facts')).toContainText('Desk Class');
-  await pickOption(book, 'Student', s.student.name);
+  await pickSearchOption(book, 'Student', s.student.name);
   await page.mouse.click(5, 5);
   await expect(book).toBeVisible();
   await book.getByRole('button', { name: 'Cancel' }).click();
@@ -223,7 +223,7 @@ test('the class page: new-look header, cards and tags, and its three dialogs wit
   await page.getByRole('button', { name: 'Add student' }).click();
   const add = page.getByRole('dialog', { name: 'Add a student to this class' });
   await expectNewLook(add, ['Cancel', 'Book']);
-  await pickOption(add, 'Student', s.newStudent.name);
+  await pickSearchOption(add, 'Student', s.newStudent.name);
   await page.mouse.click(5, 5);
   await expect(add).toBeVisible();
   await add.getByRole('button', { name: 'Cancel' }).click();

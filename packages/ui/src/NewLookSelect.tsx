@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useTypeAhead } from './typeAhead';
 
 export interface NewLookSelectOption {
   value: string;
@@ -10,7 +11,9 @@ export interface NewLookSelectOption {
  * `<select>`: a soft grey field with the value and a chevron, exactly as wide
  * as its longest option, and a list that opens under it and pushes the
  * content down. Built as the ARIA select-only combobox: a `combobox` button
- * named by its label, with a `listbox` of `option`s.
+ * named by its label, with a `listbox` of `option`s. Typing a letter opens
+ * the list on the next option starting with it, as a browser `<select>` did
+ * (Decision 462 item 7); Enter or Space then picks it.
  *
  * Its styles are the School Portal's (`layout/newLookShell.css`, under
  * [data-look='redesign']); it lives in this package so shared form parts
@@ -43,6 +46,7 @@ export function NewLookSelect({
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
   const rootRef = useRef<HTMLDivElement>(null);
+  const typeAhead = useTypeAhead();
   const labelId = `${id}-label`;
   const listId = `${id}-listbox`;
   const optionId = (i: number) => `${id}-option-${i}`;
@@ -60,6 +64,11 @@ export function NewLookSelect({
     return () => document.removeEventListener('mousedown', close);
   }, [open]);
 
+  // Keeps the highlighted option in view in a long list (arrows, type-ahead).
+  useEffect(() => {
+    if (open && active >= 0) document.getElementById(optionId(active))?.scrollIntoView?.({ block: 'nearest' });
+  }, [open, active]);
+
   const show = () => {
     setActive(selectedIndex);
     setOpen(true);
@@ -75,6 +84,17 @@ export function NewLookSelect({
     }
   };
   const onKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
+    const match = typeAhead(
+      e,
+      options.map((o) => o.label),
+      open ? active : selectedIndex,
+    );
+    if (match !== null) {
+      e.preventDefault();
+      if (!open) show();
+      if (match >= 0) setActive(match);
+      return;
+    }
     if (!open) {
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();

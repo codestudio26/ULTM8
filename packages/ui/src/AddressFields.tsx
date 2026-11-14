@@ -353,7 +353,7 @@ export function AddressFields({ value, onChange, errors = {}, idPrefix, legacy, 
   );
 }
 
-interface CountryOption {
+export interface CountryOption {
   value: string;
   label: string;
 }
@@ -362,8 +362,9 @@ const ENGLISH_COUNTRY_NAMES = new Map<string, string>(COUNTRY_NAMES.map(([code, 
 
 /** A search finds a country by its name in the reader's language or in
  * English, or by its two-letter code (as the phone field's country search
- * does). "Select a country" is only listed while nothing is typed. */
-function countryMatches(option: CountryOption, query: string): boolean {
+ * does). "Select a country" is only listed while nothing is typed. Shared
+ * with the School's tax country picker (Decision 462 item 26). */
+export function countryMatches(option: CountryOption, query: string): boolean {
   if (!option.value) return false;
   return option.label.toLowerCase().includes(query) || !!ENGLISH_COUNTRY_NAMES.get(option.value)?.includes(query) || option.value.toLowerCase() === query;
 }
@@ -389,8 +390,8 @@ type SearchState = 'idle' | 'done' | 'failed';
  * "Search address": a combobox above the fields, only shown when a provider is
  * given. Searches in the chosen country after a short pause in typing;
  * choosing a result replaces the address with it (the country too, if the
- * result is elsewhere). Arrow keys move through the results, Enter picks,
- * Escape closes.
+ * result is elsewhere). Arrow keys move through the results, Enter picks
+ * (the first result when the arrows haven't moved), Escape closes.
  */
 function AddressSearch({
   id,
@@ -412,6 +413,8 @@ function AddressSearch({
   const [state, setState] = useState<SearchState>('idle');
   // The latest search asked for; an older answer arriving late is ignored.
   const latest = useRef('');
+  // The search the results on screen answer, so Enter never picks from an older one.
+  const shownFor = useRef('');
 
   useEffect(() => {
     const q = query.trim();
@@ -427,6 +430,7 @@ function AddressSearch({
         .suggest(q, value.country)
         .then((found) => {
           if (latest.current !== key) return;
+          shownFor.current = key;
           setSuggestions(found);
           setActive(-1);
           setState('done');
@@ -465,9 +469,11 @@ function AddressSearch({
       setOpen(true);
       setActive((i) => (i <= 0 ? suggestions.length - 1 : i - 1));
     } else if (e.key === 'Enter') {
-      // Never submits the surrounding form from the search box.
+      // Never submits the surrounding form from the search box; with no
+      // result reached by the arrows, picks the first (Decision 462 item 6).
       e.preventDefault();
       if (open && active >= 0 && suggestions[active]) void pick(suggestions[active]);
+      else if (open && suggestions[0] && shownFor.current === `${value.country}|${query.trim()}`) void pick(suggestions[0]);
     } else if (e.key === 'Escape') {
       setOpen(false);
     }

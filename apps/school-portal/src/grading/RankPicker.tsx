@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useTypeAhead } from '@ultm8/ui';
 import { BeltChip } from './BeltChip';
 import type { Rung } from './ladder';
 
@@ -37,6 +38,7 @@ export function RankPicker({
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const root = useRef<HTMLDivElement>(null);
+  const typeAhead = useTypeAhead();
   const listRef = useRef<HTMLUListElement>(null);
   const chosen = options.find((r) => r.id === value) ?? null;
   const listId = `${id}-list`;
@@ -67,6 +69,14 @@ export function RankPicker({
   }
 
   function onKeyDown(e: React.KeyboardEvent) {
+    // A typed letter jumps to the next option starting with it (Decision 462 item 7).
+    const match = typeAhead(e, options.map(label), open ? active : Math.max(0, options.findIndex((r) => r.id === value)));
+    if (match !== null) {
+      e.preventDefault();
+      if (!open) openList();
+      if (match >= 0) setActive(match);
+      return;
+    }
     if (!open) {
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
