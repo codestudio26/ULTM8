@@ -13,6 +13,7 @@ import { feeRankName } from './feeRank';
 import { eventRankDisplay, historyTypeLabel } from './historyLabels';
 import { formatHours } from './hours';
 import './gradingDialogs.css';
+import { fromGradingBoard } from './studentPageState';
 
 export const fullName = (i: { firstName: string; surname: string }) => `${i.firstName} ${i.surname}`.trim();
 
@@ -294,7 +295,7 @@ export function StudentPanel({
 
         <div style={{ display: 'flex', gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
           {canPromote && e.hasNext && !waiting && item.active ? <Button onClick={() => onPromote()}>{t('grading.board.panel.promote')}</Button> : null}
-          <Link to={`/students/${item.studentId}?tab=ranks`} state={{ name }} className="ultm8-btn ultm8-btn--secondary">
+          <Link to={`/students/${item.studentId}?tab=ranks`} state={fromGradingBoard(name)} className="ultm8-btn ultm8-btn--secondary">
             {t('grading.board.panel.openStudent')}
           </Link>
         </div>

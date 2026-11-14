@@ -445,7 +445,10 @@ export function useMyGrading(schoolId: string | null) {
     return !!row && row[toggle];
   };
   const mayGradeStyle = (disciplineId: string) => isOwner || styleIds.has(disciplineId);
-  return { isLoading: query.isLoading, error: query.error, isOwner, can, mayGradeStyle };
+  // The owner, or grading permission in at least one style: who may read
+  // promotion fees (Decision 314 item 1; the API's 403 for anyone else).
+  const gradesAnyStyle = isOwner || styleIds.size > 0;
+  return { isLoading: query.isLoading, error: query.error, isOwner, can, mayGradeStyle, gradesAnyStyle };
 }
 
 /** Belts waiting to be verified that this person may verify (Decisions 137,
@@ -485,15 +488,16 @@ export function useFeeRequestAction(action: 'waive' | 'cancel' | 'dismiss') {
 export type StudentFeeRequest = components['schemas']['PromotionFeeRequestResponseDto'];
 
 /** One student's promotion fee requests at this School, newest first. Under
- * 'student-grading' so grading and fee actions refresh it. */
-export function useStudentFeeRequests(studentId: string | null, schoolId: string | null) {
+ * 'student-grading' so grading and fee actions refresh it. Only asked for
+ * when `allowed` (useMyGrading's gradesAnyStyle): the API refuses anyone else. */
+export function useStudentFeeRequests(studentId: string | null, schoolId: string | null, allowed = true) {
   return useQuery({
     queryKey: ['student-grading', studentId, 'fee-requests', schoolId],
     queryFn: () =>
       unwrap(
         apiClient.GET('/v1/schools/{schoolId}/promotion-fee-requests', { params: { path: { schoolId: schoolId! }, query: { studentId: studentId!, limit: 100 } } }),
       ),
-    enabled: !!studentId && !!schoolId,
+    enabled: !!studentId && !!schoolId && allowed,
   });
 }
 

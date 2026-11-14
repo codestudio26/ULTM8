@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Spinner } from '@ultm8/ui';
 import { NewLookSelect } from '../layout/NewLookSelect';
-import { useAuth, useGradingSchoolId } from '../auth/AuthContext';
-import { useBranches } from '../branches/branchQueries';
+import { useGradingSchoolId } from '../auth/AuthContext';
 import { useT } from '../i18n/I18nProvider';
 import { hasBackend } from './frontDeskFeatures';
 import { errorText } from './frontDeskQueries';
+import { useFrontDeskStart } from './frontDeskStart';
 import { saveKioskToken, useKioskFindMe, useKioskSignUp, useMyKioskCode, useStartKiosk, type KioskSignUpInput as SignUpInput } from './kioskSession';
 import { useHeardFromChoices } from './heardFrom';
 import { SoonTag } from './parts';
@@ -39,19 +39,10 @@ const EMPTY_SIGN_UP: SignUpInput = {
 export function FrontDeskModePage() {
   const t = useT();
   const navigate = useNavigate();
-  const { claims } = useAuth();
   const schoolId = useGradingSchoolId();
-  const branchQuery = useBranches(schoolId);
-  const myGrants = (claims?.grants ?? []).filter((g) => g.schoolId === schoolId);
-  const isOwner = myGrants.some((g) => g.role === 'SCHOOL_OWNER_MANAGER');
-  const staffBranchIds = myGrants.filter((g) => g.role === 'BRANCH_STAFF').map((g) => g.branchId ?? null);
-  // The owner, or Branch Staff for their own Branch (handover F1).
-  const canStartAt = (id: string | null) => isOwner || staffBranchIds.some((b) => b === null || b === id);
-  const allOpen = (branchQuery.data?.items ?? []).filter((b) => !b.archivedAt);
-  const branches = allOpen.filter((b) => canStartAt(b.id));
-  // A School with no Branches runs front-desk mode for the whole School (CI4).
-  const wholeSchool = branchQuery.isSuccess && allOpen.length === 0;
-  const allowed = wholeSchool ? canStartAt(null) : branches.length > 0;
+  // The owner, or Branch Staff for their own Branch (handover F1); the whole
+  // School when it has no Branches (CI4).
+  const { branchQuery, branches, wholeSchool, allowed } = useFrontDeskStart(schoolId);
   const [branchId, setBranchId] = useState<string | null>(null);
   const myCode = useMyKioskCode(schoolId);
   const startKiosk = useStartKiosk(schoolId);

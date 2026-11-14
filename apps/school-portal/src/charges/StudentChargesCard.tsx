@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Badge, Button, Checkbox, EmptyState, ErrorBanner, Field, Modal, ModalActions, Spinner, SuccessBanner, Table, TextArea, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
@@ -94,13 +94,15 @@ function LateFeeLines({ charge: c }: { charge: Charge }) {
 function PromotionFeeLines({ charge: c }: { charge: Charge }) {
   const t = useT();
   const f = c.promotionFee;
+  // Same page, other tab: keep where the person came from (its "‹" link).
+  const pageState = useLocation().state;
   if (!f) return null;
   return (
     <>
       <div className="ultm8-field__hint">
         {t('charges.promotionFee.forRank', { style: f.disciplineName, rank: f.toRungName })} ·{' '}
         {/* Grading is the page's Ranks tab. */}
-        <Link to={{ search: '?tab=ranks', hash: `#grading-${f.disciplineId}` }} data-testid="promotion-fee-grading-link">
+        <Link to={{ search: '?tab=ranks', hash: `#grading-${f.disciplineId}` }} state={pageState} data-testid="promotion-fee-grading-link">
           {t('charges.promotionFee.seeGrading')}
         </Link>
       </div>
