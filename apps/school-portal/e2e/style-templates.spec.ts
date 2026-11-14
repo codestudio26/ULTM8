@@ -37,13 +37,13 @@ test('start a style from an IBJJF template', async ({ page }) => {
 
 test('duplicate a style: ladder and skills, no students', async ({ page }) => {
   await page.goto('/disciplines');
-  await page.getByRole('row', { name: /BJJ/ }).getByRole('button', { name: 'Duplicate' }).click();
+  await page.getByRole('region', { name: 'Style', exact: true }).getByRole('button', { name: 'Duplicate', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Duplicate BJJ' });
   await expect(dialog.getByText('No students, ranks or coach permissions are copied.')).toBeVisible();
   await dialog.getByRole('button', { name: 'Duplicate' }).click();
 
   await expect(page.getByRole('heading', { name: 'BJJ (Copy)' })).toBeVisible();
-  await expect(page.getByRole('cell', { name: 'Armbar', exact: true })).toBeVisible();
+  await expect(page.getByRole('list', { name: 'Skills' }).getByRole('listitem', { name: 'Armbar' })).toBeVisible();
 
   const copy = await db.discipline.findFirstOrThrow({ where: { schoolId: s.schoolId, name: 'BJJ (Copy)' } });
   expect(await db.rankStripeTier.count({ where: { rank: { disciplineId: copy.id } } })).toBe(

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Button, Checkbox, EmptyState, ErrorBanner, Spinner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
@@ -15,11 +15,12 @@ import {
 import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import { DisciplineFormModal } from './DisciplineFormModal';
 import { DuplicateModal, TemplateModal } from './StyleTemplateModals';
+import { StyleDetail } from './StyleDetail';
+import { StyleSwitch } from '../grading/StyleSwitch';
 import { useGradingHeaderTabs } from '../grading/GradingTabs';
 import { useT } from '../i18n/I18nProvider';
 import { BillingCard, BillingPage } from '../billing/BillingLook';
 import { NewLookPageHeader } from '../layout/NewLookPage';
-import { FitTable } from '../students/StudentsSectionLook';
 import './stylesLook.css';
 
 /** Disciplines are reference data Instructors' specializations and Classes'/
@@ -34,18 +35,25 @@ import './stylesLook.css';
  * "Can manage disciplines" for edit it too, and an archived style nobody uses
  * can be deleted permanently.
  *
- * New look (Decision 460): the new page header with the Grading tabs, a white
- * card, and a table that becomes cards when it doesn't fit. Same columns,
- * buttons and checks as before. */
+ * Grading → Styles & Belts in the design's layout (Decision 462 item 9): one
+ * style at a time, picked with the style switch. The style card holds the
+ * switch and the style's own actions (Edit · Duplicate · Archive · Delete, or
+ * Unarchive · Delete permanently), Start from template, Add discipline and
+ * Show archived. Under it are the style's Ladder, Skills and (owner) Students,
+ * and beside them the "About this style" panel, which turns into the picked
+ * belt's panel (StyleDetail). `/disciplines/:id` opens the page on that style.
+ * Same actions, fields and permission checks as before. */
 export function DisciplinesPage() {
   const navigate = useNavigate();
   const t = useT();
+  const { id: routeId } = useParams<{ id: string }>();
   const ownedSchoolId = useOwnedSchoolId();
   const coachSchoolId = useCoachSchoolId();
   const schoolId = ownedSchoolId ?? coachSchoolId;
   const canEdit = useCanManageDisciplines(schoolId);
   const [showArchived, setShowArchived] = useState(false);
-  const { data, isLoading, error } = useDisciplines(schoolId, { includeArchived: showArchived });
+  // Every style, archived ones too: the switch hides them until "Show archived" is ticked.
+  const { data, isLoading, error } = useDisciplines(schoolId, { includeArchived: true });
   const createDiscipline = useCreateDiscipline(schoolId ?? '');
   const setArchived = useSetDisciplineArchived(schoolId ?? '');
   const [creating, setCreating] = useState(false);
@@ -62,7 +70,15 @@ export function DisciplinesPage() {
   if (isLoading) return <Spinner />;
   if (error) return <ErrorBanner message={error instanceof ApiError ? error.message : t('disciplines.list.loadFailed')} />;
 
-  const disciplines = data?.items ?? [];
+  const all = data?.items ?? [];
+  const anyArchived = all.some((d) => d.archivedAt);
+  // The style asked for in the address is shown even when archived (a link to it still opens it).
+  const shownStyles = all.filter((d) => showArchived || !d.archivedAt || d.id === routeId);
+  const style = shownStyles.find((d) => d.id === routeId) ?? shownStyles[0] ?? null;
+  const pick = (id: string) => {
+    setRowError(null);
+    navigate(`/disciplines/${id}`, { replace: true });
+  };
 
   async function unarchive(d: DisciplineResponse) {
     setRowError(null);
@@ -78,102 +94,112 @@ export function DisciplinesPage() {
       <NewLookPageHeader
         title={t('disciplines.list.title')}
         subtitle={canEdit ? t('disciplines.list.subtitle') : t('disciplines.list.readOnlySubtitle')}
-        actions={
-          canEdit ? (
-            <>
-              <Button variant="secondary" onClick={() => setFromTemplate(true)}>
-                {t('disciplines.list.startFromTemplate')}
-              </Button>
-              <Button onClick={() => setCreating(true)}>{t('disciplines.list.addButton')}</Button>
-            </>
-          ) : undefined
-        }
         {...headerTabs}
       />
-      <BillingCard>
-        <div className="u8gs-filter">
-          <Checkbox label={t('disciplines.list.showArchived')} checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
-        </div>
-        {rowError ? <ErrorBanner message={rowError} /> : null}
-        {disciplines.length === 0 ? (
-          <EmptyState title={t('disciplines.list.emptyTitle')} description={t('disciplines.list.emptyDescription')} />
-        ) : (
-          <FitTable<DisciplineResponse>
-            rows={disciplines}
-            columns={[
-              {
-                key: 'name',
-                header: t('disciplines.list.columnName'),
-                main: true,
-                render: (d) => (
-                  <span className="u8gs-name">
-                    <span className="u8b-name">{d.name}</span>
-                    {d.archivedAt ? <span className="u8gs-tag">{t('disciplines.list.archived')}</span> : null}
-                  </span>
-                ),
-              },
-              { key: 'classTypes', header: t('disciplines.list.columnClassTypes'), render: (d) => d.classTypesOffered.join(', ') || '—' },
-              { key: 'students', header: t('disciplines.list.columnStudents'), render: (d) => String(d.studentCount) },
-              {
-                key: 'actions',
-                header: '',
-                render: (d) => (
+      <StyleDetail
+        key={style?.id ?? 'none'}
+        discipline={style}
+        canManage={canEdit}
+        styleCard={
+          <BillingCard>
+            <section aria-label={t('grading.board.styleLabel')} className="u8gs-style-card">
+              <div className="u8gs-style-card__row">
+                {style ? (
+                  <div className="u8gs-style-card__pick">
+                    <div className="u8gs-label" aria-hidden="true">
+                      {t('grading.board.styleLabel')}
+                    </div>
+                    <StyleSwitch
+                      styles={shownStyles.map((d) => ({ id: d.id, name: d.archivedAt ? `${d.name} · ${t('disciplines.list.archived')}` : d.name }))}
+                      value={style.id}
+                      onChange={pick}
+                    />
+                  </div>
+                ) : null}
+                {canEdit ? (
                   <div className="u8gs-actions">
-                    <Button variant="secondary" className="u8b-pill--row" onClick={() => navigate(`/disciplines/${d.id}`)} aria-label={t('disciplines.list.openAria', { name: d.name })}>
-                      {t('disciplines.list.manageSkills')}
-                    </Button>
-                    {canEdit && !d.archivedAt ? (
+                    {style && !style.archivedAt ? (
                       <>
-                        <Button variant="secondary" className="u8b-pill--row" onClick={() => setEditing(d)}>
+                        <Button variant="secondary" className="u8b-pill--row" onClick={() => setEditing(style)}>
                           {t('disciplines.list.edit')}
                         </Button>
-                        <Button variant="secondary" className="u8b-pill--row" onClick={() => setDuplicating(d)}>
+                        <Button variant="secondary" className="u8b-pill--row" onClick={() => setDuplicating(style)}>
                           {t('disciplines.list.duplicate')}
                         </Button>
-                        <Button variant="secondary" className="u8b-pill--row" onClick={() => setArchiving(d)} aria-label={t('disciplines.list.archiveAria', { name: d.name })}>
+                        <Button variant="secondary" className="u8b-pill--row" onClick={() => setArchiving(style)} aria-label={t('disciplines.list.archiveAria', { name: style.name })}>
                           {t('disciplines.list.archive')}
                         </Button>
                       </>
                     ) : null}
-                    {canEdit && d.archivedAt ? (
-                      <Button variant="secondary" className="u8b-pill--row" onClick={() => void unarchive(d)} aria-label={t('disciplines.list.unarchiveAria', { name: d.name })}>
+                    {style?.archivedAt ? (
+                      <Button variant="secondary" className="u8b-pill--row" onClick={() => void unarchive(style)} aria-label={t('disciplines.list.unarchiveAria', { name: style.name })}>
                         {t('disciplines.list.unarchive')}
                       </Button>
                     ) : null}
-                    {canEdit ? (
-                      <Button variant="secondary" className="u8b-pill--row" onClick={() => setDeleting(d)} aria-label={t('disciplines.list.deleteAria', { name: d.name })}>
-                        {d.archivedAt ? t('disciplines.list.deletePermanently') : t('disciplines.list.delete')}
+                    {style ? (
+                      <Button variant="secondary" className="u8b-pill--row" onClick={() => setDeleting(style)} aria-label={t('disciplines.list.deleteAria', { name: style.name })}>
+                        {style.archivedAt ? t('disciplines.list.deletePermanently') : t('disciplines.list.delete')}
                       </Button>
                     ) : null}
+                    <Button variant="secondary" className="u8b-pill--row" onClick={() => setFromTemplate(true)}>
+                      {t('disciplines.list.startFromTemplate')}
+                    </Button>
+                    <Button className="u8b-pill--row" onClick={() => setCreating(true)}>
+                      {t('disciplines.list.addButton')}
+                    </Button>
                   </div>
-                ),
-              },
-            ]}
-          />
-        )}
-      </BillingCard>
+                ) : null}
+              </div>
+              {anyArchived ? (
+                <div className="u8gs-filter">
+                  <Checkbox
+                    label={t('disciplines.list.showArchived')}
+                    checked={showArchived}
+                    onChange={(e) => {
+                      setShowArchived(e.target.checked);
+                      // Hiding archived styles leaves an archived one that was showing.
+                      if (!e.target.checked && style?.archivedAt) navigate('/disciplines', { replace: true });
+                    }}
+                  />
+                </div>
+              ) : null}
+              {style?.archivedAt ? (
+                <p className="u8gs-status">
+                  <span className="u8gs-tag">{t('disciplines.list.archived')}</span> <span className="u8gs-note">{t('disciplines.detail.archivedNote')}</span>
+                </p>
+              ) : style && !canEdit ? (
+                <p className="u8gs-note">{t('disciplines.detail.readOnlyNote')}</p>
+              ) : null}
+              {rowError ? <ErrorBanner message={rowError} /> : null}
+              {all.length === 0 ? <EmptyState title={t('disciplines.list.emptyTitle')} description={t('disciplines.list.emptyDescription')} /> : null}
+            </section>
+          </BillingCard>
+        }
+      />
 
       {creating ? (
         <DisciplineFormModal
           title={t('disciplines.list.addTitle')}
           submitting={createDiscipline.isPending}
           onSubmit={async ({ renameClassTypes: _renames, ...values }) => {
-            await createDiscipline.mutateAsync(values);
+            const created = await createDiscipline.mutateAsync(values);
             setCreating(false);
+            if (created?.id) pick(created.id);
           }}
           onClose={() => setCreating(false)}
         />
       ) : null}
 
-      {fromTemplate ? (
-        <TemplateModal schoolId={schoolId} onCreated={(id) => navigate(`/disciplines/${id}`)} onClose={() => setFromTemplate(false)} />
-      ) : null}
+      {fromTemplate ? <TemplateModal schoolId={schoolId} onCreated={(id) => navigate(`/disciplines/${id}`)} onClose={() => setFromTemplate(false)} /> : null}
 
       {deleting ? (
         <ConfirmDeleteModal
           title={t('disciplines.list.deleteTitle', { name: deleting.name })}
           description={t('disciplines.list.deleteDescription')}
-          onConfirm={() => deleteDiscipline.mutateAsync(deleting.id)}
+          onConfirm={async () => {
+            await deleteDiscipline.mutateAsync(deleting.id);
+            if (deleting.id === routeId) navigate('/disciplines', { replace: true });
+          }}
           onClose={() => setDeleting(null)}
         />
       ) : null}
@@ -184,23 +210,20 @@ export function DisciplinesPage() {
           description={t('disciplines.list.archiveDescription')}
           confirmLabel={t('disciplines.list.archive')}
           genericErrorMessage={t('disciplines.list.archiveFailed')}
-          onConfirm={() => setArchived.mutateAsync({ id: archiving.id, archived: true })}
+          onConfirm={async () => {
+            await setArchived.mutateAsync({ id: archiving.id, archived: true });
+            // It leaves the switch (until "Show archived"), so the page moves to the first style.
+            if (!showArchived) navigate('/disciplines', { replace: true });
+          }}
           onClose={() => setArchiving(null)}
         />
       ) : null}
 
       {duplicating ? (
-        <DuplicateModal
-          schoolId={schoolId}
-          discipline={duplicating}
-          onCreated={(id) => navigate(`/disciplines/${id}`)}
-          onClose={() => setDuplicating(null)}
-        />
+        <DuplicateModal schoolId={schoolId} discipline={duplicating} onCreated={(id) => navigate(`/disciplines/${id}`)} onClose={() => setDuplicating(null)} />
       ) : null}
 
-      {editing ? (
-        <EditDisciplineModal schoolId={schoolId} discipline={editing} styles={disciplines} onClose={() => setEditing(null)} />
-      ) : null}
+      {editing ? <EditDisciplineModal schoolId={schoolId} discipline={editing} styles={all} onClose={() => setEditing(null)} /> : null}
     </BillingPage>
   );
 }

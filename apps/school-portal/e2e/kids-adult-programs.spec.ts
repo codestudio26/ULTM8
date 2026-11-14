@@ -40,7 +40,7 @@ const link = () => db.discipline.update({ where: { id: s.disciplineId }, data: {
 
 test('Edit discipline links a Kids style to its Adult program', async ({ page }) => {
   await page.goto('/disciplines');
-  await page.getByRole('row', { name: /^BJJ(?! Adult)/ }).getByRole('button', { name: 'Edit' }).click();
+  await page.getByRole('region', { name: 'Style', exact: true }).getByRole('button', { name: 'Edit', exact: true }).click(); // BJJ, the first style
   const dialog = page.getByRole('dialog', { name: 'Edit discipline' });
   await pickOption(dialog, 'Adult program (for a Kids style)', 'BJJ Adult');
   await dialog.getByRole('button', { name: 'Save' }).click();
@@ -48,7 +48,8 @@ test('Edit discipline links a Kids style to its Adult program', async ({ page })
   expect((await db.discipline.findUniqueOrThrow({ where: { id: s.disciplineId } })).adultDisciplineId).toBe(adultId);
 
   // The Adult style can't be a Kids style itself.
-  await page.getByRole('row', { name: /BJJ Adult/ }).getByRole('button', { name: 'Edit' }).click();
+  await page.getByRole('group', { name: 'Style', exact: true }).getByRole('button', { name: 'BJJ Adult' }).click();
+  await page.getByRole('region', { name: 'Style', exact: true }).getByRole('button', { name: 'Edit', exact: true }).click();
   await expect(dialog.getByText("This style is the Adult program of a Kids style, so it can't be a Kids style itself.")).toBeVisible();
   await expect(dialog.getByLabel('Adult program (for a Kids style)')).toHaveCount(0);
 });

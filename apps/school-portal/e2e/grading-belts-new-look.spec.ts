@@ -41,7 +41,7 @@ async function expectGradingHeader(page: Page, title: string, current: string) {
 test('Styles & Belts: the new header, and the style dialogs with new drop-downs, option cards and the band, Cancel first', async ({ page }) => {
   await page.goto('/disciplines');
   await expectGradingHeader(page, 'Disciplines', 'Styles & Belts');
-  await expect(page.getByRole('row', { name: /BJJ/ })).toBeVisible();
+  await expect(page.getByRole('group', { name: 'Style', exact: true }).getByRole('button', { name: 'BJJ', exact: true })).toHaveAttribute('aria-pressed', 'true');
 
   // Add discipline: no browser <select>; a pick counts as an edit.
   await page.getByRole('button', { name: 'Add discipline' }).click();
@@ -59,7 +59,7 @@ test('Styles & Belts: the new header, and the style dialogs with new drop-downs,
   expect(await db.discipline.count({ where: { schoolId: s.schoolId } })).toBe(1);
 
   // Edit discipline: the Adult program is a new drop-down too (no other style to pick, so only "None").
-  await page.getByRole('row', { name: /BJJ/ }).getByRole('button', { name: 'Edit' }).click();
+  await page.getByRole('region', { name: 'Style', exact: true }).getByRole('button', { name: 'Edit', exact: true }).click();
   const edit = page.getByRole('dialog', { name: 'Edit discipline' });
   await expect(edit.locator('select')).toHaveCount(0);
   await expect(edit.getByRole('combobox')).toHaveCount(2);
@@ -78,7 +78,7 @@ test('Styles & Belts: the new header, and the style dialogs with new drop-downs,
   await expect(template).toHaveCount(0);
 
   // Duplicate: its buttons in the band.
-  await page.getByRole('row', { name: /BJJ/ }).getByRole('button', { name: 'Duplicate' }).click();
+  await page.getByRole('region', { name: 'Style', exact: true }).getByRole('button', { name: 'Duplicate', exact: true }).click();
   const duplicate = page.getByRole('dialog', { name: 'Duplicate BJJ' });
   await expect(band(duplicate)).toHaveText(['Cancel', 'Duplicate']);
   await duplicate.getByRole('button', { name: 'Cancel' }).click();
@@ -88,8 +88,8 @@ test('Styles & Belts: the new header, and the style dialogs with new drop-downs,
 
 test('a style\'s page and the belt editor: new drop-downs, round selectors, the band, and a pick counts as an edit', async ({ page }) => {
   await page.goto(`/disciplines/${s.disciplineId}`);
-  await expectGradingHeader(page, 'BJJ', 'Styles & Belts');
-  await expect(page.getByRole('heading', { level: 2, name: 'Students (1)' })).toBeVisible();
+  await expectGradingHeader(page, 'Disciplines', 'Styles & Belts');
+  await expect(page.getByRole('heading', { level: 2, name: 'Students', exact: true })).toBeVisible();
 
   // Add rank: "Where it goes" and "Which classes count" are the new drop-downs.
   await page.getByRole('button', { name: 'Add rank' }).click();
