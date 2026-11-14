@@ -2684,9 +2684,6 @@ export const messages: PartialMessages<EnglishMessages> = {
     unarchiveFailed: "Dieses Ausbilderprofil konnte nicht wiederhergestellt werden.",
     addedEmailSent: "{name} wurde hinzugefügt – ein temporärer Zugangscode wurde an {email} gesendet.",
     addedEmailFailed: "{name} wurde hinzugefügt, aber die E-Mail konnte nicht gesendet werden. Der temporäre Zugangscode muss auf anderem Weg übermittelt werden.",
-    roleGrantedEmailSent: "Ausbilderrolle vergeben – die Person wurde per E-Mail informiert. Nutze „Ausbilder hinzufügen“, um das Profil anzulegen.",
-    roleGrantedEmailFailed: "Ausbilderrolle vergeben, aber die Benachrichtigungs-E-Mail konnte nicht gesendet werden. Nutze „Ausbilder hinzufügen“, um das Profil anzulegen.",
-    roleInviteSent: "Diese Schule verlangt, dass neue Mitarbeitende zuerst annehmen. Wir haben ihnen deshalb eine Einladung gemailt. Nach der Annahme kannst du mit „Ausbilder hinzufügen“ das Profil anlegen.",
     roleInviteEmailFailed: "Diese Schule verlangt, dass neue Mitarbeitende zuerst annehmen. Die Einladung wurde erstellt, aber die E-Mail konnte nicht gesendet werden. Storniere sie unter Team → Trainer einladen und sende sie erneut.",
     detail: {
       back: "← Ausbilder",

@@ -45,12 +45,6 @@ export const instructors = {
   unarchiveFailed: 'Could not unarchive this Instructor profile.',
   addedEmailSent: '{name} was added — a temporary passcode was emailed to {email}.',
   addedEmailFailed: "{name} was added, but the email couldn't be sent. They'll need the temporary passcode another way.",
-  roleGrantedEmailSent:
-    'Instructor role granted — they were emailed to let them know. Use "Add instructor" to add their profile.',
-  roleGrantedEmailFailed:
-    'Instructor role granted, but the notification email could not be sent. Use "Add instructor" to add their profile.',
-  roleInviteSent:
-    'This School asks new staff to accept first, so we emailed them an invite. Once they accept, use "Add instructor" to add their profile.',
   roleInviteEmailFailed:
     "This School asks new staff to accept first. The invite was made, but its email couldn't be sent. Cancel it under Team → Invite coaches and send it again.",
   detail: {

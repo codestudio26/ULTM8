@@ -18,6 +18,7 @@ import { AuthService } from '../../auth/auth.service';
 import { NotificationDeliveryService } from '../../notifications/notification-delivery.service';
 import { TenantAuthorizationService } from '../tenant-authorization.service';
 import { CoachInviteStatus, CreateCoachInviteDto, InviteRole } from './dto/coach-invite.dto';
+import { ensureInstructorProfile } from '../../instructors/ensure-instructor-profile';
 import { recordStaffActivity } from '../staff-activity/staff-activity';
 
 /** Decision 183: a coach invite link works for 7 days. */
@@ -278,17 +279,24 @@ export class CoachInvitesService {
         action: 'INVITE_ACCEPTED',
         details: { role: invite.role, branchName: invite.branchName },
       });
-      if (existing) return existing;
-      return tx.roleGrant.create({
-        data: {
-          id: randomUUID(),
-          role: invite.role,
-          userId: callerId,
-          schoolId: invite.schoolId,
-          branchId: invite.branchId,
-          grantedById: invite.invitedById,
-        },
-      });
+      const grant =
+        existing ??
+        (await tx.roleGrant.create({
+          data: {
+            id: randomUUID(),
+            role: invite.role,
+            userId: callerId,
+            schoolId: invite.schoolId,
+            branchId: invite.branchId,
+            grantedById: invite.invitedById,
+          },
+        }));
+      // A coach gets their (empty) coach profile with the role. Written as the
+      // coach, whose live grant just made above is what lets them write it.
+      if (invite.role === 'INSTRUCTOR') {
+        await ensureInstructorProfile(tx, { userId: callerId, schoolId: invite.schoolId, branchId: invite.branchId });
+      }
+      return grant;
     });
     // RoleGrant_one_live_per_scope: the same coach role given at the same
     // moment another way (a second invite, the owner's "Give role") makes

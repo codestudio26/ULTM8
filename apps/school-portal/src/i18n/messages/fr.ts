@@ -2684,9 +2684,6 @@ export const messages: PartialMessages<EnglishMessages> = {
     unarchiveFailed: "Impossible de désarchiver ce profil d’instructeur.",
     addedEmailSent: "{name} a été ajouté — un code d’accès temporaire a été envoyé à {email}.",
     addedEmailFailed: "{name} a été ajouté, mais l’e-mail n’a pas pu être envoyé. Il faudra lui transmettre le code d’accès temporaire autrement.",
-    roleGrantedEmailSent: "Rôle d’instructeur attribué — la personne a été prévenue par e-mail. Utilisez « Ajouter un instructeur » pour ajouter son profil.",
-    roleGrantedEmailFailed: "Rôle d’instructeur attribué, mais l’e-mail de notification n’a pas pu être envoyé. Utilisez « Ajouter un instructeur » pour ajouter son profil.",
-    roleInviteSent: "Cette école demande au nouveau personnel d'accepter d'abord, nous lui avons donc envoyé une invitation par e-mail. Une fois acceptée, utilisez « Ajouter un instructeur » pour créer son profil.",
     roleInviteEmailFailed: "Cette école demande au nouveau personnel d'accepter d'abord. L'invitation a été créée, mais l'e-mail n'a pas pu être envoyé. Annulez-la dans Équipe → Inviter des coachs et renvoyez-la.",
     detail: {
       back: "← Instructeurs",

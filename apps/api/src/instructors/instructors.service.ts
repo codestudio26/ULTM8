@@ -3,6 +3,7 @@ import { randomInt, randomUUID } from 'crypto';
 import * as bcrypt from 'bcrypt';
 import { Prisma } from '@prisma/client';
 import { resolveInstructorSpecializations } from './instructor-specializations';
+import { ensureInstructorProfile } from './ensure-instructor-profile';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { PrismaAuthService } from '../common/prisma/prisma-auth.service';
 import { resolveUserNames } from '../common/prisma/resolve-user-names';
@@ -292,6 +293,7 @@ export class InstructorsService {
       }
     }
 
+    await this.ensureMyProfiles(callerId);
     const existingRows = await this.prismaApp.withTenantContext(callerId, (tx) => tx.instructor.findMany({ where: { userId: callerId } }));
     if (existingRows.length === 0) {
       throw new NotFoundException('You have no Instructor profile.');
@@ -321,6 +323,29 @@ export class InstructorsService {
     );
 
     return this.findMyProfiles(callerId);
+  }
+
+  /** A coach who holds the INSTRUCTOR role at a School but has no profile
+   * there yet (given the role before profiles came with it) gets the empty one
+   * now, so "My coach profile" can save (owner's choice, 14 Nov 2026). One per
+   * School, on the branch of their first live coach role there, as if it had
+   * come with that role. Not at a closed School (Decision 110). Someone with
+   * no live coach role gets nothing, and the callers answer 404 as before. */
+  private async ensureMyProfiles(callerId: string): Promise<void> {
+    await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const grants = await tx.roleGrant.findMany({
+        where: { userId: callerId, role: 'INSTRUCTOR', revokedAt: null, schoolId: { not: null }, school: { archivedAt: null } },
+        select: { schoolId: true, branchId: true },
+        orderBy: [{ grantedAt: 'asc' }, { id: 'asc' }],
+      });
+      if (grants.length === 0) return;
+      const have = new Set((await tx.instructor.findMany({ where: { userId: callerId }, select: { schoolId: true } })).map((r) => r.schoolId));
+      for (const g of grants) {
+        if (have.has(g.schoolId!)) continue;
+        have.add(g.schoolId!);
+        await ensureInstructorProfile(tx, { userId: callerId, schoolId: g.schoolId!, branchId: g.branchId });
+      }
+    });
   }
 
   /** GET /instructors/me/profile (Decision 312) — every Instructor row the
@@ -353,6 +378,7 @@ export class InstructorsService {
    * precedent (waiver signature images). For a multi-School Instructor, uses
    * the first profile found — same flagged limitation as completeMyProfile(). */
   async requestCertificationUploadUrl(callerId: string, dto: RequestCertificationUploadUrlDto) {
+    await this.ensureMyProfiles(callerId);
     const instructor = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.instructor.findFirst({ where: { userId: callerId }, select: { id: true, schoolId: true } }),
     );
