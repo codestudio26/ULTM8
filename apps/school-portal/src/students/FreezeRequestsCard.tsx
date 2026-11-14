@@ -13,7 +13,9 @@ import './studentNotices.css';
  * their branches' students' (Decision 409). Approve or decline here or on
  * the student's page. Shown only while there is one. In the new look
  * (Decision 453): a white card above the Students list, one line per request
- * with its two buttons as an equal pair (DESIGN.md → "Button pairs").
+ * with its two buttons as an equal pair (DESIGN.md → "Button pairs"):
+ * Approve is the green main button, Decline the outlined one (Decision 462
+ * item 23).
  */
 export function FreezeRequestsCard({ schoolId }: { schoolId: string }) {
   const t = useT();
@@ -46,7 +48,7 @@ export function FreezeRequestsCard({ schoolId }: { schoolId: string }) {
                 {t('students.freezeRequests.row', { plan: f.planTitle, start: formatCalendarDay(f.startsAt), end: formatCalendarDay(f.endsAt) })}
               </span>
               <span className="u8n-notice__actions u8n-notice__actions--pair">
-                <Button variant="secondary" className="u8b-pill u8b-pill--row" loading={action.isPending} onClick={() => decide(f.id, 'approve')}>
+                <Button className="u8b-pill u8b-pill--row u8b-pill--primary" loading={action.isPending} onClick={() => decide(f.id, 'approve')}>
                   {t('students.freezeRequests.approve')}
                 </Button>
                 <Button variant="secondary" className="u8b-pill u8b-pill--row" loading={action.isPending} onClick={() => decide(f.id, 'decline')}>
