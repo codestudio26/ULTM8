@@ -8508,3 +8508,48 @@ Small choices:
 ### Recorded by
 
 User (Code), 13–14 Nov 2026: the pasted answers to the open-questions page (items 1–34); "ok" on "Not set"; "yes", "ok", "go ahead" on the page-check fixes; "a" on the back link; "A" on the coach profile; "go ahead" on the Payments card.
+
+## Decision 463 — Member app push: get the FCM token from Firebase on both platforms
+
+**Date:** 12 Nov 2026 · **Status:** Product-owner request, built · **Builds on:** Decisions 223, 250, 264 · **Takes up:** Decision 267 item 1 (push), now that the owner has provisioned the Firebase project
+
+### Decision
+
+The owner created the Firebase project `ultm8-production`, registered the Android and iOS apps (`app.ultm8.student`) and put the service-account values into Render (`FCM_PROJECT_ID`, `FCM_CLIENT_EMAIL`, `FCM_PRIVATE_KEY`). The member app (`apps/student`) is wired to it:
+
+1. **Firebase app config files committed.** `apps/student/google-services.json` and `apps/student/GoogleService-Info.plist` (client config, not secrets) are referenced from `app.json` (`android.googleServicesFile`, `ios.googleServicesFile`).
+2. **The device token comes from Firebase, not from `expo-notifications`.** `getDevicePushTokenAsync()` returns the raw APNs token on iOS, and `PushNotificationService` sends only through FCM HTTP v1 (Decision 250), which needs an FCM registration token, so iOS pushes could never have arrived. `pushRegistration.ts` now gets the token with `@react-native-firebase/messaging` (`getToken`) on iOS and Android. This keeps Decision 250's single FCM integration point; the backend is unchanged. `expo-notifications` still asks for the OS permission and shows notifications.
+3. **Token refresh.** After a successful registration the app listens for FCM token rotation (`onTokenRefresh`) and registers the new token with the same `POST /notifications/device-tokens`. Logout stops the listener.
+4. **The web app does nothing for push.** A web stand-in (`fcmToken.ts`) keeps the Firebase SDK out of the web bundle, and registration returns at once on web (before, it showed a browser permission prompt that could never lead to a push).
+5. **Versions.** `@react-native-firebase/app` and `/messaging` 27.1.x with their Expo config plugins, and `expo-build-properties` (SDK 57) with `ios.useFrameworks: "dynamic"`. React Native Firebase 27 gets the Firebase Apple SDK 13 only through Swift Package Manager and fails `pod install` with static frameworks (its own `rnfirebase_fail_if_spm_static_linkage!`), so the often-quoted `"static"` setting would not build.
+
+Unchanged: the 409 when a second person signs in on the same device (still flagged, not built), and no change to the API, data model, tenancy/RLS or permissions.
+
+### Still needed before pushes arrive on a phone
+
+- **iOS:** an Apple Developer Program membership, then the APNs authentication key (`.p8`) uploaded to the Firebase project (Project settings → Cloud Messaging). Until then iOS gets no FCM token and registration logs a warning.
+- **Both platforms:** a new native build (development or preview build through EAS). Expo Go has no Firebase native module, so it can't receive these pushes. `apps/student` has no `eas.json` and no EAS project id yet.
+
+### Recorded by
+
+User (Code), 12 Nov 2026: asked to wire real Firebase Cloud Messaging into the member app with the given Firebase config files, fix the iOS token, and handle token refresh.
+
+## Decision 464 — Logging out stops push notifications on that phone
+
+**Date:** 13 Nov 2026 · **Status:** Product-owner decision, built · **Builds on:** Decisions 223, 264, 463 · **Resolves:** the shared-phone 409 that `pushRegistration.ts` and Decision 463 flagged as not built
+
+### Decision
+
+1. **Logging out of the member app stops push notifications on that phone.** On logout the app stops listening for token refreshes, removes the phone's token from the account (`DELETE /notifications/device-tokens/:id`, the endpoint already built) while the access token is still valid, and then has Firebase delete the token (`deleteToken`).
+2. **So a shared phone works for the next person.** Someone else logging in on the same phone (a family phone, a Guardian and a Student) gets a fresh token of their own instead of the 409 the server gives for a token another account owns.
+3. **Best effort, never blocks logout.** If the delete can't reach the server, the Firebase token is still deleted, so the old row's token is dead: the next send reports it stale and `NotificationFanoutProcessor` deletes the row (existing behaviour).
+4. No change to the API, the data model, tenancy/RLS or permissions. The server still answers 409 for a token another account owns; with this change a working app no longer sends one.
+
+### Not covered
+
+- A phone where the app was deleted without logging out: its token stops working and is cleaned up on the next send, as before.
+- React Native Firebase marks the FCM token APIs (`getToken`, `deleteToken`, `onTokenRefresh`) as deprecated in favour of Firebase Installation ID messaging. They still work while that option is off (the default). Moving to it would need its own decision and a backend check.
+
+### Recorded by
+
+User (Code), 13 Nov 2026: "go ahead", answering the recommendation that logging out removes the phone's token from the account and has Firebase delete it.

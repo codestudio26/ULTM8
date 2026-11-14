@@ -27,3 +27,14 @@ jest.mock('react-native-signature-canvas', () => {
   });
   return { __esModule: true, default: SignatureScreen };
 });
+
+// Global stand-in for Firebase Cloud Messaging (Decision 463): its native
+// module doesn't exist under jest, and AuthContext pulls it in through
+// pushRegistration.ts, which most screens' tests import. pushRegistration's
+// own test sets what these return.
+jest.mock('@react-native-firebase/messaging', () => ({
+  getMessaging: jest.fn(() => ({})),
+  getToken: jest.fn(async () => 'test-fcm-token'),
+  deleteToken: jest.fn(async () => undefined),
+  onTokenRefresh: jest.fn(() => () => undefined),
+}));

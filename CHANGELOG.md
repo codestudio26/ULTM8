@@ -10,6 +10,16 @@ Compare any two versions with `git diff <old> <new>`, e.g. `git diff v1.0.0 mast
 
 Post-v1.4.0 work on `master`.
 
+- **Member app: push notifications through Firebase** (Decision 463). The member
+  app is linked to the Firebase project `ultm8-production` and registers its
+  Firebase (FCM) token on iOS and Android, and again whenever Firebase changes it.
+  Before, iOS registered an Apple token the server couldn't send to. Pushes need a
+  new app build (not Expo Go), and on iOS the Apple push key in Firebase too. The
+  web app no longer asks for notification permission it can't use.
+- **Member app: logging out stops push notifications on that phone** (Decision
+  464). The phone's token is removed from the account and deleted in Firebase, so
+  someone else logging in on a shared phone gets their own notifications instead
+  of none.
 - **Students: staff with no branch** (#603). A coach or Branch Staff member who
   isn't assigned to a branch, in a School with branches, now sees "You aren't
   assigned to a branch yet" with a note that the School owner can assign one,

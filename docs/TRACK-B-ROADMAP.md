@@ -988,6 +988,21 @@ the same device (shared family phone) hits the existing 409 on re-registering th
 token under a different user — swallowed like any other registration failure, not
 actively resolved by deregistering the previous user's token on logout.
 
+**Update, 12 Nov 2026 (Decision 463):** the token now comes from Firebase
+(`@react-native-firebase/messaging`, `fcmToken.native.ts`) on both platforms, not
+from `getDevicePushTokenAsync()`, which returns a raw APNs token on iOS that FCM
+can't send to. The Firebase config files for `ultm8-production` are committed and in
+`app.json`, refreshed tokens are re-registered, and the web app skips push. Still
+needed: a native EAS build (no `eas.json`/EAS project yet; Expo Go can't receive
+these pushes) and, for iOS, the APNs `.p8` key uploaded to Firebase once there is an
+Apple Developer membership.
+
+**Update, 13 Nov 2026 (Decision 464):** the shared-phone 409 above is closed. Logout
+removes the phone's token from the account and has Firebase delete it, so the next
+person to log in gets a fresh token. `apps/student/eas.json` now has a `preview`
+profile (internal APK, pointed at the staging API); `eas init` (the EAS project id)
+is still to be run by the owner.
+
 ---
 
 ## Coach dashboard (Decision 184) — DONE

@@ -1,0 +1,17 @@
+{
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "preview": {
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://ultm8-staging-api.onrender.com"
+      },
+      "android": {
+        "buildType": "apk"
+      }
+    }
+  }
+}

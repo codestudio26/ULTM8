@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { unwrap } from '@ultm8/api-client';
 import { apiClient, authClient } from '../api';
 import { claimQueryCache, forgetQueryCache, removeOldWebQueryCache } from '../lib/queryCacheOwner';
-import { registerForPushNotificationsAsync } from '../notifications/pushRegistration';
+import { registerForPushNotificationsAsync, unregisterPushTokenAsync } from '../notifications/pushRegistration';
 import { decodeJwtPayload } from './decodeJwt';
 import { secureTokenStore } from './secureTokenStore';
 import { setUnauthorizedHandler } from './sessionRefresh';
@@ -247,6 +247,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const logout = useCallback(async () => {
+    // Logging out stops push notifications on this phone (Decision 464). First,
+    // while the access token is still valid; best effort, never throws.
+    await unregisterPushTokenAsync();
     // Best-effort server-side revoke before the local clear below — without this, a
     // "logged out" refresh token was still live and redeemable (apps/api's /auth/
     // logout exists exactly to revoke it; nothing here ever called it until now).

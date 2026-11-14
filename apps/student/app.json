@@ -9,7 +9,8 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "app.ultm8.student"
+      "bundleIdentifier": "app.ultm8.student",
+      "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
       "package": "app.ultm8.student",
@@ -19,7 +20,8 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -42,7 +44,17 @@
           "cameraPermission": "ULTM8 uses your camera to take your profile picture."
         }
       ],
-      "expo-notifications"
+      "expo-notifications",
+      "@react-native-firebase/app",
+      "@react-native-firebase/messaging",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "dynamic"
+          }
+        }
+      ]
     ]
   }
 }

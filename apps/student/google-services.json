@@ -1,0 +1,19 @@
+{
+  "project_info": {
+    "project_number": "829584223867",
+    "project_id": "ultm8-production",
+    "storage_bucket": "ultm8-production.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:829584223867:android:874372414076e1c4a1fcde",
+        "android_client_info": { "package_name": "app.ultm8.student" }
+      },
+      "oauth_client": [],
+      "api_key": [ { "current_key": "AIzaSyCg2x4gol4IVLr4t5iPXUt7VF5jK1rBmT4" } ],
+      "services": { "appinvite_service": { "other_platform_oauth_client": [] } }
+    }
+  ],
+  "configuration_version": "1"
+}
