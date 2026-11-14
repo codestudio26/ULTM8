@@ -45,7 +45,10 @@ test('students are in columns by progress, and search narrows them', async ({ pa
 test('"currently attending only" hides inactive students and says how many', async ({ page }) => {
   await page.goto('/grading');
   await expect(page.getByRole('link', { name: s.student.name })).toBeVisible();
-  await page.getByLabel('Currently attending only').check();
+  const attending = page.getByRole('switch', { name: 'Currently attending only' });
+  await expect(attending).toHaveAttribute('aria-checked', 'false');
+  await attending.click();
+  await expect(attending).toHaveAttribute('aria-checked', 'true');
   await expect(page.getByRole('link', { name: s.student.name })).toHaveCount(0); // no membership, no switch
   await expect(page.getByText('1 inactive hidden')).toBeVisible();
   await expect(page.getByRole('link', { name: ben.name })).toBeVisible();

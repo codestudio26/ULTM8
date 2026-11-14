@@ -67,6 +67,31 @@
   gap: 4px 8px;
   min-height: 52px;
 }
+/* "Currently attending only" (Decision 462 item 12): an on/off switch with
+ * its words after the track, as the design draws it. The track and knob are
+ * the shared switch's (.ultm8-switch). */
+[data-look='redesign'] .u8gb-att {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--u8n-text);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+[data-look='redesign'] .u8gb-att .ultm8-switch {
+  display: inline-block;
+}
+[data-look='redesign'] .u8gb-att:focus-visible {
+  outline: 2px solid var(--fill-accent);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
 [data-look='redesign'] .u8gb-tools__gap {
   flex: 1;
 }
@@ -80,7 +105,8 @@
   border-radius: 999px;
   background: var(--u8n-tile);
 }
-[data-look='redesign'] .u8gb-switch {
+[data-look='redesign'] .u8gb-switch,
+[data-look='redesign'] .u8gb-tools > .u8ss {
   align-self: flex-end;
   margin-bottom: 4px;
 }

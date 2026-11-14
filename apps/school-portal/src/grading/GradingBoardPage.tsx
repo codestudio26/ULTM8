@@ -23,6 +23,7 @@ import { BulkPromoteModal } from './BulkPromoteModal';
 import { GradeModal } from './GradingModals';
 import { useGradingHeaderTabs } from './GradingTabs';
 import { NewLookSelect } from '../layout/NewLookSelect';
+import { StyleSwitch } from './StyleSwitch';
 import { NewLookPageHeader } from '../layout/NewLookPage';
 import { BillingCard } from '../billing/BillingLook';
 import './gradingDialogs.css';
@@ -72,9 +73,11 @@ type Panel = { kind: 'student'; studentId: string } | { kind: 'selection' } | nu
  * branch coach sees, and gives each one a branch there (Decision 148.2).
  *
  * New look (Decision 460): the new page header with the Grading tabs, white
- * cards, our own drop-downs for the style and a student's home branch, and
- * the new look's pills, tick boxes and tags (gradingBoard.css). Same
- * filters, sort, selection, columns and actions as before.
+ * cards, our own drop-down for a student's home branch, and the new look's
+ * pills, tick boxes and tags (gradingBoard.css). The style is picked with the
+ * style switch, and "Currently attending only" is an on/off switch (Decision
+ * 462 items 11 and 12). Same filters, sort, selection, columns and actions
+ * as before.
  */
 export function GradingBoardPage() {
   const schoolId = useGradingSchoolId();
@@ -251,20 +254,16 @@ export function GradingBoardPage() {
         <>
           <BillingCard>
             <div className="u8gb-tools">
-              <div className="u8n-dd-field">
-                <NewLookSelect
-                  id="board-style"
-                  label={t('grading.board.styleLabel')}
-                  value={disciplineId ?? ''}
-                  onChange={(v) => {
-                    setDisciplineId(v);
-                    setSelected([]);
-                    setExpanded([]);
-                    setPanel(null);
-                  }}
-                  options={styles.map((d) => ({ value: d.id, label: d.name }))}
-                />
-              </div>
+              <StyleSwitch
+                styles={styles}
+                value={disciplineId}
+                onChange={(id) => {
+                  setDisciplineId(id);
+                  setSelected([]);
+                  setExpanded([]);
+                  setPanel(null);
+                }}
+              />
               {pair ? (
                 <div role="group" aria-label={t('grading.board.programLabel')} className="ultm8-view-toggle u8gb-switch">
                   {(['kids', 'adult'] as const).map((which) => {
@@ -296,7 +295,13 @@ export function GradingBoardPage() {
                 </Field>
               </div>
               <div className="u8gb-check">
-                <Checkbox label={t('grading.board.activeOnly')} checked={activeOnly} onChange={(e) => setActiveOnly(e.target.checked)} />
+                {/* Decision 462 item 12: an on/off switch, the track before its words, as the design draws it. */}
+                <button type="button" role="switch" aria-checked={activeOnly} className="u8gb-att" onClick={() => setActiveOnly((on) => !on)}>
+                  <span className={`ultm8-switch${activeOnly ? ' ultm8-switch--on' : ''}`} aria-hidden="true">
+                    <span className="ultm8-switch__knob" />
+                  </span>
+                  {t('grading.board.activeOnly')}
+                </button>
                 {activeOnly && board.data && board.data.hiddenInactive > 0 ? (
                   <span className="u8gb-hint"> {t('grading.board.inactiveHidden', { count: board.data.hiddenInactive })}</span>
                 ) : null}

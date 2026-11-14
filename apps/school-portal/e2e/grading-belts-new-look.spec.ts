@@ -127,10 +127,10 @@ test('a style\'s page and the belt editor: new drop-downs, round selectors, the 
   expect((await db.rank.findMany({ where: { disciplineId: s.disciplineId }, orderBy: { order: 'asc' } })).map((r) => r.name)).toEqual(['White', 'Blue']);
 });
 
-test('Grading → Skills: the new header, the style as a new drop-down, and the skill dialog\'s band', async ({ page }) => {
+test('Grading → Skills: the new header, the style switch, and the skill dialog\'s band', async ({ page }) => {
   await page.goto('/grading/skills');
   await expectGradingHeader(page, 'Skills', 'Skills');
-  await expect(page.getByRole('combobox', { name: 'Style', exact: true }).locator('[data-shown="true"]')).toHaveText('BJJ');
+  await expect(page.getByRole('group', { name: 'Style', exact: true }).getByRole('button', { name: 'BJJ', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', { name: 'Add skill' }).click();
   const dialog = page.getByRole('dialog', { name: 'Add skill' });
   await expect(band(dialog)).toHaveText(['Cancel', 'Save']);
@@ -160,6 +160,6 @@ test('on a phone the pages and the belt editor fit the screen', async ({ page })
   expect(await edit.evaluate((el) => el.getBoundingClientRect().height >= el.scrollHeight - 1)).toBe(true);
 
   await page.goto('/grading/skills');
-  await expect(page.getByRole('combobox', { name: 'Style', exact: true })).toBeVisible();
+  await expect(page.getByRole('group', { name: 'Style', exact: true })).toBeVisible();
   expect(await fitsTheScreen(page)).toBe(true);
 });
