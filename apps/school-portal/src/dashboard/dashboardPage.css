@@ -75,10 +75,17 @@
   font-size: 13px;
   color: var(--u8n-quiet);
 }
+/* Attendance's two figures (present, absent): each as wide as its number, a
+ * clear gap between them, and the second goes under the first when the card
+ * is too narrow, so big numbers never run together ("556" "15" read "55615"). */
 [data-look='redesign'] .u8n-dash__stat-pair {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+}
+[data-look='redesign'] .u8n-dash__stat-pair > div {
+  flex: 1 0 auto;
+  min-width: 0;
 }
 [data-look='redesign'] .u8n-dash__more {
   display: inline-flex;
