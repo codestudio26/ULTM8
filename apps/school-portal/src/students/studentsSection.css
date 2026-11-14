@@ -273,9 +273,6 @@
   align-items: center;
   gap: 8px;
 }
-[data-look='redesign'] .u8st-roster__confirm {
-  font-size: 14px;
-}
 [data-look='redesign'] .u8st-roster-add {
   align-items: flex-end;
   margin-bottom: 16px;

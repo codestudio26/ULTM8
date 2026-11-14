@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button, Checkbox, ErrorBanner, Spinner, SuccessBanner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useGradingSchoolId } from '../auth/AuthContext';
@@ -23,6 +23,23 @@ export function useAttendanceAccess(schoolId: string | null): { stats: boolean; 
 }
 
 /**
+ * The Branches the statistics' branch filter offers (Decision 462 item 2).
+ * Staff see only their own Branches, and the API says which in `branchIds`:
+ * but that is the Branches *counted*, which a picked Branch narrows to that
+ * one. Taking the list from it made the other Branches disappear until "All
+ * your branches" was picked again. So the caller's own Branches are the ones
+ * counted with no Branch picked, kept while one is.
+ */
+export function useStatsBranchOptions<B extends { id: string }>(all: B[], picked: string, counted: string[] | null | undefined): B[] {
+  const [own, setOwn] = useState<string[] | null | undefined>(undefined);
+  useEffect(() => {
+    if (!picked && counted !== undefined) setOwn(counted);
+  }, [picked, counted]);
+  const scope = !picked && counted !== undefined ? counted : own;
+  return all.filter((b) => !scope || scope.includes(b.id) || b.id === picked);
+}
+
+/**
  * Students → Attendance (Decision 317 items 3 and 4; backlog 5.6, 5.7):
  * check-ins, students per class and classes per student over the last 30
  * days, with a filter to leave out Trial, Visitor and Friend Pass check-ins,
@@ -43,12 +60,11 @@ export function AttendancePage() {
   const [done, setDone] = useState<string | null>(null);
   const stats = useAttendanceStats(schoolId, { branchId: branchId || undefined, excludePasses }, may.stats);
   const branches = useBranches(may.stats ? schoolId : null);
+  const branchOptions = useStatsBranchOptions(branches.data?.items ?? [], branchId, stats.data?.branchIds);
 
   if (!schoolId) return null;
   const number = (n: number) => n.toLocaleString(formatLocale(), { maximumFractionDigits: 1 });
   const data = stats.data;
-  // Staff see only their own Branches; the API says which.
-  const branchOptions = (branches.data?.items ?? []).filter((b) => !data?.branchIds || data.branchIds.includes(b.id) || b.id === branchId);
 
   return (
     <>
