@@ -551,3 +551,171 @@ input[type='radio'].u8gs-radio:focus-visible {
   min-width: 0;
   padding-inline: 8px;
 }
+
+/* ------------------------------ Styles & Belts in the design's layout
+ * (Decision 462 item 9): the style card with the style switch on top, the
+ * Ladder, Skills and Students under it, and "About this style" or the picked
+ * belt in the side panel (under them on a phone). */
+.u8gs-layout {
+  margin-top: 0;
+}
+.u8gs-main {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+[data-look='redesign'] .u8gs-main > .u8b-card,
+[data-look='redesign'] .u8gs-layout .ultm8-board-panel > .u8b-card {
+  margin: 0;
+}
+.u8gs-style-card__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+.u8gs-style-card__pick {
+  min-width: 0;
+  max-width: 100%;
+}
+.u8gs-label {
+  margin-bottom: 8px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--u8n-quiet, var(--text-secondary));
+}
+.u8gs-style-card .u8gs-filter {
+  margin: 12px 0 0;
+}
+.u8gs-style-card .u8gs-status,
+.u8gs-style-card > .u8gs-note {
+  margin-top: 12px;
+}
+[data-look='redesign'] .u8gs-item--static {
+  cursor: default;
+}
+[data-look='redesign'] .u8gs-item--static:hover {
+  background: var(--u8n-surface);
+}
+/* A belt row opens its panel: a click on the row, or its name (a button). */
+.u8gs-rung--pickable {
+  cursor: pointer;
+}
+[data-look='redesign'] .u8gs-rung--pickable:hover {
+  background: var(--u8n-hover);
+}
+[data-look='redesign'] .u8gs-rung--on {
+  box-shadow: inset 0 0 0 2px var(--u8n-select-ring, #5d7081);
+}
+.u8gs-rung__pick {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 500;
+  text-align: start;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.u8gs-rung__pick:hover {
+  text-decoration: underline;
+}
+.u8gs-rung__pick:focus-visible {
+  outline: 2px solid var(--fill-accent);
+  outline-offset: 2px;
+}
+/* The panel. */
+.u8gs-panel-head > .u8gs-label {
+  flex: 1;
+  margin: 0;
+}
+.u8gs-panel__name {
+  margin: 6px 0 4px;
+  font-size: 22px;
+  font-weight: 300;
+  letter-spacing: 0.02em;
+  overflow-wrap: anywhere;
+}
+.u8gs-panel__belt {
+  margin: 14px 0 10px;
+}
+.u8gs-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 16px 0 4px;
+}
+.u8gs-stats dt,
+.u8gs-pairs dt {
+  font-size: 12px;
+  color: var(--u8n-quiet, var(--text-secondary));
+}
+.u8gs-stats dt {
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.u8gs-stats dd {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 300;
+}
+.u8gs-panel ul.u8gs-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0;
+  list-style: none;
+}
+.u8gs-chips > li {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  background: var(--u8gs-tag-bg, #edf0f2);
+  color: var(--u8gs-tag-text, #50575e);
+}
+.u8gs-pairs {
+  margin: 0;
+}
+.u8gs-pairs > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--u8n-line, var(--border));
+  font-size: 14px;
+}
+.u8gs-pairs dt {
+  font-size: 14px;
+  color: inherit;
+}
+.u8gs-pairs dd {
+  margin: 0;
+  color: var(--u8n-quiet, var(--text-secondary));
+}
+.u8gs-panel ul.u8gs-grades {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.u8gs-panel .u8gs-grades > li {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--u8gs-row-bg, #f6f7f8);
+}
+.u8gs-grades__head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.u8gs-grades__head > strong {
+  font-weight: 500;
+}

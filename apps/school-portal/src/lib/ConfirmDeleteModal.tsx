@@ -12,7 +12,7 @@ import { useT } from '../i18n/I18nProvider';
  * Enrollment on Student/Instructor Detail) — optional, additive, defaulting
  * to this component's original Delete-only wording (translated at render
  * time when the caller passes nothing), so every existing caller
- * (DisciplinesPage, DisciplineDetailPage, LadderSection, CurriculumPage) is
+ * (DisciplinesPage, StyleDetail, LadderSection, CurriculumPage) is
  * unaffected. Lets a differently-destructive action (e.g. "Revoke") reuse
  * this same house confirmation pattern instead of a new one-off modal.
  */

@@ -27,7 +27,6 @@ import { BranchSettingsPage } from './branches/BranchSettingsPage';
 import { InviteCoachesPage } from './roleGrants/InviteCoachesPage';
 import { StaffPage } from './roleGrants/StaffPage';
 import { DisciplinesPage } from './disciplines/DisciplinesPage';
-import { DisciplineDetailPage } from './disciplines/DisciplineDetailPage';
 import { InstructorsPage } from './instructors/InstructorsPage';
 import { InstructorDetailPage } from './instructors/InstructorDetailPage';
 import { CompleteInstructorProfilePage } from './instructors/CompleteInstructorProfilePage';
@@ -249,7 +248,7 @@ export function App() {
         element={
           <RequireAuth>
             <Shell>
-              <DisciplineDetailPage />
+              <DisciplinesPage />
             </Shell>
           </RequireAuth>
         }

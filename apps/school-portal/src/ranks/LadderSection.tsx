@@ -40,6 +40,8 @@ export function LadderSection({
   readOnly = false,
   showHolders = true,
   canSetPrices = true,
+  selectedId = null,
+  onSelect,
 }: {
   discipline: DisciplineResponse;
   skills: SkillResponse[];
@@ -47,6 +49,10 @@ export function LadderSection({
   readOnly?: boolean;
   showHolders?: boolean;
   canSetPrices?: boolean;
+  /** Styles & Belts (Decision 462 item 9): the belt shown in the side panel,
+   * and picking one (its name, or a click anywhere on its row). */
+  selectedId?: string | null;
+  onSelect?: (rankId: string) => void;
 }) {
   const holdersQuery = useRungHolders(showHolders ? discipline.id : null);
   const reorder = useReorderRanks(discipline.id);
@@ -153,14 +159,29 @@ export function LadderSection({
                 key={rank.id}
                 aria-label={`${i + 1}. ${rank.name}`}
                 {...(readOnly ? {} : drag.targetProps(i))}
-                className="u8gs-rung"
+                className={`u8gs-rung${onSelect ? ' u8gs-rung--pickable' : ''}${selectedId === rank.id ? ' u8gs-rung--on' : ''}`}
                 style={drag.rowStyle(i)}
+                onClick={
+                  onSelect
+                    ? (e) => {
+                        // The row's own buttons and the drag handle do their own thing.
+                        if ((e.target as HTMLElement).closest('button, [title]')) return;
+                        onSelect(rank.id);
+                      }
+                    : undefined
+                }
               >
                 <div className="u8gs-rung__main">
                   {readOnly ? null : <span {...drag.handleProps(i, rank.name)}>⠿</span>}
                   <span className="u8gs-rung__place">{i + 1}</span>
                   {tiers[0] ? <BeltChip rung={{ id: tiers[0].id, rankId: rank.id, rank, tier: tiers[0], index: 0, name: tiers[0].name }} /> : null}
-                  <strong className="u8gs-rung__name">{rank.name}</strong>
+                  {onSelect ? (
+                    <button type="button" className="u8gs-rung__name u8gs-rung__pick" aria-pressed={selectedId === rank.id} onClick={() => onSelect(rank.id)}>
+                      {rank.name}
+                    </button>
+                  ) : (
+                    <strong className="u8gs-rung__name">{rank.name}</strong>
+                  )}
                   {rank.archivedAt ? <span className="u8gs-tag">{t('ranks.ladder.archived')}</span> : null}
                   <span className="u8gs-rung__count">
                     {rank.rankDisplay === 'LEVELS' ? t('ranks.ladder.steps', { count: tiers.length }) : stripesLabel(t, Math.max(0, ...tiers.map((tier) => tier.count)))}

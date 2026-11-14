@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { addBranch, addPerson, addStudent, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
 
 /**
@@ -11,6 +11,15 @@ import { addBranch, addPerson, addStudent, cleanup, db, seedGradingSchool, signI
  */
 let s: GradingSchool;
 
+/** Styles & Belts in the design's layout (Decision 462 item 9): the style
+ * card (switch and the style's actions) and the "About this style" panel. */
+const styleCard = (page: Page) => page.getByRole('region', { name: 'Style', exact: true });
+const styleSwitch = (page: Page) => page.getByRole('group', { name: 'Style', exact: true });
+const about = (page: Page) => page.getByRole('region', { name: 'About this style' });
+/** A figure in About this style (Belts, Grades, Students). */
+const stat = (page: Page, label: string) => about(page).locator('.u8gs-stats > div').filter({ has: page.getByText(label, { exact: true }) }).locator('dd');
+const skill = (page: Page, name: string) => page.getByRole('list', { name: 'Skills' }).getByRole('listitem', { name });
+
 test.beforeEach(async ({ page }) => {
   s = await seedGradingSchool();
   await signIn(page, s.ownerToken);
@@ -22,7 +31,7 @@ test.afterAll(async () => {
 
 test('class types are a list: add one, then rename it and the rungs follow', async ({ page }) => {
   await page.goto('/disciplines');
-  await page.getByRole('row', { name: /BJJ/ }).getByRole('button', { name: 'Edit' }).click();
+  await styleCard(page).getByRole('button', { name: 'Edit', exact: true }).click();
   let dialog = page.getByRole('dialog', { name: 'Edit discipline' });
   await dialog.getByRole('button', { name: 'Add class type' }).click();
   await dialog.getByLabel('Class type 1', { exact: true }).fill('Kids');
@@ -32,19 +41,19 @@ test('class types are a list: add one, then rename it and the rungs follow', asy
   await expect(dialog.getByText('"kids" is listed twice.')).toBeVisible();
   await dialog.getByRole('button', { name: 'Remove class type 2' }).click();
   await dialog.getByRole('button', { name: 'Save' }).click();
-  await expect(page.getByRole('row', { name: /BJJ/ }).getByRole('cell', { name: 'Kids', exact: true })).toBeVisible();
+  await expect(about(page).getByRole('listitem').filter({ hasText: /^Kids$/ })).toBeVisible();
 
   // A rung counts "Kids" classes; renaming the type carries onto it.
   await db.rankStripeTier.update({ where: { id: s.rung['White 1'].id }, data: { eligibleClassTypes: ['Kids'] } });
-  await page.getByRole('row', { name: /BJJ/ }).getByRole('button', { name: 'Edit' }).click();
+  await styleCard(page).getByRole('button', { name: 'Edit', exact: true }).click();
   dialog = page.getByRole('dialog', { name: 'Edit discipline' });
   await dialog.getByLabel('Class type 1', { exact: true }).fill('Kids Fundamentals');
   await dialog.getByRole('button', { name: 'Save' }).click();
-  await expect(page.getByRole('row', { name: /BJJ/ }).getByRole('cell', { name: 'Kids Fundamentals', exact: true })).toBeVisible();
+  await expect(about(page).getByRole('listitem').filter({ hasText: /^Kids Fundamentals$/ })).toBeVisible();
   expect((await db.rankStripeTier.findUniqueOrThrow({ where: { id: s.rung['White 1'].id } })).eligibleClassTypes).toEqual(['Kids Fundamentals']);
 
   // Removing a type a rung uses is refused, with the reason.
-  await page.getByRole('row', { name: /BJJ/ }).getByRole('button', { name: 'Edit' }).click();
+  await styleCard(page).getByRole('button', { name: 'Edit', exact: true }).click();
   dialog = page.getByRole('dialog', { name: 'Edit discipline' });
   await dialog.getByRole('button', { name: 'Remove class type 1' }).click();
   await dialog.getByRole('button', { name: 'Save' }).click();
@@ -63,48 +72,48 @@ test('a blank or repeated name is refused', async ({ page }) => {
   await expect(dialog.getByText('A discipline called "bjj" already exists.')).toBeVisible();
 });
 
-test('archive a style: it leaves the list, shows under "Show archived", and comes back', async ({ page }) => {
+test('archive a style: it leaves the switch, shows under "Show archived", and comes back', async ({ page }) => {
   await page.goto('/disciplines');
-  await expect(page.getByRole('row', { name: /BJJ/ }).getByRole('cell', { name: '1', exact: true })).toBeVisible();
+  await expect(stat(page, 'Students')).toHaveText('1');
+  await expect(page.getByLabel('Show archived')).toHaveCount(0); // nothing archived yet
   await page.getByRole('button', { name: 'Archive BJJ' }).click();
   const dialog = page.getByRole('dialog', { name: 'Archive BJJ?' });
   await expect(dialog.getByText(/students keep their rank and history/)).toBeVisible();
   await dialog.getByRole('button', { name: 'Archive' }).click();
-  await expect(page.getByRole('row', { name: /BJJ/ })).toHaveCount(0);
+  await expect(styleSwitch(page).getByRole('button', { name: /BJJ/ })).toHaveCount(0);
 
   await page.getByLabel('Show archived').check();
-  const row = page.getByRole('row', { name: /BJJ/ });
-  await expect(row.getByText('Archived', { exact: true })).toBeVisible();
-  await expect(row.getByRole('button', { name: 'Edit' })).toHaveCount(0);
+  await expect(styleSwitch(page).getByRole('button', { name: 'BJJ · Archived' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(styleCard(page).getByRole('button', { name: 'Edit', exact: true })).toHaveCount(0);
 
   // Read-only while archived.
-  await row.getByRole('button', { name: 'Skills and belts of BJJ' }).click();
   await expect(page.getByText(/This style is archived/)).toBeVisible();
   await expect(page.getByRole('button', { name: 'Add skill' })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Add belt' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Add rank' })).toHaveCount(0);
 
-  await page.goto('/disciplines');
-  await page.getByLabel('Show archived').check();
   await page.getByRole('button', { name: 'Unarchive BJJ' }).click();
-  await expect(page.getByRole('row', { name: /BJJ/ }).getByText('Archived', { exact: true })).toHaveCount(0);
+  await expect(styleSwitch(page).getByRole('button', { name: 'BJJ', exact: true })).toBeVisible();
+  await expect(page.getByText(/This style is archived/)).toHaveCount(0);
   expect((await db.discipline.findUniqueOrThrow({ where: { id: s.disciplineId } })).archivedAt).toBeNull();
 });
 
 test('skills show which rungs need them and their lessons; the owner sees who trains the style', async ({ page }) => {
   await page.goto(`/disciplines/${s.disciplineId}`);
-  const armbar = page.getByRole('row', { name: /Armbar/ });
-  await expect(armbar.getByRole('cell', { name: 'White 2', exact: true })).toBeVisible();
-  await expect(armbar.getByRole('cell', { name: '1', exact: true })).toBeVisible();
+  const armbar = skill(page, 'Armbar');
+  await expect(armbar.getByText('Required for: White 2', { exact: true })).toBeVisible();
+  await expect(armbar.getByText('Lessons: 1', { exact: true })).toBeVisible();
 
   await page.getByRole('button', { name: 'Add skill' }).click();
   const dialog = page.getByRole('dialog', { name: 'Add skill' });
   await dialog.getByLabel('Name').fill('Triangle');
   await dialog.getByRole('button', { name: 'Save' }).click();
-  await expect(page.getByRole('row', { name: /Triangle/ })).toBeVisible();
+  await expect(skill(page, 'Triangle')).toBeVisible();
   await page.getByRole('button', { name: 'Move Triangle up' }).click();
-  await expect(page.getByRole('row').nth(1)).toContainText('Triangle');
+  await expect(page.getByRole('list', { name: 'Skills' }).getByRole('listitem').first()).toContainText('Triangle');
 
-  await expect(page.getByRole('heading', { name: 'Students (1)' })).toBeVisible();
+  // The count is in About this style; the Students card's heading has none.
+  await expect(stat(page, 'Students')).toHaveText('1');
+  await expect(page.getByRole('heading', { name: 'Students', exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Sam Lee' })).toBeVisible();
 });
 
@@ -118,12 +127,12 @@ test('a coach sees the Disciplines page read-only', async ({ page }) => {
   await page.getByRole('navigation', { name: 'Grading pages' }).getByRole('link', { name: 'Disciplines' }).click();
   await expect(page.getByText('Only the School owner can change them.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Add discipline' })).toHaveCount(0);
-  await page.getByRole('button', { name: 'Skills and belts of BJJ' }).click();
+  await expect(styleCard(page).getByRole('button')).toHaveText(['BJJ']); // the switch only
   await expect(page.getByText('Only the School owner can change this style.')).toBeVisible();
   await expect(page.getByText('White 2').first()).toBeVisible();
   await expect(page.getByRole('button', { name: 'Add skill' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Add belt' })).toHaveCount(0);
-  await expect(page.getByRole('heading', { name: /Students \(/ })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Students', exact: true })).toHaveCount(0);
 });
 
 test('a student\'s rank in an archived style stays visible, read-only (Decision 310)', async ({ page }) => {
@@ -141,11 +150,10 @@ test('a student who left is not counted or listed on the style (Decision 310)', 
   const leaver = await addStudent(s, 'Lea', 'Left', { rung: 'White 1' });
   await db.roleGrant.updateMany({ where: { userId: leaver.id, schoolId: s.schoolId }, data: { revokedAt: new Date() } });
   await page.goto(`/disciplines/${s.disciplineId}`);
-  await expect(page.getByRole('heading', { name: 'Students (1)' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Students', exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Sam Lee' })).toBeVisible();
   await expect(page.getByText('Lea Left')).toHaveCount(0);
-  await page.goto('/disciplines');
-  await expect(page.getByRole('row', { name: /BJJ/ }).getByRole('cell', { name: '1', exact: true })).toBeVisible();
+  await expect(stat(page, 'Students')).toHaveText('1');
 });
 
 test('the owner lets a Branch Staff member manage disciplines (Decision 383)', async ({ page }) => {
@@ -174,11 +182,10 @@ test('the owner lets a Branch Staff member manage disciplines (Decision 383)', a
   await signIn(page, staff.token);
   await page.goto('/disciplines');
   await expect(page.getByRole('button', { name: 'Add discipline' })).toBeVisible();
-  await page.getByRole('row', { name: /BJJ/ }).getByRole('button', { name: 'Skills and belts of BJJ' }).click();
   await expect(page.getByRole('button', { name: 'Add skill' })).toBeVisible();
   await expect(page.getByText('Only the School owner can change them', { exact: false })).toHaveCount(0);
   // They still don't see who trains the style.
-  await expect(page.getByRole('heading', { name: /^Students \(/ })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Students', exact: true })).toHaveCount(0);
 
   // An archived style nobody uses can be deleted permanently.
   await page.goto('/disciplines');
@@ -186,13 +193,15 @@ test('the owner lets a Branch Staff member manage disciplines (Decision 383)', a
   const add = page.getByRole('dialog', { name: 'Add discipline' });
   await add.getByLabel('Discipline name').fill('Old Karate');
   await add.getByRole('button', { name: 'Save' }).click();
+  // The new style is the one showing.
+  await expect(styleSwitch(page).getByRole('button', { name: 'Old Karate' })).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', { name: 'Archive Old Karate' }).click();
   await page.getByRole('dialog', { name: 'Archive Old Karate?' }).getByRole('button', { name: 'Archive' }).click();
   await page.getByLabel('Show archived').check();
-  const row = page.getByRole('row', { name: /Old Karate/ });
-  await expect(row.getByRole('button', { name: 'Delete Old Karate' })).toHaveText('Delete permanently');
-  await row.getByRole('button', { name: 'Delete Old Karate' }).click();
+  await styleSwitch(page).getByRole('button', { name: 'Old Karate · Archived' }).click();
+  await expect(styleCard(page).getByRole('button', { name: 'Delete Old Karate' })).toHaveText('Delete permanently');
+  await styleCard(page).getByRole('button', { name: 'Delete Old Karate' }).click();
   await page.getByRole('dialog', { name: 'Delete Old Karate?' }).getByRole('button', { name: 'Delete' }).click();
-  await expect(page.getByRole('row', { name: /Old Karate/ })).toHaveCount(0);
+  await expect(styleSwitch(page).getByRole('button', { name: /Old Karate/ })).toHaveCount(0);
   expect(await db.discipline.findFirst({ where: { schoolId: s.schoolId, name: 'Old Karate' } })).toBeNull();
 });
