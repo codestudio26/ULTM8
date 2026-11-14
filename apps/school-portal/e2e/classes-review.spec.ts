@@ -126,7 +126,8 @@ test('a coach opens Classes read-only and reaches roll call from the dashboard',
   await expect(page).toHaveURL(/\/classes\/[^/]+\/roll-call$/);
   await expect(page.getByRole('heading', { name: /Coach class/ })).toBeVisible();
 
-  await page.getByRole('link', { name: 'Classes', exact: true }).click();
+  // Back to Classes by the page's own "‹ Classes" link (Decision 462 item 24).
+  await page.locator('.u8n-page-header').getByRole('link', { name: 'Classes', exact: true }).click();
   await expect(page.getByRole('row', { name: /Coach class/ })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Add class' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Actions for Coach class' }).click();
