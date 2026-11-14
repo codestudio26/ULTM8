@@ -21,6 +21,7 @@ import { useT, type TranslationKey } from '../i18n/I18nProvider';
 import { BillingCard, BillingPage } from '../billing/BillingLook';
 import { NewLookPageHeader } from '../layout/NewLookPage';
 import { NewLookSelect } from '../layout/NewLookSelect';
+import { StyleSwitch } from './StyleSwitch';
 import '../disciplines/stylesLook.css';
 import './gradingSettingsLook.css';
 
@@ -56,6 +57,12 @@ const ABOUT: Record<About, { title: TranslationKey; body: TranslationKey }> = {
  * edit like any other: the Discard / Save changes bar shows), and the About
  * panel beside the settings (under them on a phone). The same settings,
  * rights, checks, working copy and saving as before.
+ *
+ * One style at a time (Decision 462 items 10 and 11): the style switch on top
+ * picks the style whose cards show (each card's heading names it), and
+ * "Ranks shown as" is a Belts · Levels two-button switch. The working copy
+ * still holds every style, so an edit made to one style survives switching
+ * to another, and Save sends them all.
  */
 
 /** Decision 321 item 1: the six tick boxes, in Gymdesk's order. */
@@ -109,6 +116,7 @@ export function GradingSettingsPage() {
   const [kidsToAdult, setKidsToAdult] = useState(false);
   const [openMatOn, setOpenMatOn] = useState(false);
   const [about, setAbout] = useState<About>('columns');
+  const [styleId, setStyleId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -150,6 +158,9 @@ export function GradingSettingsPage() {
   const ageProblem = (v: string) => (Number.isInteger(Number(v)) && Number(v) >= 1 && Number(v) <= 99 ? null : t('grading.settings.columns.adultAgeInvalid'));
   const changedAges = styles.filter((d) => d.adultDisciplineId && canColumns(d) && adultAges[d.id] !== undefined && adultAges[d.id] !== String(d.readyForAdultAge));
   const changedDisplays = styles.filter((d) => canColumns(d) && displays[d.id] !== undefined && displays[d.id] !== d.rankDisplay);
+  // The style whose cards show; the first one until another is picked.
+  const shown = styles.find((d) => d.id === styleId) ?? styles[0] ?? null;
+  const shownStyles = shown ? [shown] : [];
   const changedRequirements = styles.filter((d) => my.isOwner && requirements[d.id] !== undefined && !sameRequirements(requirements[d.id], requirementsOf(d)));
   const feeChanged =
     my.isOwner &&
@@ -193,10 +204,11 @@ export function GradingSettingsPage() {
     </Button>
   );
   /** A card's heading: the title, an "Owner only" tag, and its ⓘ. */
-  const cardHead = (title: TranslationKey, key: About | null, ownerOnly = false) => (
+  const cardHead = (title: TranslationKey, key: About | null, ownerOnly = false, styleName?: string) => (
     <div className="u8gst-head">
       <h2 className="u8b-card__title">
-        {t(title)} {ownerOnly ? <span className="u8gs-tag">{t('grading.settings.ownerOnly')}</span> : null}
+        {t(title)}
+        {styleName ? ` · ${styleName}` : ''} {ownerOnly ? <span className="u8gs-tag">{t('grading.settings.ownerOnly')}</span> : null}
       </h2>
       {key ? aboutButton(key) : null}
     </div>
@@ -209,28 +221,33 @@ export function GradingSettingsPage() {
       {saved && !dirty ? <SuccessBanner message={t('grading.settings.saved')} /> : null}
       <div className="u8gst-layout">
         <div className="u8gst-main">
+          {styles.length ? <StyleSwitch styles={styles} value={shown?.id ?? null} onChange={setStyleId} /> : null}
           {styles.length ? (
             <BillingCard>
               <section aria-label={t('grading.settings.displayTitle')}>
-                {cardHead('grading.settings.displayTitle', 'display')}
+                {cardHead('grading.settings.displayTitle', 'display', false, shown?.name)}
                 <div className="u8gst-rows">
-                  {styles.map((d) => {
+                  {shownStyles.map((d) => {
                     const editable = canColumns(d);
+                    const value = displays[d.id] ?? d.rankDisplay;
+                    const pick = (v: DisciplineResponse['rankDisplay']) => {
+                      if (v !== value) setDisplays((x) => ({ ...x, [d.id]: v }));
+                      setAbout('display');
+                    };
                     return (
-                      <div key={d.id} className="u8gst-row">
-                        <div className="u8n-dd-field u8gst-dd">
-                          <NewLookSelect
-                            id={`rank-display-${d.id}`}
-                            label={d.name}
-                            ariaLabel={t('grading.settings.displayAria', { style: d.name })}
-                            value={displays[d.id] ?? d.rankDisplay}
-                            disabled={!editable}
-                            onChange={(v) => setDisplays((x) => ({ ...x, [d.id]: v as DisciplineResponse['rankDisplay'] }))}
-                            options={[
-                              { value: 'BELTS', label: t('disciplines.form.rankDisplayBelts') },
-                              { value: 'LEVELS', label: t('disciplines.form.rankDisplayLevels') },
-                            ]}
-                          />
+                      <div key={d.id} className="u8gst-row u8gst-row--line">
+                        <strong className="u8gst-grow">{t('disciplines.form.rankDisplayLabel')}</strong>
+                        <div role="group" aria-label={t('grading.settings.displayAria', { style: d.name })} className="u8ss">
+                          {(
+                            [
+                              ['BELTS', 'disciplines.form.rankDisplayBelts'],
+                              ['LEVELS', 'disciplines.form.rankDisplayLevels'],
+                            ] as const
+                          ).map(([v, label]) => (
+                            <button key={v} type="button" className="u8ss__btn" aria-pressed={value === v} disabled={!editable} onClick={() => pick(v)}>
+                              {t(label)}
+                            </button>
+                          ))}
                         </div>
                         {editable ? null : <p className="u8gs-note u8gst-full">{t('grading.settings.columns.noRight')}</p>}
                       </div>
@@ -243,15 +260,14 @@ export function GradingSettingsPage() {
           {styles.length ? (
             <BillingCard>
               <section aria-label={t('grading.settings.requirements.title')}>
-                {cardHead('grading.settings.requirements.title', 'requirements', true)}
+                {cardHead('grading.settings.requirements.title', 'requirements', true, shown?.name)}
                 <p className="u8gs-note u8gst-intro">{t('grading.settings.requirements.intro')}</p>
                 <div className="u8gst-rows">
-                  {styles.map((d) => {
+                  {shownStyles.map((d) => {
                     const r = requirements[d.id] ?? requirementsOf(d);
                     const set = (patch: Partial<GradingRequirements>) => setRequirementsDraft((x) => ({ ...x, [d.id]: { ...r, ...patch } }));
                     return (
                       <div key={d.id} className="u8gst-row" data-testid={`requirements-${d.id}`}>
-                        <strong className="u8gst-full">{d.name}</strong>
                         <div className="u8gst-ticks u8gst-full">
                           {TICKS.map(({ field, label }) => (
                             <Checkbox
@@ -307,19 +323,18 @@ export function GradingSettingsPage() {
           ) : null}
           <BillingCard>
             <section aria-label={t('grading.settings.columns.title')}>
-              {cardHead('grading.settings.columns.title', 'columns')}
+              {cardHead('grading.settings.columns.title', 'columns', false, shown?.name)}
               <p className="u8gs-note u8gst-intro">{t('grading.settings.columns.intro')}</p>
               {styles.length === 0 ? (
                 <EmptyState title={t('grading.noStylesTitle')} description={t('grading.board.noStylesDescription')} />
               ) : (
                 <div className="u8gst-rows">
-                  {styles.map((d) => {
+                  {shownStyles.map((d) => {
                     const c = columns[d.id] ?? { g: String(d.boardGettingThere), r: String(d.boardReadyToGrade) };
                     const editable = canColumns(d);
                     const problem = editable ? columnProblem(c) : null;
                     return (
                       <div key={d.id} className="u8gst-row">
-                        <strong className="u8gst-full">{d.name}</strong>
                         <label className="u8gst-num">
                           {t('grading.settings.columns.gettingThere')}
                           <TextField

@@ -13,7 +13,7 @@ import { useGradingHeaderTabs } from './GradingTabs';
 import { useT } from '../i18n/I18nProvider';
 import { BillingCard, BillingPage } from '../billing/BillingLook';
 import { NewLookPageHeader } from '../layout/NewLookPage';
-import { NewLookSelect } from '../layout/NewLookSelect';
+import { StyleSwitch } from './StyleSwitch';
 import '../disciplines/stylesLook.css';
 
 /**
@@ -25,7 +25,7 @@ import '../disciplines/stylesLook.css';
  * a skill students are being signed off on can't be deleted, and the API says why.
  *
  * New look (Decision 460): the new page header with the Grading tabs, white
- * cards, the style as the new look's drop-down, and soft rows. Same list,
+ * cards, the style switch (Decision 462 item 11), and soft rows. Same list,
  * order buttons, panel and checks as before.
  */
 export function GradingSkillsPage() {
@@ -96,18 +96,14 @@ export function GradingSkillsPage() {
         <div className={`ultm8-board-layout${selected ? ' ultm8-board-layout--with-panel' : ''}`} style={{ marginTop: 0 }}>
           <BillingCard>
             <div className="u8gs-toolbar">
-              <div className="u8n-dd-field">
-                <NewLookSelect
-                  id="skills-style"
-                  label={t('grading.board.styleLabel')}
-                  value={disciplineId ?? ''}
-                  onChange={(v) => {
-                    setDisciplineId(v);
-                    setSelectedId(null);
-                  }}
-                  options={styles.map((d) => ({ value: d.id, label: d.name }))}
-                />
-              </div>
+              <StyleSwitch
+                styles={styles}
+                value={disciplineId}
+                onChange={(id) => {
+                  setDisciplineId(id);
+                  setSelectedId(null);
+                }}
+              />
               {canEdit ? <Button onClick={() => setAdding(true)}>{t('grading.skills.add')}</Button> : null}
             </div>
             {!my.isOwner ? <p className="u8gs-note">{t('disciplines.detail.readOnlyNote')}</p> : style?.archivedAt ? <p className="u8gs-note">{t('disciplines.detail.archivedNote')}</p> : null}

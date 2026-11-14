@@ -24,11 +24,10 @@ test.afterAll(async () => {
 
 test('Grading → Settings switches a style to Levels; the board then shows badges', async ({ page }) => {
   await page.goto('/grading/settings');
-  // The new look's drop-down (DESIGN.md → "Drop-downs"); a pick is an edit.
-  const select = page.getByRole('combobox', { name: 'BJJ: ranks shown as' });
-  await expect(select.locator('[data-shown="true"]')).toHaveText('Belts');
-  await select.click();
-  await page.getByRole('option', { name: 'Levels (no belt)', exact: true }).click();
+  // Belts · Levels is a two-button switch (Decision 462 item 10); a pick is an edit.
+  const display = page.getByRole('group', { name: 'BJJ: ranks shown as' });
+  await expect(display.getByRole('button', { name: 'Belts', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await display.getByRole('button', { name: 'Levels (no belt)', exact: true }).click();
   await page.getByRole('region', { name: 'You have unsaved changes.' }).getByRole('button', { name: 'Save changes' }).click();
   await expect(page.getByText('Saved.')).toBeVisible();
   await expect.poll(async () => (await db.discipline.findUniqueOrThrow({ where: { id: s.disciplineId } })).rankDisplay).toBe('LEVELS');

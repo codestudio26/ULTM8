@@ -43,21 +43,22 @@ test('Settings: the new header and tabs; a drop-down pick is an edit, Discard pu
   await expectGradingHeader(page, 'Grading settings', 'Settings');
   await expect(page.getByRole('region', { name: 'About this setting' })).toBeVisible();
 
-  // Ranks shown as: the new look's drop-down. Picking the same value changes nothing.
-  const display = page.getByRole('combobox', { name: 'BJJ: ranks shown as' });
-  await expect(display.locator('[data-shown="true"]')).toHaveText('Belts');
-  await display.click();
-  await page.getByRole('option', { name: 'Belts', exact: true }).click();
+  // Ranks shown as: a Belts · Levels switch (Decision 462 item 10). Picking the chosen one changes nothing.
+  const display = page.getByRole('group', { name: 'BJJ: ranks shown as' });
+  const belts = display.getByRole('button', { name: 'Belts', exact: true });
+  const levels = display.getByRole('button', { name: 'Levels (no belt)', exact: true });
+  await expect(belts).toHaveAttribute('aria-pressed', 'true');
+  await belts.click();
   await expect(unsavedBar(page)).toHaveCount(0);
 
   // A different pick is an edit: the bar shows, Cancel-first order Discard / Save changes.
-  await display.click();
-  await page.getByRole('option', { name: 'Levels (no belt)', exact: true }).click();
+  await levels.click();
+  await expect(levels).toHaveAttribute('aria-pressed', 'true');
   const bar = unsavedBar(page);
   await expect(bar.getByRole('button')).toHaveText(['Discard', 'Save changes']);
   await bar.getByRole('button', { name: 'Discard' }).click();
   await expect(bar).toHaveCount(0);
-  await expect(display.locator('[data-shown="true"]')).toHaveText('Belts');
+  await expect(belts).toHaveAttribute('aria-pressed', 'true');
 
   // Promotion: also a drop-down; a pick moves About this setting, then Save sends it.
   const promotion = page.getByRole('combobox', { name: 'BJJ: promotion' });
