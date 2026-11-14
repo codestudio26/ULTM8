@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useTypeAhead } from '@ultm8/ui';
 import { useBranches } from '../branches/branchQueries';
 import { useT } from '../i18n/I18nProvider';
 
@@ -26,6 +27,7 @@ export function BranchPicker({ options, value, onChange }: { options: { id: stri
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const root = useRef<HTMLDivElement>(null);
+  const typeAhead = useTypeAhead();
   const chosen = options.find((o) => o.id === value) ?? options[0];
   // Sized from the longest name, so it doesn't jump when the value changes.
   const longest = options.reduce((n, o) => Math.max(n, o.name.length), 0);
@@ -50,6 +52,14 @@ export function BranchPicker({ options, value, onChange }: { options: { id: stri
   }
 
   function onKeyDown(e: React.KeyboardEvent) {
+    // A typed letter jumps to the next option starting with it (Decision 462 item 7).
+    const match = typeAhead(e, options.map((o) => o.name), open ? active : Math.max(0, options.findIndex((o) => o.id === value)));
+    if (match !== null) {
+      e.preventDefault();
+      if (!open) openList();
+      if (match >= 0) setActive(match);
+      return;
+    }
     if (!open) {
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();

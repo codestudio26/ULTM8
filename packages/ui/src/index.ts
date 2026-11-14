@@ -2,6 +2,7 @@ export * from './components';
 export * from './postalAddress';
 export * from './AddressFields';
 export * from './NewLookSelect';
+export * from './typeAhead';
 import '@fontsource-variable/figtree';
 import './tokens.css';
 import './components.css';

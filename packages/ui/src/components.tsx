@@ -462,12 +462,16 @@ export function TimezoneField({
         e.preventDefault();
         if (isOpen) setActiveIndex((i) => Math.max(i - 1, 0));
         break;
-      case 'Enter':
-        if (isOpen && activeIndex >= 0 && results[activeIndex]) {
-          e.preventDefault();
-          selectZone(results[activeIndex]);
-        }
+      case 'Enter': {
+        // Never submits the form (Decision 462 item 6): picks the option the
+        // arrows reached, else the first match for what was typed.
+        e.preventDefault();
+        if (!isOpen) break;
+        const pick = activeIndex >= 0 ? results[activeIndex] : query.trim() ? results[0] : undefined;
+        if (pick) selectZone(pick);
+        else closeDropdown();
         break;
+      }
       case 'Escape':
         if (isOpen) {
           e.preventDefault();
@@ -640,7 +644,8 @@ export interface SearchableSelectFieldProps<T> {
 }
 
 /** The searchable picker behind `CurrencyField` and the address form's Country
- * field: type to filter, arrows to move, Enter to pick, Escape to close (ARIA
+ * field: type to filter, arrows to move, Enter to pick (the first match when
+ * the arrows haven't moved; Enter never submits the form), Escape to close (ARIA
  * 1.2 editable combobox, as `TimezoneField`). Closed, it shows the chosen
  * option's label; the committed value is the option's plain value. */
 export function SearchableSelectField<T>({
@@ -730,12 +735,17 @@ export function SearchableSelectField<T>({
         e.preventDefault();
         if (isOpen) setActiveIndex((i) => Math.max(i - 1, 0));
         break;
-      case 'Enter':
-        if (isOpen && activeIndex >= 0 && results[activeIndex]) {
-          e.preventDefault();
-          selectOption(results[activeIndex]);
-        }
+      case 'Enter': {
+        // Never submits the form (Decision 462 item 6): picks the option the
+        // arrows reached, else the first match for what was typed. With
+        // nothing typed it just closes the list, keeping the value.
+        e.preventDefault();
+        if (!isOpen) break;
+        const pick = activeIndex >= 0 ? results[activeIndex] : query.trim() ? results[0] : undefined;
+        if (pick) selectOption(pick);
+        else closeDropdown();
         break;
+      }
       case 'Escape':
         if (isOpen) {
           e.preventDefault();

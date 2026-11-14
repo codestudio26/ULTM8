@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Button, COUNTRY_NAMES, Card, ErrorBanner, Field, SuccessBanner, Switch, TextArea, TextField } from '@ultm8/ui';
+import { Button, COUNTRY_NAMES, Card, ErrorBanner, Field, SearchableSelectField, SuccessBanner, Switch, TextArea, TextField, countryMatches } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useT } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
@@ -140,18 +140,24 @@ export function ChargeSettingsCard({ schoolId, school }: { schoolId: string; sch
         <p style={{ color: 'var(--text-muted)', margin: '0 0 16px' }}>{t('charges.settings.subtitle')}</p>
         {error ? <ErrorBanner message={error} /> : null}
         {saved ? <SuccessBanner message={t('schools.profile.saved')} /> : null}
-        <div className="u8n-dd-field">
-          <NewLookSelect
-            id="charge-tax-country"
-            label={t('charges.settings.countryLabel')}
+        {/* Searchable, like the address form's Country (Decision 462 item 26). */}
+        <Field
+          label={t('charges.settings.countryLabel')}
+          htmlFor="charge-tax-country"
+          hint={standard && !standard.national ? t('charges.settings.noNationalRate', { country: countryLabel }) : t('charges.settings.countryHint')}
+        >
+          <SearchableSelectField
+            fallbackId="charge-tax-country"
+            options={[{ value: '', label: t('charges.settings.countryNone') }, ...countries]}
+            getValue={(o) => o.value}
+            getLabel={(o) => o.label}
+            matches={countryMatches}
+            noMatchesText={t('ui.noMatches')}
+            placeholder={t('charges.settings.countryNone')}
             value={country}
             onChange={chooseCountry}
-            options={[{ value: '', label: t('charges.settings.countryNone') }, ...countries]}
           />
-          <span className="ultm8-field__hint u8n-dd-field__hint">
-            {standard && !standard.national ? t('charges.settings.noNationalRate', { country: countryLabel }) : t('charges.settings.countryHint')}
-          </span>
-        </div>
+        </Field>
         <Field label={t('charges.settings.taxNameLabel')} htmlFor="charge-tax-name" hint={t('charges.settings.taxNameHint')}>
           <TextField
             id="charge-tax-name"

@@ -11,7 +11,7 @@ import { formatLocale } from '../i18n/format';
 import { useClassZone } from '../classes/useClassZone';
 import { endsNextDayInZone, formatTimeInZone } from '../lib/datetime';
 import { whoCanBookLabel } from '../classes/WhoCanBookFields';
-import { NewLookSelect } from '../layout/NewLookSelect';
+import { StudentPickerField } from '../students/StudentPickerField';
 import '../classes/classForms.css';
 
 /**
@@ -194,19 +194,15 @@ function BookingForm({
     <>
       {bookError ? <ErrorBanner message={bookError} /> : null}
 
-      <div className="u8n-dd-field">
-        <NewLookSelect
-          id="booking-student"
-          label={t('timetable.booking.studentLabel')}
-          value={studentId}
-          onChange={setStudentId}
-          options={[
-            { value: '', label: t('timetable.booking.selectStudent') },
-            ...students.map((s) => ({ value: s.id, label: `${s.firstName} ${s.surname}`.trim() })),
-          ]}
-        />
-        <span className="ultm8-field__hint u8n-dd-field__hint">{t('timetable.booking.studentHint')}</span>
-      </div>
+      <StudentPickerField
+        id="booking-student"
+        label={t('timetable.booking.studentLabel')}
+        emptyLabel={t('timetable.booking.selectStudent')}
+        hint={t('timetable.booking.studentHint')}
+        students={students}
+        value={studentId}
+        onChange={setStudentId}
+      />
 
       {/* The class's details, read-only, in the calm grey card. */}
       <dl className="u8cf-facts">

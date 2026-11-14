@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useTypeAhead } from '@ultm8/ui';
 import { useT } from '../i18n/I18nProvider';
 import './billingLook.css';
 
@@ -194,6 +195,7 @@ export function BillingSelect({
   // that keeps the arrow keys' choice instead of the option under the pointer.
   const pointerRef = useRef<{ x: number; y: number } | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+  const typeAhead = useTypeAhead();
   const labelId = `${id}-label`;
   const listId = `${id}-listbox`;
   const optionId = (i: number) => `${id}-option-${i}`;
@@ -211,6 +213,11 @@ export function BillingSelect({
     return () => document.removeEventListener('mousedown', close);
   }, [open]);
 
+  // Keeps the highlighted option in view in a long list (arrows, type-ahead).
+  useEffect(() => {
+    if (open && active >= 0) document.getElementById(optionId(active))?.scrollIntoView?.({ block: 'nearest' });
+  }, [open, active]);
+
   const show = () => {
     setActive(selectedIndex);
     setOpen(true);
@@ -220,6 +227,18 @@ export function BillingSelect({
     if (options[i] && options[i].value !== value) onChange(options[i].value);
   };
   const onKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
+    // A typed letter jumps to the next option starting with it (Decision 462 item 7).
+    const match = typeAhead(
+      e,
+      options.map((o) => o.label),
+      openRef.current ? activeRef.current : selectedIndex,
+    );
+    if (match !== null) {
+      e.preventDefault();
+      if (!openRef.current) show();
+      if (match >= 0) setActive(match);
+      return;
+    }
     if (!openRef.current) {
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
