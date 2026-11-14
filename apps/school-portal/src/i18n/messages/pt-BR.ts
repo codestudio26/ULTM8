@@ -3491,7 +3491,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
       priceChangeChoiceRequired: "Este plano tem assinantes ativos — escolha Migrar ou Manter preço antigo antes de salvar uma alteração de preço.",
       anchorDayRequired: "Defina um dia de renovação do mês (1-28) para Proporcional a ciclo compartilhado, ou volte para Ciclo novo.",
-      backToList: "← Voltar para Planos de matrícula",
       editTitle: "Editar plano de matrícula",
       addTitle: "Adicionar plano de matrícula",
       typeLabel: "Tipo",

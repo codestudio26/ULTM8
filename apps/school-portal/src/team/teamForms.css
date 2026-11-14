@@ -113,3 +113,11 @@
 [data-look='redesign'] .u8t-found {
   margin: 0 0 var(--space-4);
 }
+
+/* Give a role: the role pills (Decision 462 item 32) fit their buttons
+ * rather than stretching across the card. */
+[data-look='redesign'] .u8t-role-pills {
+  align-self: flex-start;
+  max-width: 100%;
+  box-sizing: border-box;
+}

@@ -146,7 +146,7 @@ test('Cancel payment asks for a reason and shows the payment as Cancelled', asyn
   const row = page.locator('tbody tr').first();
   await row.getByRole('button', { name: 'Cancel payment' }).click();
   const dialog = page.getByRole('dialog');
-  await dialog.getByRole('button', { name: 'Back' }).click();
+  await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
   await expect(dialog).toHaveCount(0);
   expect((await db.transaction.findUniqueOrThrow({ where: { id: pending.id } })).status).toBe('PENDING');
 

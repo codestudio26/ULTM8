@@ -3491,7 +3491,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
       priceChangeChoiceRequired: "Bu planın aktif aboneleri var — fiyat değişikliğini kaydetmeden önce Taşı veya Eski fiyatı koru seçeneğini seçin.",
       anchorDayRequired: "Ortak döngüye orantıla için ayın yenileme gününü (1-28) belirleyin veya Yeni döngüye geri dönün.",
-      backToList: "← Üyelik planlarına dön",
       editTitle: "Üyelik planını düzenle",
       addTitle: "Üyelik planı ekle",
       typeLabel: "Tür",

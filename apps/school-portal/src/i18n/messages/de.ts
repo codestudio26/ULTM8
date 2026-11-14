@@ -3491,7 +3491,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
       priceChangeChoiceRequired: "Dieser Tarif hat aktive Abonnenten — wähle Umstellen oder Bestandsschutz, bevor du eine Preisänderung speicherst.",
       anchorDayRequired: "Lege einen Verlängerungstag im Monat (1-28) für Anteilig auf gemeinsamen Zyklus fest oder wechsle zurück zu Neuer Zyklus.",
-      backToList: "← Zurück zu den Mitgliedschaftstarifen",
       editTitle: "Mitgliedschaftstarif bearbeiten",
       addTitle: "Mitgliedschaftstarif hinzufügen",
       typeLabel: "Art",

@@ -3449,7 +3449,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
       priceChangeChoiceRequired: "此方案有活跃订阅者——保存价格变更前，请选择“迁移”或“保留原价”。",
       anchorDayRequired: "“按比例对齐共同周期”需要设置每月续费日（1-28），或改回“新周期”。",
-      backToList: "← 返回会员方案",
       editTitle: "编辑会员方案",
       addTitle: "添加会员方案",
       typeLabel: "类型",

@@ -29,7 +29,6 @@ import { CurrencyFirstNotice } from '../lib/CurrencyFirstNotice';
 import { incomeCategoryOptions, useIncomeCategories, type IncomeCategory } from '../charges/incomeCategoryQueries';
 import { NewLookPage, NewLookPageHeader } from '../layout/NewLookPage';
 import { NewLookSelect } from '../layout/NewLookSelect';
-import { Chapter } from '../students/StudentFormParts';
 import '../students/studentForms.css';
 import './planForm.css';
 
@@ -60,6 +59,19 @@ const STEPS: ReadonlyArray<{ label: TranslationKey }> = [
   { label: 'membershipPlans.form.steps.disciplinesLessons' },
   { label: 'membershipPlans.form.steps.visibility' },
 ];
+
+/** One step's fields. Decision 462 item 29: the step is named once, by its
+ * pill above the sheet, so the section has no title of its own (the pill's
+ * name still labels the group for screen readers). */
+function PlanStep({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <section className="ultm8-chapter u8p-step">
+      <div className="ultm8-chapter__fields" role="group" aria-label={label}>
+        {children}
+      </div>
+    </section>
+  );
+}
 
 export function MembershipPlanFormPage() {
   const { id } = useParams<{ id: string }>();
@@ -106,13 +118,11 @@ export function MembershipPlanFormPage() {
 
   return (
     <>
+    {/* Decision 462 item 30: the "‹ Membership Plans" link replaces the
+        old "← Back to Membership Plans" button. */}
     <NewLookPageHeader
+      parent={{ to: '/membership-plans', label: t('membershipPlans.list.title') }}
       title={isEdit ? t('membershipPlans.form.editTitle') : t('membershipPlans.form.addTitle')}
-      actions={
-        <Button type="button" variant="secondary" onClick={() => navigate('/membership-plans')}>
-          {t('membershipPlans.form.backToList')}
-        </Button>
-      }
     />
     <NewLookPage>
     <MembershipPlanForm
@@ -526,7 +536,7 @@ function MembershipPlanForm({
       </div>
       <form className="u8f-sheet" onSubmit={handleSubmit}>
         {stepIndex === 0 ? (
-        <Chapter number={1} title={t('membershipPlans.form.steps.basics')}>
+        <PlanStep label={t('membershipPlans.form.steps.basics')}>
           <div className="u8n-dd-field">
             <NewLookSelect
               id="plan-type"
@@ -545,11 +555,11 @@ function MembershipPlanForm({
           <Field label={t('membershipPlans.form.titleLabel')} htmlFor="plan-title">
             <TextField required value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} />
           </Field>
-        </Chapter>
+        </PlanStep>
         ) : null}
 
         {stepIndex === 1 ? (
-        <Chapter number={2} title={t('membershipPlans.form.steps.pricingAccess')}>
+        <PlanStep label={t('membershipPlans.form.steps.pricingAccess')}>
           <Field
             label={t('membershipPlans.form.priceLabel')}
             htmlFor="plan-price"
@@ -739,11 +749,11 @@ function MembershipPlanForm({
               </Field>
             </fieldset>
           ) : null}
-        </Chapter>
+        </PlanStep>
         ) : null}
 
         {stepIndex === 2 ? (
-        <Chapter number={3} title={t('membershipPlans.form.steps.policies')}>
+        <PlanStep label={t('membershipPlans.form.steps.policies')}>
           <Field
             label={t('membershipPlans.form.refundLabel')}
             htmlFor="plan-refundFeeDate"
@@ -833,11 +843,11 @@ function MembershipPlanForm({
             />
             <span className="ultm8-field__hint u8n-dd-field__hint">{t('charges.incomeCategories.fieldHint')}</span>
           </div>
-        </Chapter>
+        </PlanStep>
         ) : null}
 
         {stepIndex === 3 ? (
-        <Chapter number={4} title={t('membershipPlans.form.steps.disciplinesLessons')}>
+        <PlanStep label={t('membershipPlans.form.steps.disciplinesLessons')}>
           {disciplines.length > 0 ? (
             <fieldset className="u8f-group u8p-styles">
               <legend className="ultm8-field__label u8f-group__title">{t('membershipPlans.form.stylesLegend')}</legend>
@@ -862,11 +872,11 @@ function MembershipPlanForm({
             <Checkbox label={t('membershipPlans.form.includesLessons')} checked={lessonsOn} onChange={(e) => setIncludesLessons(e.target.checked)} />
             <p className="ultm8-field__hint u8p-check-hint">{t('membershipPlans.form.includesLessonsHint')}</p>
           </div>
-        </Chapter>
+        </PlanStep>
         ) : null}
 
         {stepIndex === 4 ? (
-        <Chapter number={5} title={t('membershipPlans.form.steps.visibility')}>
+        <PlanStep label={t('membershipPlans.form.steps.visibility')}>
           <div className="u8f-wide">
             <Checkbox
               label={t('membershipPlans.form.visibleToStudents')}
@@ -874,7 +884,7 @@ function MembershipPlanForm({
               onChange={(e) => setForm((f) => ({ ...f, visible: e.target.checked }))}
             />
           </div>
-        </Chapter>
+        </PlanStep>
         ) : null}
 
         <div className="u8f-actions u8p-actions">

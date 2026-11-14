@@ -70,7 +70,7 @@ async function fitsTheScreen(page: Page) {
   expect(scroll).toBeLessThanOrEqual(width);
 }
 
-test('the Transactions dialogs: the button band last, back first, no browser <select>', async ({ page }) => {
+test('the Transactions dialogs: the button band last, Cancel first, no browser <select>', async ({ page }) => {
   await addCashPayment('PENDING', 2);
   await addCashPayment('SUCCESSFUL', 3);
   await signIn(page, s.ownerToken);
@@ -79,24 +79,24 @@ test('the Transactions dialogs: the button band last, back first, no browser <se
   const pending = page.locator('tbody tr').filter({ has: page.getByRole('button', { name: 'Mark as paid' }) });
 
   await pending.getByRole('button', { name: 'Mark as paid' }).click();
-  await expect(band(dialog)).toHaveText(['Back', 'Mark as paid']);
+  await expect(band(dialog)).toHaveText(['Cancel', 'Mark as paid']);
   await band(dialog).first().click();
   await expect(dialog).toHaveCount(0);
 
   await pending.getByRole('button', { name: 'Cancel payment' }).click();
   await expect(dialog.locator('form > .ultm8-modal__actions:last-child')).toHaveCount(1);
-  await expect(band(dialog)).toHaveText(['Back', 'Cancel payment']);
+  await expect(band(dialog)).toHaveText(['Cancel', 'Cancel payment']);
   await band(dialog).first().click();
 
   await page.locator('tbody tr').getByRole('button', { name: 'Refund', exact: true }).click();
   await expect(dialog.locator('form > .ultm8-modal__actions:last-child')).toHaveCount(1);
-  await expect(band(dialog)).toHaveText(['Back', 'Record refund']);
+  await expect(band(dialog)).toHaveText(['Cancel', 'Record refund']);
   await band(dialog).first().click();
 
   await page.getByRole('button', { name: 'Record a payment' }).click();
   await expect(dialog.locator('select')).toHaveCount(0);
   await expect(dialog.getByRole('combobox')).toHaveText([/Choose…/, /Choose…/, /Cash/]);
-  await expect(band(dialog)).toHaveText(['Back', 'Record payment']);
+  await expect(band(dialog)).toHaveText(['Cancel', 'Record payment']);
 });
 
 test('Enter in the Refund amount submits the form', async ({ page }) => {

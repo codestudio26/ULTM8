@@ -3491,7 +3491,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
       priceChangeChoiceRequired: "Este plan tiene suscriptores activos: elige Migrar o Mantener precio antes de guardar un cambio de precio.",
       anchorDayRequired: "Indica un día de renovación del mes (1-28) para Prorratear a ciclo compartido, o vuelve a Ciclo nuevo.",
-      backToList: "← Volver a Planes de membresía",
       editTitle: "Editar plan de membresía",
       addTitle: "Agregar plan de membresía",
       typeLabel: "Tipo",

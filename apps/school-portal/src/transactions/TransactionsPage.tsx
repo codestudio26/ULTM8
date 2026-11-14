@@ -96,7 +96,7 @@ function MarkPaidDialog({ row, schoolId, onClose }: { row: TransactionResponse; 
       <p>{t('transactions.markPaidBody', vars)}</p>
       <ModalActions>
         <Button variant="secondary" onClick={onClose}>
-          {t('transactions.back')}
+          {t('common.cancel')}
         </Button>
         <Button variant="primary" loading={settle.isPending} onClick={handleConfirm}>
           {t('transactions.markPaid')}
@@ -231,7 +231,7 @@ function RecordPaymentDialog({ schoolId, onClose, onRecorded }: { schoolId: stri
       </div>
       <ModalActions>
         <Button variant="secondary" onClick={onClose}>
-          {t('transactions.back')}
+          {t('common.cancel')}
         </Button>
         <Button disabled={!studentId || !plan} loading={record.isPending} onClick={handleSave}>
           {plan ? t('transactions.recordSave', { amount: formatMoney(deskTotal, plan.currency ?? null) }) : t('transactions.recordSaveNoAmount')}

@@ -3449,7 +3449,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
       priceChangeChoiceRequired: "แผนนี้มีสมาชิกที่ใช้งานอยู่ — เลือก \"ย้าย\" หรือ \"คงราคาเดิม\" ก่อนบันทึกการเปลี่ยนราคา",
       anchorDayRequired: "ตั้งวันต่ออายุของเดือน (1-28) สำหรับ \"เฉลี่ยตามรอบร่วม\" หรือเปลี่ยนกลับเป็น \"รอบใหม่\"",
-      backToList: "← กลับไปที่แผนสมาชิก",
       editTitle: "แก้ไขแผนสมาชิก",
       addTitle: "เพิ่มแผนสมาชิก",
       typeLabel: "ประเภท",

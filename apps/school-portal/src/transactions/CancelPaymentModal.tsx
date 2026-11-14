@@ -57,7 +57,7 @@ export function CancelPaymentModal({
         </Field>
         <ModalActions>
           <Button type="button" variant="secondary" onClick={onClose}>
-            {t('transactions.back')}
+            {t('common.cancel')}
           </Button>
           <Button type="submit" variant="danger" loading={cancel.isPending}>
             {t('transactions.cancelPayment')}

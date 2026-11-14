@@ -200,7 +200,7 @@ test('Staff: the give-a-role form, Add staff manually and Remove from School use
   await card.getByLabel('Email').fill(tara.email);
   await card.getByRole('button', { name: 'Find' }).click();
   await expect(card.locator('select')).toHaveCount(0);
-  await pickOption(card, 'Role', 'Branch Staff');
+  await card.getByRole('group', { name: 'Role' }).getByRole('button', { name: 'Branch Staff' }).click();
   // The branch is still checked before anything is sent.
   await card.getByRole('button', { name: 'Give role' }).click();
   await expect(card.getByText('Select a Branch for Branch Staff.')).toBeVisible();

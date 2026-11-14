@@ -3491,7 +3491,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
       priceChangeChoiceRequired: "Dit abonnement heeft actieve abonnees — kies Overzetten of Oude prijs behouden voordat je een prijswijziging opslaat.",
       anchorDayRequired: "Stel een verlengingsdag van de maand in (1-28) voor Pro rata naar gedeelde cyclus, of ga terug naar Nieuwe cyclus.",
-      backToList: "← Terug naar lidmaatschappen",
       editTitle: "Lidmaatschap bewerken",
       addTitle: "Lidmaatschap toevoegen",
       typeLabel: "Soort",

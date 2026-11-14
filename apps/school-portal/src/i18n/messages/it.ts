@@ -3491,7 +3491,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
       priceChangeChoiceRequired: "Questo piano ha abbonati attivi: scegli Migra o Mantieni il prezzo prima di salvare una modifica di prezzo.",
       anchorDayRequired: "Imposta un giorno di rinnovo del mese (1-28) per Proporzionale a ciclo comune, oppure torna a Nuovo ciclo.",
-      backToList: "← Torna ai piani di iscrizione",
       editTitle: "Modifica piano di iscrizione",
       addTitle: "Aggiungi piano di iscrizione",
       typeLabel: "Tipo",

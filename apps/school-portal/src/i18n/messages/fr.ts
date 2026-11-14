@@ -3491,7 +3491,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
       priceChangeChoiceRequired: "Cette formule a des abonnés actifs — choisissez Migrer ou Maintenir l’ancien tarif avant d’enregistrer un changement de prix.",
       anchorDayRequired: "Indiquez un jour de renouvellement du mois (1-28) pour Prorata sur un cycle commun, ou revenez à Nouveau cycle.",
-      backToList: "← Retour aux formules d’adhésion",
       editTitle: "Modifier la formule d’adhésion",
       addTitle: "Ajouter une formule d’adhésion",
       typeLabel: "Type",

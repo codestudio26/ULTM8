@@ -3449,7 +3449,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
       priceChangeChoiceRequired: "このプランには有効な契約者がいます。料金変更を保存する前に「移行」か「旧料金を維持」を選択してください。",
       anchorDayRequired: "「共通の更新日に日割り」には毎月の更新日（1-28）を設定するか、「新しいサイクル」に戻してください。",
-      backToList: "← 会員プランに戻る",
       editTitle: "会員プランを編集",
       addTitle: "会員プランを追加",
       typeLabel: "種類",

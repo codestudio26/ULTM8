@@ -3659,7 +3659,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
       priceChangeChoiceRequired: "لهذه الخطة مشتركون نشطون — اختر «النقل» أو «الإبقاء على السعر القديم» قبل حفظ تغيير السعر.",
       anchorDayRequired: "حدّد يوم التجديد من الشهر (1-28) لخيار «التناسب مع دورة مشتركة»، أو ارجع إلى «دورة جديدة».",
-      backToList: "→ العودة إلى خطط العضوية",
       editTitle: "تعديل خطة العضوية",
       addTitle: "إضافة خطة عضوية",
       typeLabel: "النوع",

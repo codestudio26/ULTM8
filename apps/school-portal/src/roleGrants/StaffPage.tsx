@@ -301,18 +301,25 @@ export function StaffPage() {
                 }}
               />
             </p>
-            <div className="u8n-dd-field">
-              <NewLookSelect
-                id="invite-role"
-                label={t('roleGrants.staff.roleLabel')}
-                value={role}
-                onChange={(v) => setRole(v as typeof role)}
-                options={[
-                  { value: 'INSTRUCTOR', label: t('roleGrants.staff.roleInstructor') },
-                  { value: 'BRANCH_STAFF', label: t('roleGrants.staff.roleBranchStaff') },
-                  { value: 'SCHOOL_OWNER_MANAGER', label: t('roleGrants.staff.roleCoOwner') },
-                ]}
-              />
+            {/* Decision 462 item 32: the role as round buttons (like Gender
+                on Register), the same three values as the old drop-down. */}
+            <div className="ultm8-field">
+              <span className="ultm8-field__label" id="invite-role-label">
+                {t('roleGrants.staff.roleLabel')}
+              </span>
+              <div className="ultm8-pills u8t-role-pills" role="group" aria-labelledby="invite-role-label">
+                {(
+                  [
+                    { value: 'INSTRUCTOR', label: t('roleGrants.staff.roleInstructor') },
+                    { value: 'BRANCH_STAFF', label: t('roleGrants.staff.roleBranchStaff') },
+                    { value: 'SCHOOL_OWNER_MANAGER', label: t('roleGrants.staff.roleCoOwner') },
+                  ] as const
+                ).map((r) => (
+                  <button key={r.value} type="button" className="ultm8-pills__option" aria-pressed={role === r.value} onClick={() => setRole(r.value)}>
+                    {r.label}
+                  </button>
+                ))}
+              </div>
             </div>
             {role === 'SCHOOL_OWNER_MANAGER' ? <p className="ultm8-field">{t('roleGrants.staff.coOwnerHint')}</p> : null}
             {needsBranch ? (

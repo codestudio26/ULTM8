@@ -33,7 +33,7 @@ test('with the setting on, "Give role" sends a Branch Staff invite instead', asy
   await card.getByLabel('Email').fill(bea.email);
   await card.getByRole('button', { name: 'Find' }).click();
   await expect(card.getByText('Found Bea Hire.')).toBeVisible();
-  await pickOption(card, 'Role', 'Branch Staff');
+  await card.getByRole('group', { name: 'Role' }).getByRole('button', { name: 'Branch Staff' }).click();
   await pickOption(card, 'Branch', 'North');
   await card.getByRole('button', { name: 'Send invite' }).click();
   // No email provider in the test environment: the invite is kept, with a warning.
@@ -52,7 +52,7 @@ test('with the setting on, "Give role" sends a Branch Staff invite instead', asy
   const cara = await addPerson('Cara', 'Partner');
   await card.getByLabel('Email').fill(cara.email);
   await card.getByRole('button', { name: 'Find' }).click();
-  await pickOption(card, 'Role', 'Co-owner');
+  await card.getByRole('group', { name: 'Role' }).getByRole('button', { name: 'Co-owner' }).click();
   await expect(card.getByRole('button', { name: 'Give role' })).toBeVisible();
 });
 

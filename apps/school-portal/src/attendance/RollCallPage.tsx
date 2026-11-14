@@ -81,6 +81,7 @@ export function RollCallPage() {
   return (
     <>
       <NewLookPageHeader
+        parent={{ to: '/classes', label: t('layout.nav.classes') }}
         title={cls ? t('attendance.rollCall.titleWithClass', { title: cls.title }) : t('attendance.rollCall.title')}
         subtitle={cls ? `${formatInZone(cls.startDate, zone, formatLocale())} – ${formatInZone(cls.endDate, zone, formatLocale())}` : undefined}
       />

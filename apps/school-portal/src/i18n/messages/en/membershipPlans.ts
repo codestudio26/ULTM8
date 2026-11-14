@@ -105,7 +105,6 @@ export const membershipPlans = {
     },
     priceChangeChoiceRequired: 'This plan has active subscribers — choose Migrate or Grandfather before saving a price change.',
     anchorDayRequired: 'Set a renewal day of month (1-28) for Prorate to shared cycle, or switch back to Fresh cycle.',
-    backToList: '← Back to Membership Plans',
     editTitle: 'Edit membership plan',
     addTitle: 'Add membership plan',
     typeLabel: 'Type',

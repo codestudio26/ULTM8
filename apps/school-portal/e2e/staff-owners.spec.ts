@@ -1,6 +1,5 @@
 import { expect, test } from '@playwright/test';
 import { addPerson, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
-import { pickOption } from './team-helpers';
 
 /**
  * Owners on the Staff page (Decision 370): the School's first owner is its
@@ -44,7 +43,7 @@ test('the owner makes someone a co-owner, then hands them the main owner role af
 
   await giveCard(page).getByLabel('Email').fill(cara.email);
   await page.getByRole('button', { name: 'Find' }).click();
-  await pickOption(giveCard(page), 'Role', 'Co-owner');
+  await giveCard(page).getByRole('group', { name: 'Role' }).getByRole('button', { name: 'Co-owner' }).click();
   // A co-owner is School-wide: no branch to pick.
   await expect(giveCard(page).getByLabel('Branch')).toHaveCount(0);
   await giveCard(page).getByRole('button', { name: 'Give role' }).click();

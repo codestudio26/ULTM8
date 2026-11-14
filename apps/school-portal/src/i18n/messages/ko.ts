@@ -3449,7 +3449,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
       priceChangeChoiceRequired: "이 플랜에는 활성 구독자가 있습니다. 가격 변경을 저장하기 전에 '이전' 또는 '기존 가격 유지'를 선택하세요.",
       anchorDayRequired: "'공통 주기로 일할 계산'을 쓰려면 매월 갱신일(1-28)을 설정하거나 '새 주기'로 되돌리세요.",
-      backToList: "← 회원권 플랜으로 돌아가기",
       editTitle: "회원권 플랜 편집",
       addTitle: "회원권 플랜 추가",
       typeLabel: "유형",

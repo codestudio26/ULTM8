@@ -93,3 +93,9 @@
     padding: 0 14px;
   }
 }
+
+/* A step's fields without a title of their own (Decision 462 item 29): the
+ * pill above the sheet names the step, so the fields take the whole sheet. */
+[data-look='redesign'] .u8p-step {
+  grid-template-columns: minmax(0, 1fr);
+}

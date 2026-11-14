@@ -85,7 +85,7 @@ export function RefundDeskSaleModal({
         </p>
         <ModalActions>
           <Button type="button" variant="secondary" onClick={onClose}>
-            {t('transactions.back')}
+            {t('common.cancel')}
           </Button>
           <Button type="submit" variant="danger" loading={refund.isPending}>
             {t('transactions.refund.confirm')}

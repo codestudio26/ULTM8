@@ -52,6 +52,7 @@ export function ClassQrCodePage() {
   return (
     <>
       <NewLookPageHeader
+        parent={{ to: '/classes', label: t('layout.nav.classes') }}
         title={cls ? t('attendance.qrCode.titleWithClass', { title: cls.title }) : t('attendance.qrCode.title')}
         subtitle={cls ? `${new Date(cls.startDate).toLocaleString(formatLocale())} – ${new Date(cls.endDate).toLocaleString(formatLocale())}` : undefined}
       />

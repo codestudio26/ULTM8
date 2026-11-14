@@ -3575,7 +3575,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
       priceChangeChoiceRequired: "Ten plan ma aktywnych subskrybentów — przed zapisaniem zmiany ceny wybierz Przenieś lub Zachowaj starą cenę.",
       anchorDayRequired: "Ustaw dzień odnowienia w miesiącu (1-28) dla opcji Proporcjonalnie do wspólnego cyklu albo wróć do Nowego cyklu.",
-      backToList: "← Wróć do planów członkostwa",
       editTitle: "Edytuj plan członkostwa",
       addTitle: "Dodaj plan członkostwa",
       typeLabel: "Typ",
