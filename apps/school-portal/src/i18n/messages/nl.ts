@@ -2684,9 +2684,6 @@ export const messages: PartialMessages<EnglishMessages> = {
     unarchiveFailed: "Dit instructeursprofiel kon niet worden gedearchiveerd.",
     addedEmailSent: "{name} is toegevoegd — er is een tijdelijke toegangscode naar {email} gestuurd.",
     addedEmailFailed: "{name} is toegevoegd, maar de e-mail kon niet worden verzonden. De tijdelijke toegangscode moet op een andere manier worden gedeeld.",
-    roleGrantedEmailSent: "Instructeursrol toegekend — de persoon is per e-mail op de hoogte gebracht. Gebruik ‘Instructeur toevoegen’ om het profiel toe te voegen.",
-    roleGrantedEmailFailed: "Instructeursrol toegekend, maar de meldingsmail kon niet worden verzonden. Gebruik ‘Instructeur toevoegen’ om het profiel toe te voegen.",
-    roleInviteSent: "Deze school vraagt nieuw personeel eerst te accepteren, dus we hebben een uitnodiging gemaild. Gebruik na het accepteren \"Instructeur toevoegen\" om het profiel aan te maken.",
     roleInviteEmailFailed: "Deze school vraagt nieuw personeel eerst te accepteren. De uitnodiging is gemaakt, maar de e-mail kon niet worden verstuurd. Annuleer hem onder Team → Coaches uitnodigen en stuur hem opnieuw.",
     detail: {
       back: "← Instructeurs",

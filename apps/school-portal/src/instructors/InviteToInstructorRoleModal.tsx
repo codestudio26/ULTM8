@@ -21,14 +21,9 @@ import { NewLookSelect } from '../layout/NewLookSelect';
  * .../role-grants/invite-candidate, Decision 116: exact email/phone match
  * only, never a name search) so this doesn't reinvent it.
  *
- * Granting the role is deliberately NOT the same thing as creating the
- * Instructor profile (InstructorsService.create()'s own header comment:
- * "This module does NOT grant the RoleGrant itself... two distinct
- * concerns") — after this modal closes, the School Owner still uses "Add
- * instructor" (which now lists this person as an eligible candidate) to add
- * their profile, exactly like the pre-existing Staff-page-then-Instructors-
- * page two-step flow this is replacing with one instructor-scoped entry
- * point.
+ * Giving the role also makes the person's (empty) Instructor profile (owner's
+ * choice, 14 Nov 2026), so after this modal closes the Instructors page opens
+ * that profile for editing.
  */
 export function InviteToInstructorRoleModal({
   schoolId,
@@ -40,7 +35,7 @@ export function InviteToInstructorRoleModal({
   schoolId: string;
   branches: BranchResponse[];
   submitting: boolean;
-  onSubmit: (values: { targetUserId: string; email: string; branchId?: string }) => Promise<void>;
+  onSubmit: (values: { targetUserId: string; email: string; name: string; branchId?: string }) => Promise<void>;
   onClose: () => void;
 }) {
   const t = useT();
@@ -94,7 +89,7 @@ export function InviteToInstructorRoleModal({
       return;
     }
     try {
-      await onSubmit({ targetUserId: candidate!.id!, email: candidate!.email ?? '', ...(requiresBranch ? { branchId } : {}) });
+      await onSubmit({ targetUserId: candidate!.id!, email: candidate!.email ?? '', name: `${candidate!.firstName ?? ''} ${candidate!.surname ?? ''}`.trim(), ...(requiresBranch ? { branchId } : {}) });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
     }

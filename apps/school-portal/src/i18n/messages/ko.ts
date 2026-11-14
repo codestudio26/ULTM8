@@ -2643,9 +2643,6 @@ export const messages: PartialMessages<EnglishMessages> = {
     unarchiveFailed: "이 사범 프로필의 보관을 해제할 수 없습니다.",
     addedEmailSent: "{name} 님을 추가했습니다. 임시 비밀번호를 {email}(으)로 보냈습니다.",
     addedEmailFailed: "{name} 님을 추가했지만 이메일을 보내지 못했습니다. 임시 비밀번호를 다른 방법으로 전달해야 합니다.",
-    roleGrantedEmailSent: "사범 역할을 부여했습니다. 본인에게 이메일로 알렸습니다. '사범 추가'로 프로필을 추가하세요.",
-    roleGrantedEmailFailed: "사범 역할을 부여했지만 알림 이메일을 보내지 못했습니다. '사범 추가'로 프로필을 추가하세요.",
-    roleInviteSent: "이 도장은 새 직원이 먼저 수락하도록 하고 있어 초대 이메일을 보냈습니다. 수락하면 \"강사 추가\"로 프로필을 추가하세요.",
     roleInviteEmailFailed: "이 도장은 새 직원이 먼저 수락하도록 하고 있습니다. 초대는 만들어졌지만 이메일을 보내지 못했습니다. 팀 → 코치 초대에서 취소하고 다시 보내세요.",
     detail: {
       back: "← 사범",

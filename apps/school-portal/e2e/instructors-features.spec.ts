@@ -53,7 +53,7 @@ test('search and the status filter narrow the roster, and a manually added instr
   await expect(page.getByText('No instructors match')).toBeVisible();
 });
 
-test('inviting an existing user opens Add instructor with them already picked', async ({ page }) => {
+test('inviting an existing user opens their new profile for editing, and Save keeps one profile', async ({ page }) => {
   const person = await addPerson('Ivy', 'Existing');
   await signIn(page, s.ownerToken);
   await page.goto('/instructors');
@@ -63,11 +63,17 @@ test('inviting an existing user opens Add instructor with them already picked', 
   await invite.getByRole('button', { name: 'Find' }).click();
   await invite.getByRole('button', { name: 'Grant Instructor role' }).click();
 
-  const add = page.getByRole('dialog', { name: /Add instructor/i });
-  await expect(add).toBeVisible();
-  await expect(add.getByRole('combobox', { name: 'User', exact: true }).locator('[data-shown="true"]')).toHaveText(`Ivy Existing (${person.email})`);
-  await add.getByRole('button', { name: /^(Save|Add|Create)/ }).click();
+  // The profile came with the role (owner's choice, 14 Nov 2026): Edit
+  // instructor opens on it, where "Add instructor" used to (Decision 312, F9).
+  const edit = page.getByRole('dialog', { name: 'Edit instructor' });
+  await expect(edit).toBeVisible();
   await expect(page.getByRole('row', { name: /Ivy Existing/ })).toBeVisible();
+  await edit.locator('textarea').fill('Teaches the kids');
+  await edit.getByRole('button', { name: /^Save/ }).click();
+  await expect(edit).toHaveCount(0);
+  const profiles = await db.instructor.findMany({ where: { userId: person.id, schoolId: s.schoolId } });
+  expect(profiles).toHaveLength(1);
+  expect(profiles[0].bio).toBe('Teaches the kids');
 });
 
 test('the detail page shows what the instructor filled in, and hands their classes to someone else', async ({ page }) => {

@@ -71,9 +71,6 @@ export function InstructorsPage() {
   const unarchiveInstructor = useUnarchiveInstructor(schoolId ?? '');
   const inviteToInstructorRole = useInviteStaff();
   const [creating, setCreating] = useState(false);
-  // Who "Add instructor" starts on, right after "Invite existing user"
-  // granted them the role (Decision 312, F9): one flow instead of two.
-  const [createPreset, setCreatePreset] = useState<{ userId: string; branchId: string | null } | null>(null);
   const [addingManually, setAddingManually] = useState(false);
   const [invitingExisting, setInvitingExisting] = useState(false);
   const [editing, setEditing] = useState<InstructorResponse | null>(null);
@@ -162,7 +159,7 @@ export function InstructorsPage() {
                 </button>
               </>
             ) : null}
-            <button type="button" className="u8t-pill u8t-pill--go" onClick={() => { setCreatePreset(null); setCreating(true); }}>
+            <button type="button" className="u8t-pill u8t-pill--go" onClick={() => setCreating(true)}>
               {t('instructors.addInstructor')}
             </button>
           </>
@@ -326,7 +323,6 @@ export function InstructorsPage() {
         <InstructorFormModal
           title={t('instructors.addInstructor')}
           schoolId={schoolId}
-          initial={createPreset ?? undefined}
           branches={branches}
           disciplines={disciplines}
           eligibleUsers={eligibleUsersData?.items ?? []}
@@ -368,36 +364,40 @@ export function InstructorsPage() {
           schoolId={schoolId}
           branches={branches}
           submitting={inviteToInstructorRole.isPending}
-          onSubmit={async ({ targetUserId, email, branchId }) => {
+          onSubmit={async ({ targetUserId, email, name, branchId }) => {
             const granted = await inviteToInstructorRole.mutateAsync({
               targetUserId,
               email,
               body: { role: 'INSTRUCTOR', schoolId, branchId },
             });
+            const given = { name, role: t('roleGrants.staff.roleInstructor') };
             // Decision 396: the School asks new staff to accept first, so an
-            // invite went out instead; the profile comes after they accept.
+            // invite went out instead; their profile comes with the role when
+            // they accept.
             if (granted.invited) {
               setInviteRoleNotice(
                 granted.emailSent
-                  ? { kind: 'ok', text: t('instructors.roleInviteSent') }
+                  ? { kind: 'ok', text: t('roleGrants.staff.invitedEmailed', given) }
                   : { kind: 'warn', text: t('instructors.roleInviteEmailFailed') },
               );
               setInvitingExisting(false);
               return;
             }
-            // The role grant alone doesn't create an Instructor profile (a
-            // deliberately separate concern — see InstructorsService.create()'s
-            // own header comment) — point the owner at "Add instructor" next,
-            // where this user now shows up as an eligible candidate.
-            await queryClient.invalidateQueries({ queryKey: ['instructors', 'eligible-users', schoolId] });
+            // The role came with their (empty) Instructor profile, or kept the
+            // one they already had here (owner's choice, 14 Nov 2026): open it
+            // for editing, where "Add instructor" used to start (Decision 312, F9).
+            await queryClient.invalidateQueries({ queryKey: ['instructors'] });
             setInviteRoleNotice(
               granted.emailSent
-                ? { kind: 'ok', text: t('instructors.roleGrantedEmailSent') }
-                : { kind: 'warn', text: t('instructors.roleGrantedEmailFailed') },
+                ? { kind: 'ok', text: t('roleGrants.staff.givenEmailed', given) }
+                : { kind: 'warn', text: t('roleGrants.staff.givenNoEmail', given) },
             );
             setInvitingExisting(false);
-            setCreatePreset({ userId: targetUserId, branchId: branchId ?? null });
-            setCreating(true);
+            const profile = queryClient.getQueryData<{ items: InstructorResponse[] }>(['instructors', schoolId])?.items.find((i) => i.userId === targetUserId);
+            if (profile) {
+              setSelectedId(profile.id);
+              setEditing(profile);
+            }
           }}
           onClose={() => setInvitingExisting(false)}
         />

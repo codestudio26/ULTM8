@@ -240,6 +240,22 @@ describeIfDb('cross-tenant isolation (RLS)', () => {
     }
   });
 
+  it('a coach profile (Instructor row) can be made only at a School the caller has a live role at', async () => {
+    // The insert "Give a role", invite accept and "My coach profile" use
+    // (ensureInstructorProfile: INSERT ... ON CONFLICT DO NOTHING).
+    const row = (schoolId: string, branchId: string) => [{ id: randomUUID(), userId: userA.id, schoolId, branchId }];
+    await expect(withUser(userA.id, (tx) => tx.instructor.createMany({ data: row(schoolB.id, branchB.id), skipDuplicates: true }))).rejects.toThrow();
+    expect(await superuser.instructor.count({ where: { schoolId: schoolB.id } })).toBe(0);
+    try {
+      await withUser(userA.id, (tx) => tx.instructor.createMany({ data: row(schoolA.id, branchA.id), skipDuplicates: true }));
+      expect(await superuser.instructor.count({ where: { schoolId: schoolA.id, userId: userA.id } })).toBe(1);
+      // Tenant B's owner sees nothing of it.
+      expect(await withUser(userB.id, (tx) => tx.instructor.count({ where: { schoolId: schoolA.id } }))).toBe(0);
+    } finally {
+      await superuser.instructor.deleteMany({ where: { schoolId: { in: [schoolA.id, schoolB.id] } } });
+    }
+  });
+
   it('a request with no tenant context set sees zero rows, not an error and not all rows', async () => {
     // Deliberately bypass withUser — no SET LOCAL app.current_user_id at all.
     const schools = await appDb.school.findMany({ where: { id: { in: [schoolA.id, schoolB.id] } } });

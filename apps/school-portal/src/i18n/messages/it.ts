@@ -2684,9 +2684,6 @@ export const messages: PartialMessages<EnglishMessages> = {
     unarchiveFailed: "Impossibile ripristinare questo profilo istruttore.",
     addedEmailSent: "{name} è stato aggiunto: un codice di accesso temporaneo è stato inviato a {email}.",
     addedEmailFailed: "{name} è stato aggiunto, ma non è stato possibile inviare l’email. Servirà fornirgli il codice di accesso temporaneo in un altro modo.",
-    roleGrantedEmailSent: "Ruolo di istruttore assegnato: la persona è stata avvisata via email. Usa «Aggiungi istruttore» per aggiungere il suo profilo.",
-    roleGrantedEmailFailed: "Ruolo di istruttore assegnato, ma non è stato possibile inviare l’email di notifica. Usa «Aggiungi istruttore» per aggiungere il suo profilo.",
-    roleInviteSent: "Questa scuola chiede al nuovo staff di accettare prima, quindi abbiamo inviato un invito via email. Dopo l'accettazione, usa \"Aggiungi istruttore\" per creare il profilo.",
     roleInviteEmailFailed: "Questa scuola chiede al nuovo staff di accettare prima. L'invito è stato creato, ma non è stato possibile inviare l'email. Annullalo in Team → Invita allenatori e invialo di nuovo.",
     detail: {
       back: "← Istruttori",

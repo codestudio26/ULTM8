@@ -46,6 +46,7 @@ import { schoolZone } from '../../common/school-zone';
 import { CoachAccessDto, STAFF_ROLES, StaffAccessDto, StaffListQueryDto, StaffMemberDto, StaffRole, UpdateStaffDetailsDto } from './dto/staff-list.dto';
 import { StepUpService } from '../../auth/step-up.service';
 import { RolesChangedService } from '../../common/prisma/roles-changed.service';
+import { ensureInstructorProfile } from '../../instructors/ensure-instructor-profile';
 import { recordStaffActivity } from '../staff-activity/staff-activity';
 import { deleteMedicalInfoOfLeavers } from '../../medical-info/medical-info-erasure';
 
@@ -274,6 +275,11 @@ export class RoleGrantsService {
             grantedById: callerId,
           },
         });
+        // A coach gets their (empty) coach profile with the role (kept, not
+        // doubled, when they had one here before).
+        if (dto.role === 'INSTRUCTOR') {
+          await ensureInstructorProfile(tx, { userId: targetUserId, schoolId: dto.schoolId, branchId: dto.branchId ?? null });
+        }
         await recordStaffActivity(tx, {
           schoolId: dto.schoolId,
           actorId: callerId,
