@@ -3145,6 +3145,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     emptyFilteredTitle: "Geen leerlingen voor dit filter",
     emptyDescription: "Leerlingen verschijnen hier zodra ze lid worden van je school (of een ouder/voogd ze inschrijft).",
     emptyFilteredDescription: "Probeer een andere zoekterm of filter.",
+    noBranchTitle: "Je bent nog niet aan een vestiging toegewezen",
+    noBranchDescription: "Je ziet de leerlingen van de vestigingen waaraan je bent toegewezen. De eigenaar van de school kan je aan een vestiging toewijzen.",
     columnName: "Naam",
     columnEmail: "E-mail",
     columnStatus: "Status",

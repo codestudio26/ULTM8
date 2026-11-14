@@ -3227,6 +3227,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     emptyFilteredTitle: "Brak uczniów pasujących do filtra",
     emptyDescription: "Uczniowie pojawią się tutaj, gdy dołączą do Twojej szkoły (lub zapisze ich opiekun).",
     emptyFilteredDescription: "Spróbuj innego wyszukiwania lub filtra.",
+    noBranchTitle: "Nie masz jeszcze przypisanej filii",
+    noBranchDescription: "Widzisz uczniów filii, do których Cię przypisano. Właściciel szkoły może przypisać Cię do filii.",
     columnName: "Imię i nazwisko",
     columnEmail: "E-mail",
     columnStatus: "Status",

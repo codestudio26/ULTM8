@@ -3145,6 +3145,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     emptyFilteredTitle: "Nenhum aluno corresponde a este filtro",
     emptyDescription: "Os alunos aparecem aqui quando entram na sua escola (ou quando um responsável os matricula).",
     emptyFilteredDescription: "Tente outra busca ou outro filtro.",
+    noBranchTitle: "Você ainda não está vinculado a nenhuma unidade",
+    noBranchDescription: "Você vê os alunos das unidades às quais está vinculado. O dono da escola pode vincular você a uma unidade.",
     columnName: "Nome",
     columnEmail: "E-mail",
     columnStatus: "Status",

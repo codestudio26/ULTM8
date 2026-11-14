@@ -3145,6 +3145,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     emptyFilteredTitle: "Nessun allievo corrisponde a questo filtro",
     emptyDescription: "Gli allievi compaiono qui quando si iscrivono alla tua scuola (o quando un tutore li iscrive).",
     emptyFilteredDescription: "Prova una ricerca o un filtro diverso.",
+    noBranchTitle: "Non sei ancora assegnato a una sede",
+    noBranchDescription: "Vedi gli allievi delle sedi a cui sei assegnato. Il titolare della scuola può assegnarti a una sede.",
     columnName: "Nome",
     columnEmail: "Email",
     columnStatus: "Stato",

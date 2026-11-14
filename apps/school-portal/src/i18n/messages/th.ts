@@ -3104,6 +3104,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     emptyFilteredTitle: "ไม่มีนักเรียนที่ตรงกับตัวกรองนี้",
     emptyDescription: "นักเรียนจะแสดงที่นี่เมื่อเข้าร่วมโรงเรียนของคุณ (หรือผู้ปกครองลงทะเบียนให้)",
     emptyFilteredDescription: "ลองค้นหาหรือใช้ตัวกรองอื่น",
+    noBranchTitle: "คุณยังไม่ได้รับมอบหมายให้อยู่สาขาใด",
+    noBranchDescription: "คุณจะเห็นนักเรียนของสาขาที่คุณได้รับมอบหมาย เจ้าของโรงเรียนสามารถมอบหมายสาขาให้คุณได้",
     columnName: "ชื่อ",
     columnEmail: "อีเมล",
     columnStatus: "สถานะ",

@@ -3104,6 +3104,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     emptyFilteredTitle: "このフィルターに該当する生徒はいません",
     emptyDescription: "生徒がスクールに参加すると（または保護者が登録すると）ここに表示されます。",
     emptyFilteredDescription: "別の検索語やフィルターをお試しください。",
+    noBranchTitle: "まだ支部に割り当てられていません",
+    noBranchDescription: "割り当てられた支部の生徒が表示されます。スクールのオーナーが支部に割り当てることができます。",
     columnName: "名前",
     columnEmail: "メール",
     columnStatus: "ステータス",
