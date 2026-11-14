@@ -10,6 +10,20 @@ Compare any two versions with `git diff <old> <new>`, e.g. `git diff v1.0.0 mast
 
 Post-v1.4.0 work on `master`.
 
+- **Students: staff with no branch** (#603). A coach or Branch Staff member who
+  isn't assigned to a branch, in a School with branches, now sees "You aren't
+  assigned to a branch yet" with a note that the School owner can assign one,
+  instead of "No Students yet". Who sees which students is unchanged.
+- **Branch Staff and coaches: links and requests** (#602). A student's page no
+  longer asks for promotion fees when the person has no grading permission.
+  "Front-desk mode" on Check-in shows only to the owner and Branch Staff. The
+  "‹" link on a student's page goes back to the Grading Board when you came from
+  it, and to Students otherwise.
+- **New look for Branch Staff and coaches** (#601). The Timetable's rows fit a
+  tablet and show overnight times cleanly; Start front-desk mode and the
+  front-desk tablet read properly in dark mode; the tablet sign-up's Gender and
+  "How did you hear about us?" use the new pills and drop-down ("Not set" first);
+  the owner Dashboard's Attendance figures no longer run together.
 - **New look: Platform Admin** (#585). Platform Admin: the new look's app shell,
   with the side menu and icon tiles, the phone top bar, and light and dark mode.
   Same pages and Log out. No top bar, and `/` still opens Admin Users (Decision
