@@ -344,15 +344,52 @@
 [data-look='redesign'] .fd-staff .fd-tag:not(.fd-tag--ok):not(.fd-tag--info):not(.fd-tag--warn) {
   background: var(--u8n-ci-soft, var(--color-neutral-100));
 }
+/* The same on "Start front-desk mode" and the front-desk tablet (its side
+ * panel, scan box, sign-up steps, notes, chips and the Exit veil): in dark
+ * mode they sat near-white, with light text that couldn't be read, and the
+ * text on the pale mint "Sign up" pill and current step was light too. In
+ * light mode every fallback below is the colour it had before. */
+[data-look='redesign'] .fd-kiosk .fd-tick,
+[data-look='redesign'] .fd-page .fd-tick,
+[data-look='redesign'] .fd-kiosk .fd-chip {
+  background: var(--u8n-ci-soft, var(--color-neutral-50));
+}
+[data-look='redesign'] .fd-kiosk .fd-note,
+[data-look='redesign'] .fd-page .fd-note,
+[data-look='redesign'] .fd-kiosk .fd-tag:not(.fd-tag--ok):not(.fd-tag--info):not(.fd-tag--warn),
+[data-look='redesign'] .fd-scan,
+[data-look='redesign'] .fd-steps span:not(.on) {
+  background: var(--u8n-ci-soft, var(--color-neutral-100));
+}
+[data-look='redesign'] .fd-kiosk__side {
+  background: var(--u8n-ci-column, var(--color-neutral-100));
+}
+[data-look='redesign'] .fd-soon,
+[data-look='redesign'] .fd-bar {
+  background: var(--u8n-fd-track, var(--color-neutral-200));
+}
+[data-look='redesign'] .fd-pill--soft,
+[data-look='redesign'] .fd-steps span.on {
+  color: var(--u8n-fd-on-mint, var(--text-strong));
+}
+[data-look='redesign'] .fd-veil {
+  background: var(--u8n-fd-veil, color-mix(in srgb, var(--color-neutral-100) 94%, transparent));
+}
 @media (prefers-color-scheme: dark) {
   :root[data-look='redesign']:not([data-theme='light']) {
     --u8n-ci-column: rgba(255, 255, 255, 0.04);
     --u8n-ci-soft: rgba(255, 255, 255, 0.06);
+    --u8n-fd-track: rgba(255, 255, 255, 0.12);
+    --u8n-fd-on-mint: #20262c;
+    --u8n-fd-veil: color-mix(in srgb, var(--surface-0) 94%, transparent);
   }
 }
 :root[data-look='redesign'][data-theme='dark'] {
   --u8n-ci-column: rgba(255, 255, 255, 0.04);
   --u8n-ci-soft: rgba(255, 255, 255, 0.06);
+  --u8n-fd-track: rgba(255, 255, 255, 0.12);
+  --u8n-fd-on-mint: #20262c;
+  --u8n-fd-veil: color-mix(in srgb, var(--surface-0) 94%, transparent);
 }
 /* A class row in the welcome card: the tick, then the time over the name, and
  * the note on the right, so a long name or note never runs into the other. */

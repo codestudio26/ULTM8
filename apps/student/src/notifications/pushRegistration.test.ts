@@ -193,7 +193,7 @@ describe('registerForPushNotificationsAsync', () => {
     });
   });
 
-  describe('logout (shared phones, Decision 463)', () => {
+  describe('logout (shared phones, Decision 464)', () => {
     beforeEach(() => {
       Platform.OS = 'android';
       Notifications.getPermissionsAsync.mockResolvedValue({ status: 'granted' });

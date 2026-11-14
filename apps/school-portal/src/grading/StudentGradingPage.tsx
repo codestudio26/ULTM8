@@ -63,6 +63,7 @@ import { StudentMembershipsCard } from '../membershipPlans/StudentMembershipsCar
 import { StudentChargesCard } from '../charges/StudentChargesCard';
 import { formatHours } from './hours';
 import { mayCloseFee } from './feeAccess';
+import { useStudentPageState } from './studentPageState';
 
 type Lesson = { id: string; title: string; skillIds: string[]; archivedAt?: string | null };
 
@@ -113,7 +114,8 @@ export function StudentGradingPage() {
   }, [hash, tab]);
   // The board passes the name along, for a student a coach's list doesn't
   // include.
-  const passedName = (useLocation() as { state?: { name?: string } }).state?.name;
+  const pageState = useStudentPageState();
+  const passedName = pageState.name;
   const my = useMyGrading(schoolId);
   // Former students too, so their page still shows their name (Decision 341).
   const students = useStudents(schoolId, 'ALL');
@@ -124,7 +126,8 @@ export function StudentGradingPage() {
   const instructors = useInstructors(schoolId);
   const [showVoided, setShowVoided] = useState(false);
   const history = useRankHistory(studentId, schoolId, showVoided);
-  const feeRequests = useStudentFeeRequests(studentId, schoolId);
+  // Fees are prices: asked for only by the owner and those with grading permission (Decision 314 item 1).
+  const feeRequests = useStudentFeeRequests(studentId, schoolId, my.gradesAnyStyle);
   // Belt correction requests this caller may answer (backlog 3.13).
   const corrections = useStudentCorrections(schoolId, studentId);
   const feeSettings = usePromotionFeeSettings(schoolId);
@@ -219,7 +222,9 @@ export function StudentGradingPage() {
   return (
     <StudentPageRoot>
       <NewLookPageHeader
-        parent={my.isOwner ? { to: '/students', label: t('layout.nav.students') } : { to: '/grading', label: t('layout.nav.gradingBoard') }}
+        // Back where the person came from: the Grading Board when its links
+        // brought them here, Students for every other way in.
+        parent={pageState.from === 'grading' ? { to: '/grading', label: t('layout.nav.gradingBoard') } : { to: '/students', label: t('layout.nav.students') }}
         title={studentName}
         subtitle={inactive ? t('grading.student.inactiveSubtitle') : undefined}
         actions={
@@ -244,8 +249,9 @@ export function StudentGradingPage() {
           </>
         }
         tabs={[
-          { to: here, label: t('students.page.profile'), current: !onRanks },
-          { to: `${here}?tab=ranks`, label: t('students.page.ranks'), current: onRanks },
+          // The tabs keep where the person came from (the "‹" link).
+          { to: here, label: t('students.page.profile'), current: !onRanks, state: pageState },
+          { to: `${here}?tab=ranks`, label: t('students.page.ranks'), current: onRanks, state: pageState },
         ]}
         tabsLabel={t('students.page.tabsAria')}
       />
@@ -1071,6 +1077,8 @@ const FEE_STATUS_BADGE: Record<StudentFeeRequest['status'], 'default' | 'success
  */
 function FeeRequestList({ requests, currency }: { requests: StudentFeeRequest[]; currency: string | null }) {
   const t = useT();
+  // Same page, other tab: keep where the person came from (the "‹" link).
+  const pageState = useStudentPageState();
   if (requests.length === 0) return null;
   return (
     <section aria-label={t('grading.student.feeList.title')} style={{ marginTop: 16 }} data-testid="promotion-fee-list">
@@ -1085,7 +1093,7 @@ function FeeRequestList({ requests, currency }: { requests: StudentFeeRequest[];
                 {r.charge.owedAmount > 0
                   ? t('grading.student.feeList.owed', { invoice: r.charge.invoiceLabel, amount: formatMoney(r.charge.owedAmount, r.charge.currency) })
                   : t('grading.student.feeList.paidInvoice', { invoice: r.charge.invoiceLabel })}{' '}
-                · <Link to={{ search: '', hash: '#student-payments' }}>{t('grading.student.feeList.seePayments')}</Link>
+                · <Link to={{ search: '', hash: '#student-payments' }} state={pageState}>{t('grading.student.feeList.seePayments')}</Link>
               </span>
             ) : null}
           </li>

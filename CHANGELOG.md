@@ -10,16 +10,61 @@ Compare any two versions with `git diff <old> <new>`, e.g. `git diff v1.0.0 mast
 
 Post-v1.4.0 work on `master`.
 
-- **Member app: push notifications through Firebase** (Decision 462). The member
+- **Member app: push notifications through Firebase** (Decision 463). The member
   app is linked to the Firebase project `ultm8-production` and registers its
   Firebase (FCM) token on iOS and Android, and again whenever Firebase changes it.
   Before, iOS registered an Apple token the server couldn't send to. Pushes need a
   new app build (not Expo Go), and on iOS the Apple push key in Firebase too. The
   web app no longer asks for notification permission it can't use.
 - **Member app: logging out stops push notifications on that phone** (Decision
-  463). The phone's token is removed from the account and deleted in Firebase, so
+  464). The phone's token is removed from the account and deleted in Firebase, so
   someone else logging in on a shared phone gets their own notifications instead
   of none.
+- **Students: staff with no branch** (#603). A coach or Branch Staff member who
+  isn't assigned to a branch, in a School with branches, now sees "You aren't
+  assigned to a branch yet" with a note that the School owner can assign one,
+  instead of "No Students yet". Who sees which students is unchanged.
+- **Branch Staff and coaches: links and requests** (#602). A student's page no
+  longer asks for promotion fees when the person has no grading permission.
+  "Front-desk mode" on Check-in shows only to the owner and Branch Staff. The
+  "‹" link on a student's page goes back to the Grading Board when you came from
+  it, and to Students otherwise.
+- **New look for Branch Staff and coaches** (#601). The Timetable's rows fit a
+  tablet and show overnight times cleanly; Start front-desk mode and the
+  front-desk tablet read properly in dark mode; the tablet sign-up's Gender and
+  "How did you hear about us?" use the new pills and drop-down ("Not set" first);
+  the owner Dashboard's Attendance figures no longer run together.
+- **New look: Platform Admin** (#585). Platform Admin: the new look's app shell,
+  with the side menu and icon tiles, the phone top bar, and light and dark mode.
+  Same pages and Log out. No top bar, and `/` still opens Admin Users (Decision
+  461).
+- **New look: Platform Admin** (#586). Platform Admin: the sign-in page in the
+  new look, a white card on the grey page, in light and dark.
+- **New look: Platform Admin** (#587). Platform Admin → Admin Users: page
+  header, a list that turns into cards on narrow screens, tier and status tags,
+  and the new-look Tier drop-down in Invite.
+- **New look: Platform Admin** (#589). Platform Admin → Schools: page header,
+  details as label/value pairs, owners and staff as rows with tags, and the
+  trial, account status and payment account cards with tags and equal button
+  pairs.
+- **New look: Platform Admin** (#591). Platform Admin → Franchises: page header,
+  details as label/value pairs with tags, and the shared account status and
+  payment account cards.
+- **New look: Platform Admin** (#592). Platform Admin → Impersonation: page
+  header, the form in a white card, and the started session as label/value pairs
+  with the token in a grey code box.
+- **New look: Platform Admin** (#593). Platform Admin → Translations: page
+  header, filters in a card, a list that turns into cards on narrow screens with
+  Edit · Delete as an equal pair, and Load more under it.
+- **New look: Platform Admin** (#594). Platform Admin → Card Surcharge: page
+  header, the Add a country form with the new-look tick box, the list as the
+  new-look table, and Back · Remove as an equal pair.
+- **New look: Platform Admin** (#595). Platform Admin → What's new: New post in
+  the page header, each post as a card, and the post dialog's translations as
+  soft rows that open.
+- **New look: Platform Admin** (#596). Platform Admin → Subscription Plans: page
+  header, the plans as a list that turns into cards on narrow screens, and Load
+  more under it.
 - **Dashboard: Ready to grade and Check-ins today** (#584). The owner Dashboard
   shows Ready to grade (the Grading Board's Ready to Grade column across every
   style, with "See all N →") and Check-ins today (today's check-ins on the

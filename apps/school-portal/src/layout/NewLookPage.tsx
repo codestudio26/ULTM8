@@ -22,7 +22,8 @@ export function NewLookPageHeader({
   subtitle?: React.ReactNode;
   parent?: { to: string; label: string };
   actions?: React.ReactNode;
-  tabs?: Array<{ to: string; label: string; current?: boolean }>;
+  /** `state` is passed on with the tab's link (e.g. where the person came from). */
+  tabs?: Array<{ to: string; label: string; current?: boolean; state?: unknown }>;
   tabsLabel?: string;
 }) {
   return (
@@ -43,7 +44,7 @@ export function NewLookPageHeader({
       {tabs?.length ? (
         <nav className="u8n-tabs u8n-tabs--page" aria-label={tabsLabel}>
           {tabs.map((tab) => (
-            <Link key={tab.to} to={tab.to} className={'u8n-tab' + (tab.current ? ' u8n-tab--active' : '')} aria-current={tab.current ? 'page' : undefined}>
+            <Link key={tab.to} to={tab.to} state={tab.state} className={'u8n-tab' + (tab.current ? ' u8n-tab--active' : '')} aria-current={tab.current ? 'page' : undefined}>
               {tab.label}
             </Link>
           ))}

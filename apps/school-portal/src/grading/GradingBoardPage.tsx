@@ -33,6 +33,7 @@ import { programPair, useAdultProgram } from './adultProgram';
 import { mayCloseFee } from './feeAccess';
 import { useMyStaffAccess } from '../roleGrants/roleGrantQueries';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
+import { fromGradingBoard } from './studentPageState';
 
 /** Column labels are translation keys, resolved at render time. */
 export const COLUMNS: Array<{ key: BoardColumn; label: TranslationKey }> = [
@@ -670,7 +671,7 @@ function BoardCard({ item, rung, selected, open, onOpen, onToggle, onProgress, o
         {onToggle ? <TickBox item={item} selected={selected} onToggle={onToggle} /> : null}
         <Avatar person={item} size={40} />
         <div className="u8gb-card__name">
-          <Link to={`/students/${item.studentId}?tab=ranks`} state={{ name }}>
+          <Link to={`/students/${item.studentId}?tab=ranks`} state={fromGradingBoard(name)}>
             {name}
           </Link>
         </div>
@@ -714,7 +715,7 @@ function BoardRow({ item, rung, next, selected, open, onOpen, onToggle, onProgre
         <div className="u8gb-row__who">
           <Avatar person={item} size={40} />
           <div className="u8gb-card__name">
-            <Link to={`/students/${item.studentId}?tab=ranks`} state={{ name }}>
+            <Link to={`/students/${item.studentId}?tab=ranks`} state={fromGradingBoard(name)}>
               {name}
             </Link>
             <div className="u8gb-row__tags">

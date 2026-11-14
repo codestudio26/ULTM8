@@ -8447,7 +8447,69 @@ The owner approved building the two Dashboard items and the Platform Admin new l
 
 User (Code), 12 Nov 2026: "Go ahead" (the two Dashboard items and the Platform Admin new look); answers to the four Dashboard questions on #584; "Keep as they are" on #585.
 
-## Decision 462 — Member app push: get the FCM token from Firebase on both platforms
+---
+
+## Decision 462 — New look: the owner's answers to the 34 open questions; Branch Staff and coach fixes
+
+**Date:** 14 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 168, 169, 312, 314, 341, 425, 453, 460, 461 · **Raised in:** the open-questions page (13 Nov 2026), #601 (Branch Staff and coach page check), #602, #603
+
+### Decision
+
+**A. The open-questions page.** The owner took every recommendation.
+
+How things behave:
+1. Every pop-up and form asks "Discard changes?" before closing with unsaved edits (the round ✕, Cancel, a click outside, Escape). This is the behaviour Decision 460 item 13 described, which no form had yet.
+2. The branch filter on Students → Attendance and Growth is fixed: picking one branch no longer hides the others from the list.
+3. Deleting a roster uses the standard delete pop-up, not the in-row "Delete?".
+4. Picking a rank in a grading pop-up counts as a change.
+5. Picking a Currency counts as a change.
+6. In a searchable picker, Enter picks the first match and never submits the form.
+7. Every drop-down jumps to an item when its first letter is typed.
+8. The student picker (Class page "Add a student", Timetable "Book a student") is searchable.
+
+Layout, closer to the design:
+9. Grading → Styles & Belts (and Skills) are rebuilt to the design's layout: a style switch, an "About this style" panel and a panel for the picked belt, in place of the restyled table.
+10. Grading → Settings shows one style at a time, with a style switch on top and Belts/Levels as a two-button switch.
+11. The style picker is a switch on every grading page.
+12. "Currently attending only" on the Grading Board is an on/off switch.
+13. On a phone the Grading Board's panels stay under the board (no bottom sheet).
+14. Bulk promote shows each student's photo and belt picture.
+15. No "About this permission" panel for now.
+16. Check-in rules keep their own layout.
+17. Check-in rules keep today's groups (When / Who / Front desk).
+18. Sign-in pages keep the white card with the U8 mark.
+19. Create account stays one card.
+20. Access paused and the legal pages get the full sign-in frame with the U8 mark.
+
+Small choices:
+21. Delete buttons are red-outlined everywhere.
+22. In tall pop-ups the title and ✕ stay pinned while the content scrolls.
+23. On freeze requests (Students list), Approve is the green main button.
+24. Show QR and Roll call get a "‹ Classes" link at the top.
+25. Grading → Permissions: "Change board %" is renamed "Change grading settings", in every language.
+26. School → Charges and tax: the tax country is searchable.
+27. The guest waiver shows the School's logo instead of the ULTM8 mark.
+28. Billing → Transactions pop-ups say "Cancel" instead of "Back".
+29. The Membership plan form names each step once.
+30. The Membership plan form has a "‹ Membership Plans" link at the top instead of the "← Back" button.
+31. Pop-ups with only a main button and ✕ stay as they are (no extra Cancel).
+32. Team → Staff → Give a role uses round buttons for the role.
+33. Branch Staff's "Check-ins today" card shows the total only (no branch names).
+34. On the Grading Board's columns pop-up, "Back to 33% / 66%" stays in the bottom bar.
+
+**B. Branch Staff and coach page check (#601–#603).**
+35. The front-desk sign-up's "How did you hear about us?" starts at "Not set" (#601).
+36. A student's page asks for promotion fees only when the caller is the owner or grades a style (#602). It also asks for charges (the Payments card) only when the caller may see payments; who may see payments is unchanged.
+37. "Front-desk mode" on Check-in shows only to the owner and Branch Staff (#602).
+38. A student page's "‹" link goes back where the person came from: "‹ Grading Board" from the board, "‹ Students" otherwise (#602).
+39. Decisions 168/341 stand: staff with no branch in a School with branches see no students; they now see "You aren't assigned to a branch yet" with a note that the owner can assign one (#603).
+40. Every coach gets a coach (Instructor) profile however they joined: by invite, by "Give a role" or by "Add manually". So "My coach profile" always saves, and such coaches appear in Team → Instructors (with a Revoked tag after removal), the class and timetable coach pickers and search, and leave the "Add instructor" picker. "Invite existing user" (Decision 312 F9) opens their existing profile. No data migration; existing coaches get their profile on first save. ("Option A".)
+
+### Recorded by
+
+User (Code), 13–14 Nov 2026: the pasted answers to the open-questions page (items 1–34); "ok" on "Not set"; "yes", "ok", "go ahead" on the page-check fixes; "a" on the back link; "A" on the coach profile; "go ahead" on the Payments card.
+
+## Decision 463 — Member app push: get the FCM token from Firebase on both platforms
 
 **Date:** 12 Nov 2026 · **Status:** Product-owner request, built · **Builds on:** Decisions 223, 250, 264 · **Takes up:** Decision 267 item 1 (push), now that the owner has provisioned the Firebase project
 
@@ -8472,9 +8534,9 @@ Unchanged: the 409 when a second person signs in on the same device (still flagg
 
 User (Code), 12 Nov 2026: asked to wire real Firebase Cloud Messaging into the member app with the given Firebase config files, fix the iOS token, and handle token refresh.
 
-## Decision 463 — Logging out stops push notifications on that phone
+## Decision 464 — Logging out stops push notifications on that phone
 
-**Date:** 13 Nov 2026 · **Status:** Product-owner decision, built · **Builds on:** Decisions 223, 264, 462 · **Resolves:** the shared-phone 409 that `pushRegistration.ts` and Decision 462 flagged as not built
+**Date:** 13 Nov 2026 · **Status:** Product-owner decision, built · **Builds on:** Decisions 223, 264, 463 · **Resolves:** the shared-phone 409 that `pushRegistration.ts` and Decision 463 flagged as not built
 
 ### Decision
 

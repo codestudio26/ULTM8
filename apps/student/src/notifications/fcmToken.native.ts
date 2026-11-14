@@ -2,7 +2,7 @@ import { deleteToken, getMessaging, getToken, onTokenRefresh } from '@react-nati
 
 /**
  * The FCM registration token for this device, on iOS AND Android (Decision
- * 250's single FCM integration point; this file's choice is Decision 462).
+ * 250's single FCM integration point; this file's choice is Decision 463).
  *
  * `expo-notifications`' `getDevicePushTokenAsync()` was used before, but on
  * iOS it returns the raw APNs device token, which FCM HTTP v1
@@ -19,7 +19,7 @@ export function getFcmTokenAsync(): Promise<string> {
 }
 
 /**
- * Makes Firebase throw this device's token away (on logout, Decision 463), so
+ * Makes Firebase throw this device's token away (on logout, Decision 464), so
  * the next person to log in on this phone gets a fresh token of their own.
  */
 export function deleteFcmTokenAsync(): Promise<void> {

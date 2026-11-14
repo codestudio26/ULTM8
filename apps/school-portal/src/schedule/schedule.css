@@ -576,10 +576,12 @@
 }
 
 /* One class row: avatar → class name (branch under it) → time → seats →
- * tags → ⋮. The columns have capped widths; spare width sits at the end. */
+ * tags → ⋮. The columns have capped widths; spare width sits at the end.
+ * Their smallest widths fit the card on a tablet beside the side menu
+ * (900px), so the ⋮ never sticks out and scrolls the page sideways. */
 [data-look='redesign'] .u8s-entry {
   display: grid;
-  grid-template-columns: 40px minmax(140px, 260px) 110px 130px minmax(96px, 1fr) 44px;
+  grid-template-columns: 40px minmax(120px, 260px) minmax(96px, 110px) minmax(72px, 130px) minmax(min-content, 1fr) 44px;
   align-items: center;
   gap: 14px;
   padding: 12px 20px;
@@ -594,9 +596,11 @@
 [data-look='redesign'] .u8s-entry--dim > :not(.u8s-entry__actions) {
   opacity: 0.6;
 }
+/* A class running past midnight ("23:00 – 00:30 (next day)") wraps inside
+ * its column instead of running into the seats beside it. */
 [data-look='redesign'] .u8s-entry__time {
   font-size: 14px;
-  white-space: nowrap;
+  min-width: 0;
 }
 [data-look='redesign'] .u8s-entry__seats {
   font-size: 13px;

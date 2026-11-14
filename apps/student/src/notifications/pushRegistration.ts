@@ -6,7 +6,7 @@ import { deleteFcmTokenAsync, getFcmTokenAsync, onFcmTokenRefresh } from './fcmT
 
 /**
  * Device-token registration (Decision 223/264; FCM token on both platforms,
- * Decision 462). Registers this device's FCM registration token with
+ * Decision 463). Registers this device's FCM registration token with
  * `POST /notifications/device-tokens`, so PushNotificationService (FCM HTTP
  * v1 only, Decision 250) can reach it.
  *
@@ -26,7 +26,7 @@ import { deleteFcmTokenAsync, getFcmTokenAsync, onFcmTokenRefresh } from './fcmT
  * successful registration this listens for a new token and registers it the
  * same way.
  *
- * Logout (`unregisterPushTokenAsync()`, Decision 463): logging out stops push
+ * Logout (`unregisterPushTokenAsync()`, Decision 464): logging out stops push
  * notifications on this phone. The app stops listening for refreshes, removes
  * this device's token from the account (`DELETE /notifications/device-tokens/
  * :id`), and makes Firebase throw the token away. So the next person to log in
@@ -64,7 +64,7 @@ export async function registerForPushNotificationsAsync(): Promise<void> {
 }
 
 /**
- * Called on logout, while the access token is still valid (Decision 463).
+ * Called on logout, while the access token is still valid (Decision 464).
  * Best effort and never throws: a failure here must not stop the logout.
  */
 export async function unregisterPushTokenAsync(): Promise<void> {

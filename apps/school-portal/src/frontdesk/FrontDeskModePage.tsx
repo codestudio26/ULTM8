@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Spinner } from '@ultm8/ui';
-import { useAuth, useGradingSchoolId } from '../auth/AuthContext';
-import { useBranches } from '../branches/branchQueries';
+import { NewLookSelect } from '../layout/NewLookSelect';
+import { useGradingSchoolId } from '../auth/AuthContext';
 import { useT } from '../i18n/I18nProvider';
 import { hasBackend } from './frontDeskFeatures';
 import { errorText } from './frontDeskQueries';
+import { useFrontDeskStart } from './frontDeskStart';
 import { saveKioskToken, useKioskFindMe, useKioskSignUp, useMyKioskCode, useStartKiosk, type KioskSignUpInput as SignUpInput } from './kioskSession';
 import { useHeardFromChoices } from './heardFrom';
 import { SoonTag } from './parts';
@@ -38,19 +39,10 @@ const EMPTY_SIGN_UP: SignUpInput = {
 export function FrontDeskModePage() {
   const t = useT();
   const navigate = useNavigate();
-  const { claims } = useAuth();
   const schoolId = useGradingSchoolId();
-  const branchQuery = useBranches(schoolId);
-  const myGrants = (claims?.grants ?? []).filter((g) => g.schoolId === schoolId);
-  const isOwner = myGrants.some((g) => g.role === 'SCHOOL_OWNER_MANAGER');
-  const staffBranchIds = myGrants.filter((g) => g.role === 'BRANCH_STAFF').map((g) => g.branchId ?? null);
-  // The owner, or Branch Staff for their own Branch (handover F1).
-  const canStartAt = (id: string | null) => isOwner || staffBranchIds.some((b) => b === null || b === id);
-  const allOpen = (branchQuery.data?.items ?? []).filter((b) => !b.archivedAt);
-  const branches = allOpen.filter((b) => canStartAt(b.id));
-  // A School with no Branches runs front-desk mode for the whole School (CI4).
-  const wholeSchool = branchQuery.isSuccess && allOpen.length === 0;
-  const allowed = wholeSchool ? canStartAt(null) : branches.length > 0;
+  // The owner, or Branch Staff for their own Branch (handover F1); the whole
+  // School when it has no Branches (CI4).
+  const { branchQuery, branches, wholeSchool, allowed } = useFrontDeskStart(schoolId);
   const [branchId, setBranchId] = useState<string | null>(null);
   const myCode = useMyKioskCode(schoolId);
   const startKiosk = useStartKiosk(schoolId);
@@ -169,7 +161,7 @@ export function SignUpScreen({
   const [step, setStep] = useState(1);
   const [form, setForm] = useState<SignUpInput>(EMPTY_SIGN_UP);
   const [error, setError] = useState<string | null>(null);
-  const set = (key: keyof SignUpInput) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setForm((f) => ({ ...f, [key]: e.target.value }));
+  const set = (key: keyof SignUpInput) => (e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, [key]: e.target.value }));
   const ready = hasBackend('signUp');
   const send = useKioskSignUp();
   const choices = useHeardFromChoices(heardFromOptions);
@@ -222,14 +214,22 @@ export function SignUpScreen({
               </label>
             </div>
             {field('dateOfBirth', t('frontDesk.signUp.dateOfBirth'), 'date', true)}
-            <label className="fd-class__meta" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {t('frontDesk.signUp.gender')}
-              <select className="ultm8-input" value={form.gender} onChange={set('gender')} style={{ minHeight: 52, fontSize: 16 }}>
-                <option value="" />
-                <option value="FEMALE">{t('frontDesk.signUp.female')}</option>
-                <option value="MALE">{t('frontDesk.signUp.male')}</option>
-              </select>
-            </label>
+            {/* Gender: three short choices, so pills, as on Register and Edit
+                a student (never a browser <select> in the new look). */}
+            <div className="fd-class__meta" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <span id="fd-sign-up-gender-label">{t('frontDesk.signUp.gender')}</span>
+              <div className="ultm8-pills" role="group" aria-labelledby="fd-sign-up-gender-label">
+                {[
+                  { value: '', label: t('schools.form.notSet') },
+                  { value: 'FEMALE', label: t('frontDesk.signUp.female') },
+                  { value: 'MALE', label: t('frontDesk.signUp.male') },
+                ].map((g) => (
+                  <button key={g.value || 'none'} type="button" className="ultm8-pills__option" aria-pressed={form.gender === g.value} onClick={() => setForm((f) => ({ ...f, gender: g.value as SignUpInput['gender'] }))}>
+                    {g.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
           <p className="fd-class__meta">
             {t('frontDesk.signUp.childNote')}{' '}
@@ -244,17 +244,15 @@ export function SignUpScreen({
           <div className="fd-grid2">
             {field('phone', t('frontDesk.signUp.phone'), 'tel')}
             {field('email', t('frontDesk.signUp.email'), 'email', true)}
-            <label className="fd-class__meta" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {t('frontDesk.signUp.heardFrom')}
-              <select className="ultm8-input" value={form.heardFrom} onChange={set('heardFrom')} style={{ minHeight: 52, fontSize: 16 }}>
-                <option value="" />
-                {choices.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <div className="fd-class__meta">
+              <NewLookSelect
+                id="fd-sign-up-heard-from"
+                label={t('frontDesk.signUp.heardFrom')}
+                value={form.heardFrom}
+                options={[{ value: '', label: t('schools.form.notSet') }, ...choices.map((c) => ({ value: c, label: c }))]}
+                onChange={(heardFrom) => setForm((f) => ({ ...f, heardFrom }))}
+              />
+            </div>
           </div>
         </>
       ) : (

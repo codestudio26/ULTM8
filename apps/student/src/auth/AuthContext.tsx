@@ -247,7 +247,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const logout = useCallback(async () => {
-    // Logging out stops push notifications on this phone (Decision 463). First,
+    // Logging out stops push notifications on this phone (Decision 464). First,
     // while the access token is still valid; best effort, never throws.
     await unregisterPushTokenAsync();
     // Best-effort server-side revoke before the local clear below — without this, a

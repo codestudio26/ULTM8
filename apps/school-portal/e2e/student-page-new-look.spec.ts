@@ -92,12 +92,13 @@ test('"On the Grading Board" is our own drop-down, and saves', async ({ page }) 
     .toBe(true);
 });
 
-test('a coach comes back to the Grading Board, and has no Edit', async ({ page }) => {
+test('a coach who opened the page by its address goes back to Students, and has no Edit', async ({ page }) => {
   const coach = await addPerson('Cora', 'Coach', [{ role: 'INSTRUCTOR', schoolId: s.schoolId }]);
   await signIn(page, coach.token);
   await page.goto(`/students/${s.student.id}`);
   await expect(page.getByRole('heading', { level: 1, name: s.student.name })).toBeVisible();
-  await expect(page.locator('.u8n-page-header').getByRole('link', { name: 'Grading Board', exact: true })).toHaveAttribute('href', '/grading');
+  // The "‹" link goes back where the person came from: Students, unless the Grading Board's links brought them.
+  await expect(page.locator('.u8n-page-header').getByRole('link', { name: 'Students', exact: true })).toHaveAttribute('href', '/students');
   await expect(panel(page).getByRole('link', { name: /^Edit / })).toHaveCount(0);
   await page.getByRole('navigation', { name: 'Student sections' }).getByRole('link', { name: 'Ranks' }).click();
   // A coach with no grading permissions is told so on the Ranks tab.
